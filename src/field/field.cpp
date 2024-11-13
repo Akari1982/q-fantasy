@@ -1,5 +1,5 @@
 #include "field.h"
-#include "../game.h"
+#include "../psyq/libgte.h"
 
 
 
@@ -31,15 +31,7 @@ std::vector< u8> field_random =
 void
 field_main()
 {
-    ////////////////////////////////
-    // MISSING
-    ////////////////////////////////
-
     field_main_loop();
-
-    ////////////////////////////////
-    // MISSING
-    ////////////////////////////////
 }
 
 
@@ -56,10 +48,20 @@ field_main_loop()
 
         field_rain_update();
 
+        MATRIX m;
+        m->m[0][0] = 1;
+        m->m[0][1] = 0;
+        m->m[0][2] = 0;
+        m->m[1][0] = 0;
+        m->m[1][1] = 1;
+        m->m[1][2] = 0;
+        m->m[2][0] = 0;
+        m->m[2][1] = 0;
+        m->m[2][2] = 1;
+
         // A1 = ot + 1749c; // rain packets
-        // A2 = w[80071e40]; // matrix
         // A3 = ot + 17490; // draw_mode_packet
-        field_rain_add_to_render( &field_rain_prim[ 0 ].poly[ 0 ] );
+        field_rain_add_to_render( &field_rain_prim[ 0 ].poly[ 0 ], &m );
 
         DrawOTag( &field_rain_prim[ 0 ].poly[ 0 ] );
 
@@ -169,37 +171,32 @@ field_rain_update()
 
 
 void
-field_rain_add_to_render( sTag* ot )
+field_rain_add_to_render( sTag* ot, MATRIX* m )
 {
     //S1 = A1;
-    //matrix = A2;
     //packet = A3;
 
-    //system_psyq_push_matrix();
+    PushMatrix();
 
-    //A0 = matrix;
-    //system_psyq_set_rot_matrix();
-
-    //A0 = matrix;
-    //system_psyq_set_trans_matrix();
+    SetRotMatrix( m );
+    SetTransMatrix( m );
 
     for( int i = 0; i < 0x40; ++i )
     {
         if( field_rain[ i ].m16_render == true )
         {
-            //A0 = 800e42d8 + i * 18 + 0;
-            //A1 = S1 + i * 10 + 8;
-            //A2 = SP + 10;
-            //A3 = SP + 14;
-            //system_psyq_rot_trans_pers();
-
-            //A0 = 800e42d8 + i * 18 + 8;
-            //A1 = S1 + i * 10 + c;
-            //A2 = SP + 10;
-            //A3 = SP + 14;
-            //system_psyq_rot_trans_pers();
+            u32 p;
+            u32 flag;
+            DVECTOR sxy;
 
             LINE_F2* p = &field_rain_prim[ 0 ].poly[ i ];
+
+            //A1 = S1 + i * 10 + 8;
+            RotTransPers( &p->x0y0, &sxy, &p, &flag );
+
+            //A1 = S1 + i * 10 + c;
+            RotTransPers( p->x1y1, &sxy, &p, &flag );
+
             p->x0y0.vx = 500 + field_rain[ i ].m0_p1.vx / 3;
             p->x0y0.vy = 1900 - field_rain[ i ].m0_p1.vz;
             p->x1y1.vx = 500 + field_rain[ i ].m8_p2.vx / 3;
@@ -209,7 +206,7 @@ field_rain_add_to_render( sTag* ot )
         }
     }
 
-    //system_psyq_pop_matrix();
+    PopMatrix();
 
     //[packet] = w((w[packet] & ff000000) | (w[otag] & 00ffffff));
     //[otag] = w((w[otag] & ff000000) | (packet & 00ffffff));

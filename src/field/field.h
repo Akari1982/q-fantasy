@@ -2,8 +2,8 @@
 
 #include <array>
 
-#include "game.h"
-#include "../psyq/graphic.h"
+#include "../psyq/typedef.h"
+#include "../psyq/libgpu.h"
 
 
 
@@ -29,4 +29,4 @@ void field_main_loop();
 
 void field_rain_init( sFieldRainPrim* prim );
 void field_rain_update();
-void field_rain_add_to_render( sTag* ot );
+void field_rain_add_to_render( sTag* ot, MATRIX* m );
