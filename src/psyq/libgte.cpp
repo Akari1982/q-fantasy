@@ -1,4 +1,5 @@
 #include "psxgte.h"
+#include <array>
 
 
 
@@ -7,7 +8,7 @@ int matrix_stack_id = 0;
 
 
 
-voidPushMatrix()
+void PushMatrix()
 {
     matrix_stack[ matrix_stack_id ].m[ 0 ][ 0 ] = DVECTOR::fromS32( getCopControlWord( 2, 0x0000 ) ).vx;
     matrix_stack[ matrix_stack_id ].m[ 0 ][ 1 ] = DVECTOR::fromS32( getCopControlWord( 2, 0x0000 ) ).vy;
@@ -64,10 +65,10 @@ void SetTransMatrix( const MATRIX* m )
 
 
 
-long RotTransPers( SVECTOR* v0, DVECTOR* sxy, long* p, long* flag )
+s32 RotTransPers( SVECTOR* v0, DVECTOR* sxy, u32* p, u32* flag )
 {
-    setCopReg( 2, 0x0000, DVECTOR::fromValue( v0->vx, v0->vy ) );
-    setCopReg( 2, 0x0800, DVECTOR::fromValue( v0->vz, 0 ) );
+    setCopReg( 2, 0x0000, DVECTOR( v0->vx, v0->vy ) );
+    setCopReg( 2, 0x0800, DVECTOR( v0->vz, 0 ) );
     copFunction( 2, 0x180001 );
     *sxy = DVECTOR::fromS32( getCopReg( 2, 0xe ) );
     *p = getCopReg(2, 8);

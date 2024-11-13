@@ -1,6 +1,26 @@
 #pragma once
 
 #include "typedef.h"
+#include <vector>
+
+
+
+enum eCOP2D
+{
+    COP2D_XY0 = 0,
+    COP2D_Z0 = 1,
+    COP2D_XY1 = 2,
+    COP2D_Z1 = 3,
+    COP2D_XY2 = 4,
+    COP2D_Z2 = 5,
+    COP2D_IR0 = 8,
+    COP2D_IR1 = 9,
+    COP2D_IR2 = 10,
+    COP2D_IR3 = 11,
+};
+
+s16 READ_LE_S16(const void* ptr);
+s16 READ_LE_S16(const std::vector<u8>::const_iterator& inputStream);
 
 
 

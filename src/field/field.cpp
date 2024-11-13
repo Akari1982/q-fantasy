@@ -1,5 +1,7 @@
 #include "field.h"
+#include "../game.h"
 #include "../psyq/libgte.h"
+#include <vector>
 
 
 
@@ -49,15 +51,18 @@ field_main_loop()
         field_rain_update();
 
         MATRIX m;
-        m->m[0][0] = 1;
-        m->m[0][1] = 0;
-        m->m[0][2] = 0;
-        m->m[1][0] = 0;
-        m->m[1][1] = 1;
-        m->m[1][2] = 0;
-        m->m[2][0] = 0;
-        m->m[2][1] = 0;
-        m->m[2][2] = 1;
+        m.m[ 0 ][ 0 ] = 0x0fe2;
+        m.m[ 0 ][ 1 ] = 0xfe11;
+        m.m[ 0 ][ 2 ] = 0x0000;
+        m.m[ 1 ][ 0 ] = 0xffcb;
+        m.m[ 1 ][ 1 ] = 0xfe52;
+        m.m[ 1 ][ 2 ] = 0xf016;
+        m.m[ 2 ][ 0 ] = 0x01eb;
+        m.m[ 2 ][ 1 ] = 0x0fcb;
+        m.m[ 2 ][ 2 ] = 0xfe4f;
+        m.t[ 0 ] = 0xfffffe93;
+        m.t[ 1 ] = 0x00000ccf;
+        m.t[ 2 ] = 0xffff9669;
 
         // A1 = ot + 1749c; // rain packets
         // A3 = ot + 17490; // draw_mode_packet
@@ -145,7 +150,7 @@ field_rain_update()
                 field_rain[ i ].m12_seed += 1;
 
                 s16 rnd_seed = field_rain[ i ].m12_seed;
-                u8 rnd1 = field_random[ rnd_seed ];
+                u8 rnd1 = field_random[ rnd_seed & 0xff ];
                 u8 rnd2 = field_random[ ( ( rnd_seed * 3 ) & 0xff)];
 
                 field_rain[ i ].m8_p2.vx = /*w[80074ea4 + entity_id * 84 + c] >> c) + */ rnd1 * 0xc - 0x600;
@@ -185,22 +190,24 @@ field_rain_add_to_render( sTag* ot, MATRIX* m )
     {
         if( field_rain[ i ].m16_render == true )
         {
-            u32 p;
+            u32 pt;
             u32 flag;
             DVECTOR sxy;
 
-            LINE_F2* p = &field_rain_prim[ 0 ].poly[ i ];
-
             //A1 = S1 + i * 10 + 8;
-            RotTransPers( &p->x0y0, &sxy, &p, &flag );
+            RotTransPers( &field_rain[ i ].m0_p1, &sxy, &pt, &flag );
+
+            LINE_F2* p = &field_rain_prim[ 0 ].poly[ i ];
+            //p->x0y0.vx = 500 + field_rain[ i ].m0_p1.vx / 3;
+            //p->x0y0.vy = 1900 - field_rain[ i ].m0_p1.vz;
+            p->x0y0 = sxy;
 
             //A1 = S1 + i * 10 + c;
-            RotTransPers( p->x1y1, &sxy, &p, &flag );
+            RotTransPers( &field_rain[ i ].m8_p2, &sxy, &pt, &flag );
 
-            p->x0y0.vx = 500 + field_rain[ i ].m0_p1.vx / 3;
-            p->x0y0.vy = 1900 - field_rain[ i ].m0_p1.vz;
-            p->x1y1.vx = 500 + field_rain[ i ].m8_p2.vx / 3;
-            p->x1y1.vy = 1900 - field_rain[ i ].m8_p2.vz;
+            //p->x1y1.vx = 500 + field_rain[ i ].m8_p2.vx / 3;
+            //p->x1y1.vy = 1900 - field_rain[ i ].m8_p2.vz;
+            p->x1y1 = sxy;
 
             if( i != 0 ) AddPrim( ot, p );
         }

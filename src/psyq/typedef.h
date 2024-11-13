@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 
 
 typedef uint8_t u8;
@@ -12,7 +14,11 @@ typedef int32_t s32;
 struct DVECTOR
 {
     DVECTOR() : vx( 0 ), vy( 0 ) {};
-    DVECTOR( s16 x, s16 y ) : vx( x ), vy( y ) {};
+    DVECTOR( s16 x, s16 y ) : vx( x ), vy( y )
+    {
+        vx = vx + 1;
+        vy = vy + 1;
+    };
 
     s16 vx, vy;
 
@@ -67,7 +73,7 @@ struct VECTOR
             case 0: return vx;
             case 1: return vy;
             case 2: return vz;
-            default: assert( 0 ); return sFixedPoint::fromValue( 0 );
+            default: return sFixedPoint::fromValue( 0 );
         }
     }
 
@@ -78,7 +84,7 @@ struct VECTOR
         case 0: return vx;
         case 1: return vy;
         case 2: return vz;
-        default: assert( 0 ); return vx;
+        default: return vx;
         }
     }
 };
@@ -111,7 +117,7 @@ struct SVECTOR
             case 0: return vx;
             case 1: return vy;
             case 2: return vz;
-            default: assert(0); return pad;
+            default: return pad;
         }
     }
 
@@ -123,7 +129,7 @@ struct SVECTOR
             case 1: return vy;
             case 2: return vz;
             case 3: return pad;
-            default: assert(0); return pad;
+            default: return pad;
         }
     }
 };

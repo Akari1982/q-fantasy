@@ -1,7 +1,17 @@
 #include "psxgte.h"
 #include <math.h>
+#include <array>
 
 
+
+s16 READ_LE_S16(const void* ptr)
+{
+    return *(s16*)ptr;
+}
+s16 READ_LE_S16(const std::vector<u8>::const_iterator& inputStream)
+{
+    return READ_LE_S16(&inputStream[0]);
+}
 
 s32 gDepthDivider = 2;
 
@@ -693,7 +703,7 @@ void copFunction(int cop, u32 function)
         case 0x2E: AVSZ4(function); return;
         case 0x30: RTPT(function); return;
         case 0x3D: GPF(function); return;
-        default: assert(0);
+        default: {}
     }
 }
 
@@ -752,7 +762,7 @@ void gte_ldlv0(const VECTOR* pVertices0)
     setCopReg(2, COP2D_Z0, DVECTOR(pVertices0->vz, 0));
 }
 
-void gte_ldv0(const SFP_VEC4* pVertices0)
+void gte_ldv0(const SVECTOR* pVertices0)
 {
 	setCopReg(2, COP2D_XY0, DVECTOR(pVertices0->vx, pVertices0->vy));
 	setCopReg(2, COP2D_Z0, DVECTOR(pVertices0->vz, 0));
@@ -774,7 +784,7 @@ void gte_ldIR0(s32 value) {
     setCopReg(2, COP2D_IR0, DVECTOR(value, 0));
 }
 
-void gte_ldVXY0(struct SFP_VEC4* pInput) {
+void gte_ldVXY0(struct SVECTOR* pInput) {
     setCopReg(2, COP2D_XY0, DVECTOR(pInput->vx, pInput->vy));
 }
 
@@ -782,7 +792,7 @@ void gte_ldVZ0(s16* pInput) {
     setCopReg(2, COP2D_Z0, DVECTOR(*pInput, 0));
 }
 
-void gte_ldVXY1(struct SFP_VEC4* pInput) {
+void gte_ldVXY1(struct SVECTOR* pInput) {
     setCopReg(2, COP2D_XY1, DVECTOR(pInput->vx, pInput->vy));
 }
 
@@ -790,7 +800,7 @@ void gte_ldVZ1(s16* pInput) {
     setCopReg(2, COP2D_Z1, DVECTOR(*pInput, 0));
 }
 
-void gte_ldVXY2(struct SFP_VEC4* pInput) {
+void gte_ldVXY2(struct SVECTOR* pInput) {
     setCopReg(2, COP2D_XY2, DVECTOR(pInput->vx, pInput->vy));
 }
 

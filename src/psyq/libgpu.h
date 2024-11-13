@@ -39,7 +39,7 @@ struct LINE_F2 : public sTag
     };
     DVECTOR x0y0, x1y1;
 
-    void execute()
+    void execute();
 };
 
 sTag* ClearOTagR( sTag* ot, int n );

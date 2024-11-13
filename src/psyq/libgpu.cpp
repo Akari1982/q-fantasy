@@ -1,4 +1,5 @@
 #include "libgpu.h"
+#include "../game.h"
 
 
 
@@ -73,22 +74,14 @@ LINE_F2::execute()
 
 
 
-void TermPrim( sTag* p )
-{
-    p->next = nullptr;
-    p->size = 0;
-}
-
-
-
 sTag* ClearOTagR( sTag* ot, int n )
 {
     sTag* current = ot;
     for( int i = 0; i < n - 1; ++i )
     {
         ++current;
-        pCurrent->next = current - 1;
-        pCurrent->size = 0;
+        current->next = current - 1;
+        current->size = 0;
     }
 
     TermPrim( ot );
@@ -109,8 +102,24 @@ void DrawOTag( sTag* ot )
 
 
 
+void SetLineF2(LINE_F2* p)
+{
+    p->size = 3;
+    p->code = 0x40;
+}
+
+
+
 void AddPrim( sTag* ot, sTag* p )
 {
     p->next = ot->next;
     ot->next = p;
+}
+
+
+
+void TermPrim( sTag* p )
+{
+    p->next = nullptr;
+    p->size = 0;
 }
