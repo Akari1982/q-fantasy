@@ -63,6 +63,7 @@ field_main_loop()
         m.t[ 0 ] = 0xfffffe93;
         m.t[ 1 ] = 0x00000ccf;
         m.t[ 2 ] = 0xffff9669;
+        SetGeomScreen( 0x182 );
 
         // A1 = ot + 1749c; // rain packets
         // A3 = ot + 17490; // draw_mode_packet

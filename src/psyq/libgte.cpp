@@ -8,6 +8,19 @@ int matrix_stack_id = 0;
 
 
 
+void InitGeom()
+{
+    setCopControlWord( 2, 0xe800, 0x155 ); // ZSF3
+    setCopControlWord( 2, 0xf000, 0x100 ); // ZSF4
+    setCopControlWord( 2, 0xd000, 1000 ); // H
+    setCopControlWord( 2, 0xd800, 0xffffef9e ); // DQA
+    setCopControlWord( 2, 0xe000, 0x1400000 ); // DQB
+    setCopControlWord( 2, 0xc000, 0 ); // OFX
+    setCopControlWord( 2, 0xc800, 0 ); // OFY
+}
+
+
+
 void PushMatrix()
 {
     matrix_stack[ matrix_stack_id ].m[ 0 ][ 0 ] = DVECTOR::fromS32( getCopControlWord( 2, 0x0000 ) ).vx;
@@ -61,6 +74,13 @@ void SetTransMatrix( const MATRIX* m )
     setCopControlWord( 2, 0x2800, m->t[ 0 ] );
     setCopControlWord( 2, 0x3000, m->t[ 1 ] );
     setCopControlWord( 2, 0x3800, m->t[ 2 ] );
+}
+
+
+
+void SetGeomScreen( s32 h )
+{
+    setCopControlWord( 2, 0xd000, h );
 }
 
 

@@ -1,12 +1,12 @@
 #include "game.h"
-#include "field/field.h"
+#include "system/system.h"
 
 
 
 void
 GameRun()
 {
-    field_main();
+    system_main();
 }
 
 

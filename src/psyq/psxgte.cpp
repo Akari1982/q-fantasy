@@ -513,8 +513,7 @@ void RTPS(u32 function)
 	h_over_sz3 = Lm_E(gte_divide(H, SZ3));
 	SXY0 = SXY1;
 	SXY1 = SXY2;
-	SX2 = Lm_G1(
-		F((int64_t)OFX + ((int64_t)IR1 * h_over_sz3) * (gWidescreen ? 0.75 : 1)) >> 16);
+	SX2 = Lm_G1(F((int64_t)OFX + ((int64_t)IR1 * h_over_sz3) * (gWidescreen ? 0.75 : 1)) >> 16);
 	SY2 = Lm_G2(F((int64_t)OFY + ((int64_t)IR2 * h_over_sz3)) >> 16);
 
 #if 0
