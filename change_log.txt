@@ -1,0 +1,39 @@
+================================================================================
+Q-FFVII v0.01 (first steps) | 2025-01-??
+--------------------------------------------------------------------------------
+
+To Do
+----------
+
+- Add walkmesh debug vizualization.
+- Add walkmesh.
+- Do imgui rain on/off switch.
+- Add enviroment settings.
+- Add line transparency (for rain)
+- Finilize screen rendering borders.
+
+2024-11-16
+----------
+- Fix rain rendering position (add temporary PC coords hack to calc).
+
+2024-11-14
+----------
+- Add gte initialization.
+
+2024-11-13
+----------
+- Files reorganization.
+- Add base geometry transformation functions.
+- More rendering function and fixes.
+
+2024-11-12
+----------
+- Add rain test functions.
+- Add line primitive.
+- Base renderer.
+
+2024-11-11
+----------
+- Add base field module.
+- Add imgui.
+- Experiment application with OF.

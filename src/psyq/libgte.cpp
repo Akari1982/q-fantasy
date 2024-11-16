@@ -10,11 +10,11 @@ int matrix_stack_id = 0;
 
 void InitGeom()
 {
-    setCopControlWord( 2, 0xe800, 0x155 ); // ZSF3
-    setCopControlWord( 2, 0xf000, 0x100 ); // ZSF4
-    setCopControlWord( 2, 0xd000, 1000 ); // H
+    setCopControlWord( 2, 0xe800, 0x0155 ); // ZSF3
+    setCopControlWord( 2, 0xf000, 0x0100 ); // ZSF4
+    setCopControlWord( 2, 0xd000, 0x03e8 ); // H
     setCopControlWord( 2, 0xd800, 0xffffef9e ); // DQA
-    setCopControlWord( 2, 0xe000, 0x1400000 ); // DQB
+    setCopControlWord( 2, 0xe000, 0x01400000 ); // DQB
     setCopControlWord( 2, 0xc000, 0 ); // OFX
     setCopControlWord( 2, 0xc800, 0 ); // OFY
 }

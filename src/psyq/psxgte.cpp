@@ -381,11 +381,18 @@ static uint32_t gte_divide(uint16_t numerator, uint16_t denominator) {
 }
 
 
-int32_t A1(/*int44*/ int64_t a) { return BOUNDS(a, (1 << 31) | (1 << 30), (1 << 31) | (1 << 27)); }
-int32_t A2(/*int44*/ int64_t a) { return BOUNDS(a, (1 << 31) | (1 << 29), (1 << 31) | (1 << 26)); }
-int32_t A3(/*int44*/ int64_t a) {
-	s_mac3 = a;
-	return BOUNDS(a, (1 << 31) | (1 << 28), (1 << 31) | (1 << 25));
+int32_t A1( int64_t a )
+{
+     return BOUNDS( a, (1 << 31) | (1 << 30), (1 << 31) | (1 << 27) );
+}
+int32_t A2( int64_t a )
+{
+    return BOUNDS( a, (1 << 31) | (1 << 29), (1 << 31) | (1 << 26) );
+}
+int32_t A3( int64_t a )
+{
+    s_mac3 = a;
+    return BOUNDS( a, (1 << 31) | (1 << 28), (1 << 31) | (1 << 25) );
 }
 
 static int32_t Lm_B1(int32_t a, int lm) { return LIM(a, 0x7fff, -0x8000 * !lm, (1 << 31) | (1 << 24)); }
@@ -500,12 +507,14 @@ void RTPS(u32 function)
 	int lm = GTE_LM(function);
 	int32_t h_over_sz3 = 0;
 
-	MAC1 = A1(/*int44*/ (int64_t)((int64_t)TRX << 12) + (R11 * VX0) + (R12 * VY0) + (R13 * VZ0));
-	MAC2 = A2(/*int44*/ (int64_t)((int64_t)TRY << 12) + (R21 * VX0) + (R22 * VY0) + (R23 * VZ0));
-	MAC3 = A3(/*int44*/ (int64_t)((int64_t)TRZ << 12) + (R31 * VX0) + (R32 * VY0) + (R33 * VZ0));
-	IR1 = Lm_B1(MAC1, lm);
-	IR2 = Lm_B2(MAC2, lm);
-	IR3 = Lm_B3_sf(s_mac3, s_sf, lm);
+    //RTPS: R11(fe2), R12(fffffe11), R13(0), TRX(fffffe93), VX0(ebf), VY0(6b1c), VZ0(ffffffb6), MAC1(44), MAC2(1a9), MAC3(1ee), SX2(35), SY2(14c)
+
+	MAC1 = A1( (int64_t)((int64_t)TRX << 12) + (R11 * VX0) + (R12 * VY0) + (R13 * VZ0) );
+	MAC2 = A2( (int64_t)((int64_t)TRY << 12) + (R21 * VX0) + (R22 * VY0) + (R23 * VZ0) );
+	MAC3 = A3( (int64_t)((int64_t)TRZ << 12) + (R31 * VX0) + (R32 * VY0) + (R33 * VZ0) );
+	IR1 = Lm_B1( MAC1, lm );
+	IR2 = Lm_B2( MAC2, lm );
+	IR3 = Lm_B3_sf( s_mac3, s_sf, lm );
 	SZ0 = SZ1;
 	SZ1 = SZ2;
 	SZ2 = SZ3;
@@ -513,8 +522,11 @@ void RTPS(u32 function)
 	h_over_sz3 = Lm_E(gte_divide(H, SZ3));
 	SXY0 = SXY1;
 	SXY1 = SXY2;
-	SX2 = Lm_G1(F((int64_t)OFX + ((int64_t)IR1 * h_over_sz3) * (gWidescreen ? 0.75 : 1)) >> 16);
-	SY2 = Lm_G2(F((int64_t)OFY + ((int64_t)IR2 * h_over_sz3)) >> 16);
+    int64_t f1 = F((int64_t)OFX + ((int64_t)IR1 * h_over_sz3) * (gWidescreen ? 0.75 : 1));
+    int64_t f2 = F((int64_t)OFY + ((int64_t)IR2 * h_over_sz3));
+
+	SX2 = Lm_G1(f1 >> 16);
+	SY2 = Lm_G2(f2 >> 16);
 
 #if 0
 	PGXP_pushSXYZ2s(Lm_G1_ia((int64_t)OFX +

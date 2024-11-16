@@ -14,11 +14,7 @@ typedef int32_t s32;
 struct DVECTOR
 {
     DVECTOR() : vx( 0 ), vy( 0 ) {};
-    DVECTOR( s16 x, s16 y ) : vx( x ), vy( y )
-    {
-        vx = vx + 1;
-        vy = vy + 1;
-    };
+    DVECTOR( s16 x, s16 y ) : vx( x ), vy( y ) {};
 
     s16 vx, vy;
 

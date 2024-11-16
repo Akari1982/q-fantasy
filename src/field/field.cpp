@@ -51,6 +51,8 @@ field_main_loop()
         field_rain_update();
 
         MATRIX m;
+
+// md1_stin
         m.m[ 0 ][ 0 ] = 0x0fe2;
         m.m[ 0 ][ 1 ] = 0xfe11;
         m.m[ 0 ][ 2 ] = 0x0000;
@@ -64,6 +66,23 @@ field_main_loop()
         m.t[ 1 ] = 0x00000ccf;
         m.t[ 2 ] = 0xffff9669;
         SetGeomScreen( 0x182 );
+
+// md1_1
+/*
+        m.m[ 0 ][ 0 ] = 0x0c9e;
+        m.m[ 0 ][ 1 ] = 0x09d6;
+        m.m[ 0 ][ 2 ] = 0xffff;
+        m.m[ 1 ][ 0 ] = 0x069d;
+        m.m[ 1 ][ 1 ] = 0xf783;
+        m.m[ 1 ][ 2 ] = 0xf428;
+        m.m[ 2 ][ 0 ] = 0xf8b8;
+        m.m[ 2 ][ 1 ] = 0x0956;
+        m.m[ 2 ][ 2 ] = 0xf53d;
+        m.t[ 0 ] = 0xfffffc1a;
+        m.t[ 1 ] = 0x000003a2;
+        m.t[ 2 ] = 0x00001415;
+        SetGeomScreen( 0x2bf );
+*/
 
         // A1 = ot + 1749c; // rain packets
         // A3 = ot + 17490; // draw_mode_packet
@@ -138,6 +157,15 @@ field_rain_update()
     //}
 
     //entity_id = h[800965e0]; // manual visible entity
+    // md1_stin
+    u32 x = 0xe31dbc;
+    u32 y = 0x6b46368;
+    u32 z = 0x136000;
+
+    // md1_1
+    //u32 x = 0x419000;
+    //u32 y = 0x190000;
+    //u32 z = 0x510000;
 
     for( int i = 0; i < 0x40; ++i )
     {
@@ -154,11 +182,11 @@ field_rain_update()
                 u8 rnd1 = field_random[ rnd_seed & 0xff ];
                 u8 rnd2 = field_random[ ( ( rnd_seed * 3 ) & 0xff)];
 
-                field_rain[ i ].m8_p2.vx = /*w[80074ea4 + entity_id * 84 + c] >> c) + */ rnd1 * 0xc - 0x600;
-                field_rain[ i ].m8_p2.vy = /*w[80074ea4 + entity_id * 84 + c] >> c) + */ rnd2 * 0xc - 0x600;
+                field_rain[ i ].m8_p2.vx = (x >> 0xc) /*w[80074ea4 + entity_id * 84 + c] >> c) */ + rnd1 * 0xc - 0x600;
+                field_rain[ i ].m8_p2.vy = (y >> 0xc) /*w[80074ea4 + entity_id * 84 + c] >> c) */ + rnd2 * 0xc - 0x600;
                 field_rain[ i ].m0_p1 = field_rain[ i ].m8_p2;
 
-                field_rain[ i ].m14 = /*(w[80074ea4 + entity_id * 84 + 14] >> c) - */ 0x300;
+                field_rain[ i ].m14 = (z >> 0xc) /*(w[80074ea4 + entity_id * 84 + 14] >> c) */ - 0x300;
             }
             else
             {
@@ -206,8 +234,6 @@ field_rain_add_to_render( sTag* ot, MATRIX* m )
             //A1 = S1 + i * 10 + c;
             RotTransPers( &field_rain[ i ].m8_p2, &sxy, &pt, &flag );
 
-            //p->x1y1.vx = 500 + field_rain[ i ].m8_p2.vx / 3;
-            //p->x1y1.vy = 1900 - field_rain[ i ].m8_p2.vz;
             p->x1y1 = sxy;
 
             if( i != 0 ) AddPrim( ot, p );
