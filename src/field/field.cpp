@@ -153,9 +153,9 @@ field_main_loop()
 
             g_GameVram.begin();
             ofSetColor( 255, 0, 0, 144 );
-            ofDrawLine( glm::vec3( sxy1.vx, sxy1.vy, 0 ), glm::vec3( sxy2.vx, sxy2.vy, 0 ) );
-            ofDrawLine( glm::vec3( sxy1.vx, sxy1.vy, 0 ), glm::vec3( sxy3.vx, sxy3.vy, 0 ) );
-            ofDrawLine( glm::vec3( sxy2.vx, sxy2.vy, 0 ), glm::vec3( sxy3.vx, sxy3.vy, 0 ) );
+            ofDrawLine( glm::vec3( 0x140 + sxy1.vx, 0xe0 + sxy1.vy, 0 ), glm::vec3( 0x140 + sxy2.vx, 0xe0 + sxy2.vy, 0 ) );
+            ofDrawLine( glm::vec3( 0x140 + sxy1.vx, 0xe0 + sxy1.vy, 0 ), glm::vec3( 0x140 + sxy3.vx, 0xe0 + sxy3.vy, 0 ) );
+            ofDrawLine( glm::vec3( 0x140 + sxy2.vx, 0xe0 + sxy2.vy, 0 ), glm::vec3( 0x140 + sxy3.vx, 0xe0 + sxy3.vy, 0 ) );
             g_GameVram.end();
         }
         PopMatrix();

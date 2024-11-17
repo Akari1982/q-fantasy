@@ -12,11 +12,11 @@ void Application::setup()
 
     gui.setup( nullptr, true, ImGuiConfigFlags_ViewportsEnable );
 
-    backgroundColor = ofColor(114, 144, 154);
+    backgroundColor = ofColor( 255, 255, 255 );
 
-    g_GameVram.allocate( 1920, 1080, GL_RGBA );
+    g_GameVram.allocate( 800, 600, GL_RGBA );
     g_GameVram.begin();
-    ofClear( 255,255,255, 0 );
+    ofClear( 255, 0, 255, 255 );
     g_GameVram.end();
 }
 
@@ -32,7 +32,7 @@ void Application::draw()
 {
     gui.begin(); //required to call this at beginning
 
-    g_GameVram.draw( 0, 0 );
+    g_GameVram.draw( 10, 10 );
 
     // Show the ImGui test window. Most of the sample code is in ImGui::ShowDemoWindow()
     //ImGui::SetNextWindowPos( ofVec2f( ofGetWindowPositionX(), ofGetWindowPositionY()), ImGuiCond_Once);
@@ -40,7 +40,8 @@ void Application::draw()
     //ImGui::ShowDemoWindow();
 
     g_GameVram.begin();
-    ofClear( 255,255,255, 0 );
+    ofClear( 100, 100, 100, 255 );
+    ofDrawCircle( 0, 0, 0, 10 );
     g_GameVram.end();
 
     gui.end(); //required to call this at end

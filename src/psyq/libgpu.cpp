@@ -68,7 +68,7 @@ LINE_F2::execute()
 {
     g_GameVram.begin();
     ofSetColor( 255, 255, 255, 144 );
-    ofDrawLine( glm::vec3( x0y0.vx, x0y0.vy, 0 ), glm::vec3( x1y1.vx, x1y1.vy, 0 ) );
+    ofDrawLine( glm::vec3( 0x140 + x0y0.vx, 0xe0 + x0y0.vy, 0 ), glm::vec3( 0x140 + x1y1.vx, 0xe0 + x1y1.vy, 0 ) );
     g_GameVram.end();
 }
 
