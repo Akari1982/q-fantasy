@@ -4,14 +4,6 @@
 
 
 
-s16 READ_LE_S16(const void* ptr)
-{
-    return *(s16*)ptr;
-}
-s16 READ_LE_S16(const std::vector<u8>::const_iterator& inputStream)
-{
-    return READ_LE_S16(&inputStream[0]);
-}
 
 s32 gDepthDivider = 2;
 

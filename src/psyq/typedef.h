@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <vector>
 
 
 
@@ -10,6 +11,19 @@ typedef uint16_t u16;
 typedef int16_t s16;
 typedef uint32_t u32;
 typedef int32_t s32;
+
+u8 READ_LE_U8( const void* ptr );
+s8 READ_LE_S8( const void* ptr );
+u16 READ_LE_U16( const void* ptr );
+s16 READ_LE_S16( const void* ptr );
+u32 READ_LE_U32( const void* ptr );
+s32 READ_LE_S32( const void* ptr );
+u8 READ_LE_U8( const std::vector< u8 >::const_iterator& input );
+s8 READ_LE_S8( const std::vector< u8 >::const_iterator& input );
+u16 READ_LE_U16( const std::vector< u8 >::const_iterator& input );
+s16 READ_LE_S16( const std::vector< u8 >::const_iterator& input );
+u32 READ_LE_U32( const std::vector< u8 >::const_iterator& input );
+s32 READ_LE_S32( const std::vector< u8 >::const_iterator& input );
 
 struct DVECTOR
 {

@@ -6,11 +6,16 @@ To Do
 ----------
 
 - Add walkmesh debug vizualization.
-- Add walkmesh.
 - Do imgui rain on/off switch.
 - Add enviroment settings.
 - Add line transparency (for rain)
 - Finilize screen rendering borders.
+
+2024-11-17
+----------
+- Add walkmesh temp visualization.
+- Add walkmesh read from DAT file.
+- Add file reading.
 
 2024-11-16
 ----------

@@ -27,6 +27,8 @@ struct sFieldRainPrim
 void field_main();
 void field_main_loop();
 
+void field_load_mim_dat_files();
+
 void field_rain_init( sFieldRainPrim* prim );
 void field_rain_update();
 void field_rain_add_to_render( sTag* ot, MATRIX* m );

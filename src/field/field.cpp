@@ -1,8 +1,28 @@
 #include "field.h"
 #include "../game.h"
+#include "../psyq/filesystem.h"
 #include "../psyq/libgte.h"
 #include <vector>
 
+
+u32 field_dat_base_addr = 0x80114fe4;
+std::vector<u8> field_dat;
+
+struct sWalkMesh
+{
+    SVECTOR p1;
+    SVECTOR p2;
+    SVECTOR p3;
+};
+std::vector< sWalkMesh > field_walkmesh;
+
+struct sWalkMeshAccess
+{
+    u16 p1;
+    u16 p2;
+    u16 p3;
+};
+std::vector< sWalkMeshAccess > field_walkmesh_access;
 
 
 std::array< sFieldRain, 0x40 > field_rain;
@@ -33,6 +53,8 @@ std::vector< u8> field_random =
 void
 field_main()
 {
+    field_load_mim_dat_files();
+
     field_main_loop();
 }
 
@@ -41,6 +63,35 @@ field_main()
 void
 field_main_loop()
 {
+    //V0 = w[8009a044];
+    //A0 = w[V0] + 4;
+    //[800e4274] = w(A0); // offset to walkmesh block
+    //V0 = w[V0];
+    //[80114458] = w(A0 + hu[V0] * 18); // walkmesh triangle access block
+
+    u32 walkmesh_addr = READ_LE_U32( &field_dat[ 0x4 ] ) - field_dat_base_addr;
+    u32 id_n = READ_LE_U32( &field_dat[ walkmesh_addr ] );
+    walkmesh_addr += 0x4;
+    u32 walkmesh_access_addr = walkmesh_addr + id_n * 0x18;
+    printf( "Number of trianges in walkmesh: 0x%02x\n", id_n );
+    field_walkmesh.resize( id_n );
+    field_walkmesh_access.resize( id_n );
+    for( int i = 0; i < id_n; ++i )
+    {
+        field_walkmesh[ i ].p1.vx = READ_LE_S16( &field_dat[ walkmesh_addr + i * 0x18 + 0x0 ]  );
+        field_walkmesh[ i ].p1.vy = READ_LE_S16( &field_dat[ walkmesh_addr + i * 0x18 + 0x2 ]  );
+        field_walkmesh[ i ].p1.vz = READ_LE_S16( &field_dat[ walkmesh_addr + i * 0x18 + 0x4 ]  );
+        field_walkmesh[ i ].p2.vx = READ_LE_S16( &field_dat[ walkmesh_addr + i * 0x18 + 0x8 ]  );
+        field_walkmesh[ i ].p2.vy = READ_LE_S16( &field_dat[ walkmesh_addr + i * 0x18 + 0xa ]  );
+        field_walkmesh[ i ].p2.vz = READ_LE_S16( &field_dat[ walkmesh_addr + i * 0x18 + 0xc ]  );
+        field_walkmesh[ i ].p3.vx = READ_LE_S16( &field_dat[ walkmesh_addr + i * 0x18 + 0x10 ] );
+        field_walkmesh[ i ].p3.vy = READ_LE_S16( &field_dat[ walkmesh_addr + i * 0x18 + 0x12 ] );
+        field_walkmesh[ i ].p3.vz = READ_LE_S16( &field_dat[ walkmesh_addr + i * 0x18 + 0x14 ] );
+        field_walkmesh_access[ i ].p1 = READ_LE_U16( &field_dat[ walkmesh_access_addr + i * 0x6 + 0x0 ] );
+        field_walkmesh_access[ i ].p2 = READ_LE_U16( &field_dat[ walkmesh_access_addr + i * 0x6 + 0x2 ] );
+        field_walkmesh_access[ i ].p3 = READ_LE_U16( &field_dat[ walkmesh_access_addr + i * 0x6 + 0x4 ] );
+    }
+
     field_rain_init( &field_rain_prim[ 0 ] );
     field_rain_init( &field_rain_prim[ 1 ] );
 
@@ -88,11 +139,44 @@ field_main_loop()
         // A3 = ot + 17490; // draw_mode_packet
         field_rain_add_to_render( &field_rain_prim[ 0 ].poly[ 0 ], &m );
 
+        PushMatrix();
+        SetRotMatrix( &m );
+        SetTransMatrix( &m );
+        for( int i = 0; i < id_n; ++i )
+        {
+            u32 pt;
+            u32 flag;
+            DVECTOR sxy1, sxy2, sxy3;
+            RotTransPers( &field_walkmesh[ i ].p1, &sxy1, &pt, &flag );
+            RotTransPers( &field_walkmesh[ i ].p2, &sxy2, &pt, &flag );
+            RotTransPers( &field_walkmesh[ i ].p3, &sxy3, &pt, &flag );
+
+            g_GameVram.begin();
+            ofSetColor( 255, 0, 0, 144 );
+            ofDrawLine( glm::vec3( sxy1.vx, sxy1.vy, 0 ), glm::vec3( sxy2.vx, sxy2.vy, 0 ) );
+            ofDrawLine( glm::vec3( sxy1.vx, sxy1.vy, 0 ), glm::vec3( sxy3.vx, sxy3.vy, 0 ) );
+            ofDrawLine( glm::vec3( sxy2.vx, sxy2.vy, 0 ), glm::vec3( sxy3.vx, sxy3.vy, 0 ) );
+            g_GameVram.end();
+        }
+        PopMatrix();
+
         DrawOTag( &field_rain_prim[ 0 ].poly[ 0 ] );
 
         GameRender();
         if( g_AppRunning == false ) return;
     }
+}
+
+
+
+void field_load_mim_dat_files()
+{
+    // load field dat
+    // V1 = h[8009a05c]; // field id to load
+    // A0 = w[800da5b8 + V1 * 18 + 4];
+    // A1 = w[800da5b8 + V1 * 18 + 0];
+    // A2 = 80114fe4;
+    ReadFileLZS( "data/FIELD/MD1STIN.DAT", field_dat );
 }
 
 

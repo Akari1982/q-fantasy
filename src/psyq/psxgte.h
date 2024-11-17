@@ -19,11 +19,6 @@ enum eCOP2D
     COP2D_IR3 = 11,
 };
 
-s16 READ_LE_S16(const void* ptr);
-s16 READ_LE_S16(const std::vector<u8>::const_iterator& inputStream);
-
-
-
 void setCopControlWord( int cop, int reg, u32 value );
 void setCopControlWord( int cop, int reg, DVECTOR value );
 void setCopReg( int, int, DVECTOR );
