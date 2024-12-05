@@ -8,6 +8,13 @@
 u32 field_dat_base_addr = 0x80114fe4;
 std::vector<u8> field_dat;
 
+struct sBaseDrawOffset
+{
+    u32 x;
+    u32 y;
+};
+sBaseDrawOffset base_draw_offset;
+
 struct sWalkMesh
 {
     SVECTOR p1;
@@ -63,6 +70,9 @@ field_main()
 void
 field_main_loop()
 {
+    base_draw_offset.x = 0xa0;
+    base_draw_offset.y = 0x78;
+
     //V0 = w[8009a044];
     //A0 = w[V0] + 4;
     //[800e4274] = w(A0); // offset to walkmesh block
