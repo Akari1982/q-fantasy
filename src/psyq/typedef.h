@@ -149,3 +149,11 @@ struct MATRIX
     s16 m[ 3 ][ 3 ]; // 3 x 3 matrix coefficient value
     s32 t[ 3 ]; // Parallel transfer volume
 };
+
+struct RECT
+{
+    s16 x;
+    s16 y;
+    s16 w;
+    s16 h;
+};
