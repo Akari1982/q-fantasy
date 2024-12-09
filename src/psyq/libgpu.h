@@ -4,31 +4,6 @@
 
 
 
-struct DISPENV
-{
-    RECT disp;
-    RECT screen;
-    u8 isinter;
-    u8 isrgb24;
-    u8 pad0;
-    u8 pad1;
-};
-
-struct DRAWENV
-{
-    RECT clip;
-    s16 ofs[ 2 ];
-    RECT tw;
-    u16 tpage;
-    u8 dtd;
-    u8 dfe;
-    u8 isbg;
-    u8 r0;
-    u8 g0;
-    u8 b0;
-    DR_ENV dr_env;
-};
-
 struct sColorAndCode
 {
     u8 r, g, b;
@@ -76,6 +51,31 @@ struct DR_ENV : public sTag
     u32 code[ 15 ];
 
     void execute();
+};
+
+struct DISPENV
+{
+    SRECT disp;
+    SRECT screen;
+    u8 isinter;
+    u8 isrgb24;
+    u8 pad0;
+    u8 pad1;
+};
+
+struct DRAWENV
+{
+    SRECT clip;
+    s16 ofs[ 2 ];
+    SRECT tw;
+    u16 tpage;
+    u8 dtd;
+    u8 dfe;
+    u8 isbg;
+    u8 r0;
+    u8 g0;
+    u8 b0;
+    DR_ENV dr_env;
 };
 
 

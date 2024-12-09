@@ -48,6 +48,7 @@ DRAWENV* SetDefDrawEnv( DRAWENV* env, s32 x, s32 y, s32 w, s32 h )
 
 void SetDrawEnv( DR_ENV* dr_env, DRAWENV* env )
 {
+/*
     A0 = h[env + 0]; // x top clip
     A1 = h[env + 2]; // y top clip
     system_gpu_set_drawing_area_top_left(); // create packet for clip
@@ -107,19 +108,23 @@ void SetDrawEnv( DR_ENV* dr_env, DRAWENV* env )
         }
         [dr_env + 3] = b(9);
     }
+*/
 }
 
 
 
-DISPENV currentDispEnv;
-DRAWENV currentDrawEnv;
+DISPENV copyDispEnv;
+DRAWENV copyDrawEnv;
 
 DISPENV* PutDispEnv( DISPENV* env )
 {
-    noahFrame_end();
-    noahFrame_start();
+    
+    if( ( g_GameVram.getWidth() != (env->disp).w ) || ( g_GameVram.getHeight() != (env->disp).h ) )
+    {
+        g_GameVram.allocate( (env->disp).w, (env->disp).h, GL_RGBA );
+    }
 
-    currentDispEnv = *env;
+    copyDispEnv = *env;
     return env;
 }
 
@@ -127,7 +132,7 @@ DISPENV* PutDispEnv( DISPENV* env )
 
 DRAWENV* PutDrawEnv( DRAWENV* env )
 {
-    currentDrawEnv = *env;
+    copyDrawEnv = *env;
     return env;
 }
 
@@ -197,8 +202,10 @@ void
 LINE_F2::execute()
 {
     g_GameVram.begin();
-    ofSetColor( 255, 255, 255, 144 );
-    ofDrawLine( glm::vec3( 0x140 + x0y0.vx, 0xe0 + x0y0.vy, 0 ), glm::vec3( 0x140 + x1y1.vx, 0xe0 + x1y1.vy, 0 ) );
+
+    ofSetColor( r0, g0, b0, ( code & 2 ) ? 0x3f : 0xff );
+    ofSetLineWidth( 1 );
+    ofDrawLine( glm::vec3( 0xa0 + x0y0.vx, 0x78 + x0y0.vy, 0 ), glm::vec3( 0xa0 + x1y1.vx, 0x78 + x1y1.vy, 0 ) );
     g_GameVram.end();
 }
 

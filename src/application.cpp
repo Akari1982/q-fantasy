@@ -32,7 +32,8 @@ void Application::draw()
 {
     gui.begin(); //required to call this at beginning
 
-    g_GameVram.draw( 10, 10 );
+    //g_GameVram.draw( 0, 0, ofGetWidth(), ofGetHeight() );
+    g_GameVram.draw( 0, 0, 640, 480 );
 
     // Show the ImGui test window. Most of the sample code is in ImGui::ShowDemoWindow()
     //ImGui::SetNextWindowPos( ofVec2f( ofGetWindowPositionX(), ofGetWindowPositionY()), ImGuiCond_Once);
@@ -41,7 +42,6 @@ void Application::draw()
 
     g_GameVram.begin();
     ofClear( 100, 100, 100, 255 );
-    ofDrawCircle( 0, 0, 0, 10 );
     g_GameVram.end();
 
     gui.end(); //required to call this at end

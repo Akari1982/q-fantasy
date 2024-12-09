@@ -15,6 +15,9 @@ struct sBaseDrawOffset
 };
 sBaseDrawOffset base_draw_offset;
 
+DISPENV field_disp_env;
+DRAWENV field_draw_env;
+
 struct sWalkMesh
 {
     SVECTOR p1;
@@ -60,6 +63,11 @@ std::vector< u8> field_random =
 void
 field_main()
 {
+    SetDefDispEnv( &field_disp_env, 0x0, 0x0, 0x140, 0xe0 );
+    SetDefDrawEnv( &field_draw_env, 0x0, 0x8, 0x140, 0xe0 );
+    field_draw_env.dtd = 1;
+    field_draw_env.isbg = 1;
+
     field_load_mim_dat_files();
 
     field_main_loop();
@@ -152,6 +160,7 @@ field_main_loop()
         PushMatrix();
         SetRotMatrix( &m );
         SetTransMatrix( &m );
+        std::array< LINE_F2, 0x1000 > walkmesh_prim;
         for( int i = 0; i < id_n; ++i )
         {
             u32 pt;
@@ -161,14 +170,37 @@ field_main_loop()
             RotTransPers( &field_walkmesh[ i ].p2, &sxy2, &pt, &flag );
             RotTransPers( &field_walkmesh[ i ].p3, &sxy3, &pt, &flag );
 
-            g_GameVram.begin();
-            ofSetColor( 255, 0, 0, 144 );
-            ofDrawLine( glm::vec3( 0x140 + sxy1.vx, 0xe0 + sxy1.vy, 0 ), glm::vec3( 0x140 + sxy2.vx, 0xe0 + sxy2.vy, 0 ) );
-            ofDrawLine( glm::vec3( 0x140 + sxy1.vx, 0xe0 + sxy1.vy, 0 ), glm::vec3( 0x140 + sxy3.vx, 0xe0 + sxy3.vy, 0 ) );
-            ofDrawLine( glm::vec3( 0x140 + sxy2.vx, 0xe0 + sxy2.vy, 0 ), glm::vec3( 0x140 + sxy3.vx, 0xe0 + sxy3.vy, 0 ) );
-            g_GameVram.end();
+            SetLineF2( &walkmesh_prim[ i * 3 + 0 ] );
+            SetSemiTrans( &walkmesh_prim[ i * 3 + 0 ], 0 );
+            walkmesh_prim[ i * 3 + 0 ].r0 = 0x7f;
+            walkmesh_prim[ i * 3 + 0 ].g0 = 0x0;
+            walkmesh_prim[ i * 3 + 0 ].b0 = 0x0;
+            walkmesh_prim[ i * 3 + 0 ].x0y0 = sxy1;
+            walkmesh_prim[ i * 3 + 0 ].x1y1 = sxy2;
+            AddPrim( &field_rain_prim[ 0 ].poly[ 0 ], &walkmesh_prim[ i * 3 + 0 ] );
+
+            SetLineF2( &walkmesh_prim[ i * 3 + 1 ] );
+            SetSemiTrans( &walkmesh_prim[ i * 3 + 1 ], 0 );
+            walkmesh_prim[ i * 3 + 1 ].r0 = 0x7f;
+            walkmesh_prim[ i * 3 + 1 ].g0 = 0x0;
+            walkmesh_prim[ i * 3 + 1 ].b0 = 0x0;
+            walkmesh_prim[ i * 3 + 1 ].x0y0 = sxy1;
+            walkmesh_prim[ i * 3 + 1 ].x1y1 = sxy3;
+            AddPrim( &field_rain_prim[ 0 ].poly[ 0 ], &walkmesh_prim[ i * 3 + 1 ] );
+
+            SetLineF2( &walkmesh_prim[ i * 3 + 2 ] );
+            SetSemiTrans( &walkmesh_prim[ i * 3 + 2 ], 0 );
+            walkmesh_prim[ i * 3 + 2 ].r0 = 0x7f;
+            walkmesh_prim[ i * 3 + 2 ].g0 = 0x0;
+            walkmesh_prim[ i * 3 + 2 ].b0 = 0x0;
+            walkmesh_prim[ i * 3 + 2 ].x0y0 = sxy2;
+            walkmesh_prim[ i * 3 + 2 ].x1y1 = sxy3;
+            AddPrim( &field_rain_prim[ 0 ].poly[ 0 ], &walkmesh_prim[ i * 3 + 2 ] );
         }
         PopMatrix();
+
+        PutDispEnv( &field_disp_env );
+        PutDrawEnv( &field_draw_env );
 
         DrawOTag( &field_rain_prim[ 0 ].poly[ 0 ] );
 
@@ -181,11 +213,6 @@ field_main_loop()
 
 void field_load_mim_dat_files()
 {
-    // load field dat
-    // V1 = h[8009a05c]; // field id to load
-    // A0 = w[800da5b8 + V1 * 18 + 4];
-    // A1 = w[800da5b8 + V1 * 18 + 0];
-    // A2 = 80114fe4;
     ReadFileLZS( "data/FIELD/MD1STIN.DAT", field_dat );
 }
 

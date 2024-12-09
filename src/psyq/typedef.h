@@ -150,7 +150,7 @@ struct MATRIX
     s32 t[ 3 ]; // Parallel transfer volume
 };
 
-struct RECT
+struct SRECT
 {
     s16 x;
     s16 y;
