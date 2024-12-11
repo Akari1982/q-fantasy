@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../psyq/typedef.h"
+#include "../psyq/libgpu.h"
 
 
 

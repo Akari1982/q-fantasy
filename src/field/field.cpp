@@ -15,7 +15,6 @@ struct sBaseDrawOffset
 };
 sBaseDrawOffset base_draw_offset;
 
-DISPENV field_disp_env;
 DRAWENV field_draw_env;
 
 struct sWalkMesh
@@ -63,10 +62,9 @@ std::vector< u8> field_random =
 void
 field_main()
 {
-    SetDefDispEnv( &field_disp_env, 0x0, 0x0, 0x140, 0xe0 );
     SetDefDrawEnv( &field_draw_env, 0x0, 0x8, 0x140, 0xe0 );
     field_draw_env.dtd = 1;
-    field_draw_env.isbg = 1;
+    field_draw_env.isbg = 0;
 
     field_load_mim_dat_files();
 
@@ -199,7 +197,7 @@ field_main_loop()
         }
         PopMatrix();
 
-        PutDispEnv( &field_disp_env );
+        PutDispEnv( &global_dispenv );
         PutDrawEnv( &field_draw_env );
 
         DrawOTag( &field_rain_prim[ 0 ].poly[ 0 ] );
@@ -211,6 +209,12 @@ field_main_loop()
 
 
 
+void field_update_drawenv()
+{
+}
+
+
+
 void field_load_mim_dat_files()
 {
     ReadFileLZS( "data/FIELD/MD1STIN.DAT", field_dat );
@@ -218,8 +222,7 @@ void field_load_mim_dat_files()
 
 
 
-void
-field_rain_init( sFieldRainPrim* prim )
+void field_rain_init( sFieldRainPrim* prim )
 {
     for( int i = 0; i < 0x40; ++i )
     {
@@ -255,8 +258,7 @@ field_rain_init( sFieldRainPrim* prim )
 
 
 
-void
-field_rain_update()
+void field_rain_update()
 {
     static int wait = 0;
     ++wait;
@@ -325,8 +327,7 @@ field_rain_update()
 
 
 
-void
-field_rain_add_to_render( sTag* ot, MATRIX* m )
+void field_rain_add_to_render( sTag* ot, MATRIX* m )
 {
     //S1 = A1;
     //packet = A3;
