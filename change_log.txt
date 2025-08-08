@@ -8,8 +8,13 @@ To Do
 - Add walkmesh debug vizualization.
 - Do imgui rain on/off switch.
 - Add enviroment settings.
-- Add line transparency (for rain)
-- Finilize screen rendering borders.
+- Add line transparency (for rain).
+- Finalize screen rendering borders.
+- Add akao support.
+
+2025-08-08
+----------
+- Add sound support and start AKAO implementation.
 
 2024-11-17
 ----------
