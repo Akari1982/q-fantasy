@@ -4,13 +4,13 @@
 
 
 
-void InitGeom();
+void PsyqInitGeom();
 
-void PopMatrix();
-void PushMatrix();
+void PsyqPopMatrix();
+void PsyqPushMatrix();
 
-void SetRotMatrix( const MATRIX* m );
-void SetTransMatrix( const MATRIX* m );
-void SetGeomScreen( s32 );
+void PsyqSetRotMatrix( const MATRIX* m );
+void PsyqSetTransMatrix( const MATRIX* m );
+void PsyqSetGeomScreen( s32 );
 
-s32 RotTransPers( SVECTOR* v0, DVECTOR* sxy, u32* p, u32* flag );
+s32 PsyqRotTransPers( SVECTOR* v0, DVECTOR* sxy, u32* p, u32* flag );

@@ -80,22 +80,22 @@ struct DRAWENV
 
 
 
-DISPENV* SetDefDispEnv( DISPENV* env, s32 x, s32 y, s32 w, s32 h );
-DRAWENV* SetDefDrawEnv( DRAWENV* env, s32 x, s32 y, s32 w, s32 h );
-void SetDrawEnv( DR_ENV *dr_env, DRAWENV *env );
-DISPENV* PutDispEnv( DISPENV* env );
-DRAWENV* PutDrawEnv( DRAWENV* env );
+DISPENV* PsyqSetDefDispEnv( DISPENV* env, s32 x, s32 y, s32 w, s32 h );
+DRAWENV* PsyqSetDefDrawEnv( DRAWENV* env, s32 x, s32 y, s32 w, s32 h );
+void PsyqSetDrawEnv( DR_ENV *dr_env, DRAWENV *env );
+DISPENV* PsyqPutDispEnv( DISPENV* env );
+DRAWENV* PsyqPutDrawEnv( DRAWENV* env );
 
-sTag* ClearOTagR( sTag* ot, s32 n );
-void DrawOTag( sTag* ot );
+sTag* PsyqClearOTagR( sTag* ot, s32 n );
+void PsyqDrawOTag( sTag* ot );
 
-void SetLineF2( LINE_F2* p );
+void PsyqSetLineF2( LINE_F2* p );
 
-void AddPrim( sTag* ot, sTag* p );
-void TermPrim( sTag* );
+void PsyqAddPrim( sTag* ot, sTag* p );
+void PsyqTermPrim( sTag* );
 
 template< typename T >
-void SetSemiTrans( T* p, s32 abe )
+void PsyqSetSemiTrans( T* p, s32 abe )
 {
     if( abe == 0 ) p->code &= ~2;
     else p->code |= 2;

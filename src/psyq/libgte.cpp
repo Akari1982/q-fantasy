@@ -8,7 +8,7 @@ int matrix_stack_id = 0;
 
 
 
-void InitGeom()
+void PsyqInitGeom()
 {
     setCopControlWord( 2, 0xe800, 0x0155 ); // ZSF3
     setCopControlWord( 2, 0xf000, 0x0100 ); // ZSF4
@@ -21,7 +21,7 @@ void InitGeom()
 
 
 
-void PushMatrix()
+void PsyqPushMatrix()
 {
     matrix_stack[ matrix_stack_id ].m[ 0 ][ 0 ] = DVECTOR::fromS32( getCopControlWord( 2, 0x0000 ) ).vx;
     matrix_stack[ matrix_stack_id ].m[ 0 ][ 1 ] = DVECTOR::fromS32( getCopControlWord( 2, 0x0000 ) ).vy;
@@ -42,7 +42,7 @@ void PushMatrix()
 
 
 
-void PopMatrix()
+void PsyqPopMatrix()
 {
     const MATRIX* m = &matrix_stack[ matrix_stack_id ];
     setCopControlWord( 2, 0x0000, DVECTOR( m->m[ 0 ][ 0 ], m->m[ 0 ][ 1 ] ) );
@@ -58,7 +58,7 @@ void PopMatrix()
 
 
 
-void SetRotMatrix( const MATRIX* m )
+void PsyqSetRotMatrix( const MATRIX* m )
 {
     setCopControlWord( 2, 0x0000, DVECTOR( m->m[ 0 ][ 0 ], m->m[ 0 ][ 1 ] ) );
     setCopControlWord( 2, 0x0800, DVECTOR( m->m[ 0 ][ 2 ], m->m[ 1 ][ 0 ] ) );
@@ -69,7 +69,7 @@ void SetRotMatrix( const MATRIX* m )
 
 
 
-void SetTransMatrix( const MATRIX* m )
+void PsyqSetTransMatrix( const MATRIX* m )
 {
     setCopControlWord( 2, 0x2800, m->t[ 0 ] );
     setCopControlWord( 2, 0x3000, m->t[ 1 ] );
@@ -78,14 +78,14 @@ void SetTransMatrix( const MATRIX* m )
 
 
 
-void SetGeomScreen( s32 h )
+void PsyqSetGeomScreen( s32 h )
 {
     setCopControlWord( 2, 0xd000, h );
 }
 
 
 
-s32 RotTransPers( SVECTOR* v0, DVECTOR* sxy, u32* p, u32* flag )
+s32 PsyqRotTransPers( SVECTOR* v0, DVECTOR* sxy, u32* p, u32* flag )
 {
     setCopReg( 2, 0x0000, DVECTOR( v0->vx, v0->vy ) );
     setCopReg( 2, 0x0800, DVECTOR( v0->vz, 0 ) );

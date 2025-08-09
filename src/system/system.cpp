@@ -26,8 +26,8 @@ void system_main()
 
 void system_init_base()
 {
-    SpuInit();
-    InitGeom();
+    PsyqSpuInit();
+    PsyqInitGeom();
 }
 
 
@@ -62,11 +62,11 @@ void system_init_akao_engine()
 
 void system_init_dispenv_drawenv()
 {
-    SetDefDispEnv( &global_dispenv, 0x0, 0x0, 0x140, 0xe0 );
-    SetDefDrawEnv( &global_drawenv, 0x0, 0x8, 0x140, 0xe0 );
+    PsyqSetDefDispEnv( &global_dispenv, 0x0, 0x0, 0x140, 0xe0 );
+    PsyqSetDefDrawEnv( &global_drawenv, 0x0, 0x8, 0x140, 0xe0 );
     global_drawenv.dtd = 1;
     global_drawenv.isbg = 0;
 
-    PutDispEnv( &global_dispenv );
-    PutDrawEnv( &global_drawenv );
+    PsyqPutDispEnv( &global_dispenv );
+    PsyqPutDrawEnv( &global_drawenv );
 }

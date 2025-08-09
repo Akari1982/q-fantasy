@@ -14,14 +14,14 @@ void system_akao_init( FILE* instr_all, FILE* instr_dat )
     system_psyq_spu_init_malloc( 0x4, 0x8007e778 );
     system_psyq_spu_malloc_with_start_addr( 0x77000, 0x2000 );
 
-    system_psyq_spu_set_transfer_mode( SPU_TRANSFER_BY_DMA );
 */
 
     system_akao_load_instr_files( instr_all, instr_dat );
 
+    //PsyqSpuSetTransferStartAddr( 0x76fe0 );
+    //PsyqSpuWrite( 0x8004a60c, 0x20 );
+
 /*
-    system_psyq_spu_set_transfer_start_addr( 0x76fe0 );
-    system_akao_spu_write( 0x8004a60c, 0x20 );
     system_akao_spu_transfer_sync();
 
     system_akao_init_data();

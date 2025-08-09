@@ -3,7 +3,7 @@
 
 
 
-DISPENV* SetDefDispEnv( DISPENV* env, s32 x, s32 y, s32 w, s32 h )
+DISPENV* PsyqSetDefDispEnv( DISPENV* env, s32 x, s32 y, s32 w, s32 h )
 {
     (env->disp).x = x;
     (env->disp).y = y;
@@ -22,7 +22,7 @@ DISPENV* SetDefDispEnv( DISPENV* env, s32 x, s32 y, s32 w, s32 h )
 
 
 
-DRAWENV* SetDefDrawEnv( DRAWENV* env, s32 x, s32 y, s32 w, s32 h )
+DRAWENV* PsyqSetDefDrawEnv( DRAWENV* env, s32 x, s32 y, s32 w, s32 h )
 {
     (env->clip).x = x;
     (env->clip).y = y;
@@ -46,7 +46,7 @@ DRAWENV* SetDefDrawEnv( DRAWENV* env, s32 x, s32 y, s32 w, s32 h )
 
 
 
-void SetDrawEnv( DR_ENV* dr_env, DRAWENV* env )
+void PsyqSetDrawEnv( DR_ENV* dr_env, DRAWENV* env )
 {
 /*
     A0 = h[env + 0]; // x top clip
@@ -116,7 +116,7 @@ void SetDrawEnv( DR_ENV* dr_env, DRAWENV* env )
 DISPENV copyDispEnv;
 DRAWENV copyDrawEnv;
 
-DISPENV* PutDispEnv( DISPENV* env )
+DISPENV* PsyqPutDispEnv( DISPENV* env )
 {
     
     if( ( g_GameVram.getWidth() != (env->disp).w ) || ( g_GameVram.getHeight() != (env->disp).h ) )
@@ -130,7 +130,7 @@ DISPENV* PutDispEnv( DISPENV* env )
 
 
 
-DRAWENV* PutDrawEnv( DRAWENV* env )
+DRAWENV* PsyqPutDrawEnv( DRAWENV* env )
 {
     copyDrawEnv = *env;
     return env;
@@ -211,7 +211,7 @@ LINE_F2::execute()
 
 
 
-sTag* ClearOTagR( sTag* ot, s32 n )
+sTag* PsyqClearOTagR( sTag* ot, s32 n )
 {
     sTag* current = ot;
     for( int i = 0; i < n - 1; ++i )
@@ -228,7 +228,7 @@ sTag* ClearOTagR( sTag* ot, s32 n )
 
 
 
-void DrawOTag( sTag* ot )
+void PsyqDrawOTag( sTag* ot )
 {
     while( ot )
     {
@@ -239,7 +239,7 @@ void DrawOTag( sTag* ot )
 
 
 
-void SetLineF2( LINE_F2* p )
+void PsyqSetLineF2( LINE_F2* p )
 {
     p->size = 3;
     p->code = 0x40;
@@ -247,7 +247,7 @@ void SetLineF2( LINE_F2* p )
 
 
 
-void AddPrim( sTag* ot, sTag* p )
+void PsyqAddPrim( sTag* ot, sTag* p )
 {
     p->next = ot->next;
     ot->next = p;
@@ -255,7 +255,7 @@ void AddPrim( sTag* ot, sTag* p )
 
 
 
-void TermPrim( sTag* p )
+void PsyqTermPrim( sTag* p )
 {
     p->next = nullptr;
     p->size = 0;

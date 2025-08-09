@@ -76,11 +76,28 @@ void SpuPlayer::audioOut( ofSoundBuffer & buffer )
 
 
 
-void SpuInit()
+void PsyqSpuInit()
 {
     emulatedSpuDevice.device_start();
     emulatedSpuDevice.device_reset();
 
     spu_player = new SpuPlayer();
     spu_player->setup();
+}
+
+
+void PsyqSpuSetTransferStartAddr( u32 addr )
+{
+    //spuMutex.lock();
+    emulatedSpuDevice.write( 0x1a6 / 2, addr >> 0x3 );
+    //spuMutex.unlock();
+}
+
+
+
+void PsyqSpuWrite( u8* addr, u32 size )
+{
+    //spuMutex.lock();
+    emulatedSpuDevice.dma_write( (u32*)addr, 0, size / 4 );
+    //spuMutex.unlock();
 }

@@ -31,4 +31,6 @@ public:
 
 
 
-void SpuInit();
+void PsyqSpuInit();
+void PsyqSpuSetTransferStartAddr( u32 addr );
+void PsyqSpuWrite( u8* addr, u32 size );
