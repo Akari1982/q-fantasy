@@ -221,7 +221,7 @@ sTag* PsyqClearOTagR( sTag* ot, s32 n )
         current->size = 0;
     }
 
-    TermPrim( ot );
+    PsyqTermPrim( ot );
 
     return ot;
 }

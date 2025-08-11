@@ -222,6 +222,12 @@
     <ClInclude Include="src\system\akao.h">
       <Filter>src\system</Filter>
     </ClInclude>
+    <ClInclude Include="src\system\akao_commands.h">
+      <Filter>src\system</Filter>
+    </ClInclude>
+    <ClInclude Include="src\system\akao_opcodes.h">
+      <Filter>src\system</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="third_party">

@@ -151,6 +151,8 @@
     <ClInclude Include="src\psyq\psxspu\spureverb.h" />
     <ClInclude Include="src\psyq\typedef.h" />
     <ClInclude Include="src\system\akao.h" />
+    <ClInclude Include="src\system\akao_commands.h" />
+    <ClInclude Include="src\system\akao_opcodes.h" />
     <ClInclude Include="src\system\system.h" />
     <ClInclude Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_glfw.h" />
     <ClInclude Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_glfw_arc_support.h" />

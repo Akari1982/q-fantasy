@@ -64,8 +64,8 @@ void system_init_akao_engine()
     fread( effect_all_b, 1, 0xc800, effect_all );
     fclose( effect_all );
 
-    system_akao_init( instr_all, instr_dat );
-    system_akao_load_effect_file( effect_all );
+    system_akao_init( instr_all_b, instr_dat_b );
+    system_akao_load_effect_file( effect_all_b );
 }
 
 

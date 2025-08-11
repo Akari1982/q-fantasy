@@ -16,7 +16,7 @@ void SpuPlayer::setup()
     phaseAdder = 0.0f;
     phaseAdderTarget = 0.0f;
     volume = 0.1f;
-    bNoise = true;
+    bNoise = false;
 
     lAudio.assign( bufferSize, 0.0 );
     rAudio.assign( bufferSize, 0.0 );
@@ -89,7 +89,7 @@ void PsyqSpuInit()
 void PsyqSpuSetTransferStartAddr( u32 addr )
 {
     //spuMutex.lock();
-    emulatedSpuDevice.write( 0x1a6 / 2, addr >> 0x3 );
+    emulatedSpuDevice.write( 0x1a6 / 0x2, addr >> 0x3 );
     //spuMutex.unlock();
 }
 
@@ -104,7 +104,7 @@ void PsyqSpuWrite( u8* addr, u32 size )
 
 
 
-void PsyqSpuSetVoicePitch( int voiceNum, u_short pitch )
+void PsyqSpuSetVoicePitch( s32 voiceNum, u16 pitch )
 {
     emulatedSpuDevice.write( voiceNum * 0x8 + 0x2, pitch );
 }
@@ -142,7 +142,7 @@ void PsyqSpuSetVoiceSRAttr( s32 voiceNum, u16 SR, s32 SRmode )
 
     u16 value = emulatedSpuDevice.read( voiceNum * 0x8 + 0x5 );
     value &= 0x003f;
-    value |= (SR | mode_f) << 0x6
+    value |= (SR | mode_f) << 0x6;
     emulatedSpuDevice.write( voiceNum * 0x8 + 0x5, value );
 }
 

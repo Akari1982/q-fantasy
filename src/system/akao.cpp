@@ -7,16 +7,21 @@
 AkaoInstrument g_akao_instrument[0x80];
 u8 g_effect_all[0xc800];
 
-ChannelData g_channels_1[0x18];
-ChannelConfig g_channels_1_config;
+AkaoChannel g_channels_1[0x18];
+AkaoConfig g_channels_1_config;
 u8* g_akao_music;
 
-const u8 g_akao_default_sound[0x20] =
+u8 g_akao_default_sound[0x20] =
 {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x0c, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+u16 g_akao_length_table[0xb] =
+{
+    0xc0c0, 0x6060, 0x3030, 0x1818, 0x0c0c, 0x0606, 0x0303, 0x2020, 0x1010, 0x0808, 0x0404
 };
 
 s16 akao_left_volume_table[ 256 ] =
@@ -57,6 +62,102 @@ s16 akao_right_volume_table[ 256 ] =
     -2209, -2116, -2025, -1936, -1849, -1764, -1981, -1600, -1521, -1444, -1369, -1296, -1225, -1156, -1089, -1024,
      -961,  -900,  -841,  -784,  -729,  -676,  -625,  -576,  -529,  -484,  -441,  -400,  -361,  -324,  -289,  -256,
      -225,  -196,  -169,  -144,  -121,  -100,   -81,   -64,   -49,   -36,   -25,   -16,    -9,    -4,    -1,     0
+};
+
+AkaoCommand akao_commands[] =
+{
+    system_akao_command_null, system_akao_command_null, system_akao_command_null, system_akao_command_null,
+    system_akao_command_null, system_akao_command_null, system_akao_command_null, system_akao_command_null,
+    system_akao_command_null, system_akao_command_null, system_akao_command_null, system_akao_command_null,
+    system_akao_command_null, system_akao_command_null, system_akao_command_null, system_akao_command_null,
+    system_akao_command_10,   system_akao_command_null, system_akao_command_null, system_akao_command_null,
+    system_akao_command_14,   system_akao_command_15,   system_akao_command_null, system_akao_command_null,
+    system_akao_command_18,   system_akao_command_19,   system_akao_command_null, system_akao_command_null,
+    system_akao_command_null, system_akao_command_null, system_akao_command_null, system_akao_command_null,
+    system_akao_command_20,   system_akao_command_21,   system_akao_command_22,   system_akao_command_23,
+    system_akao_command_null, system_akao_command_null, system_akao_command_null, system_akao_command_null,
+    system_akao_command_20,   system_akao_command_29,   system_akao_command_2a,   system_akao_command_2b,
+    system_akao_command_null, system_akao_command_null, system_akao_command_null, system_akao_command_null,
+    system_akao_command_30,   system_akao_command_null, system_akao_command_null, system_akao_command_null,
+    system_akao_command_34,   system_akao_command_null, system_akao_command_null, system_akao_command_null,
+    system_akao_command_null, system_akao_command_null, system_akao_command_null, system_akao_command_null,
+    system_akao_command_null, system_akao_command_null, system_akao_command_null, system_akao_command_null,
+    system_akao_command_null, system_akao_command_null, system_akao_command_null, system_akao_command_null,
+    system_akao_command_null, system_akao_command_null, system_akao_command_null, system_akao_command_null,
+    system_akao_command_null, system_akao_command_null, system_akao_command_null, system_akao_command_null,
+    system_akao_command_null, system_akao_command_null, system_akao_command_null, system_akao_command_null,
+    system_akao_command_null, system_akao_command_null, system_akao_command_null, system_akao_command_null,
+    system_akao_command_null, system_akao_command_null, system_akao_command_null, system_akao_command_null,
+    system_akao_command_null, system_akao_command_null, system_akao_command_null, system_akao_command_null,
+    system_akao_command_null, system_akao_command_null, system_akao_command_null, system_akao_command_null,
+    system_akao_command_null, system_akao_command_null, system_akao_command_null, system_akao_command_null,
+    system_akao_command_null, system_akao_command_null, system_akao_command_null, system_akao_command_null,
+    system_akao_command_null, system_akao_command_null, system_akao_command_null, system_akao_command_null,
+    system_akao_command_null, system_akao_command_null, system_akao_command_null, system_akao_command_null,
+    system_akao_command_null, system_akao_command_null, system_akao_command_null, system_akao_command_null,
+    system_akao_command_null, system_akao_command_null, system_akao_command_null, system_akao_command_null,
+    system_akao_command_null, system_akao_command_null, system_akao_command_null, system_akao_command_null,
+    system_akao_command_null, system_akao_command_null, system_akao_command_null, system_akao_command_null,
+    system_akao_command_80,   system_akao_command_81,   system_akao_command_82,   system_akao_command_null,
+    system_akao_command_null, system_akao_command_null, system_akao_command_null, system_akao_command_null,
+    system_akao_command_null, system_akao_command_null, system_akao_command_null, system_akao_command_null,
+    system_akao_command_null, system_akao_command_null, system_akao_command_null, system_akao_command_null,
+    system_akao_command_90,   system_akao_command_null, system_akao_command_92,   system_akao_command_null,
+    system_akao_command_null, system_akao_command_null, system_akao_command_null, system_akao_command_null,
+    system_akao_command_null, system_akao_command_null, system_akao_command_9a,   system_akao_command_9b,
+    system_akao_command_9c,   system_akao_command_9d,   system_akao_command_null, system_akao_command_null,
+    system_akao_command_a0,   system_akao_command_a1,   system_akao_command_a2,   system_akao_command_a3,
+    system_akao_command_a4,   system_akao_command_a5,   system_akao_command_a6,   system_akao_command_a7,
+    system_akao_command_a8,   system_akao_command_a9,   system_akao_command_aa,   system_akao_command_ab,
+    system_akao_command_ac,   system_akao_command_ad,   system_akao_command_ae,   system_akao_command_af,
+    system_akao_command_b0,   system_akao_command_b1,   system_akao_command_b2,   system_akao_command_b3,
+    system_akao_command_b4,   system_akao_command_b5,   system_akao_command_b6,   system_akao_command_b7,
+    system_akao_command_b8,   system_akao_command_b9,   system_akao_command_ba,   system_akao_command_bb,
+    system_akao_command_bc,   system_akao_command_bd,   system_akao_command_null, system_akao_command_null,
+    system_akao_command_c0,   system_akao_command_c1,   system_akao_command_c2,   system_akao_command_null,
+    system_akao_command_null, system_akao_command_null, system_akao_command_null, system_akao_command_null,
+    system_akao_command_c8,   system_akao_command_c9,   system_akao_command_ca,   system_akao_command_null,
+    system_akao_command_null, system_akao_command_null, system_akao_command_null, system_akao_command_null,
+    system_akao_command_d0,   system_akao_command_d1,   system_akao_command_d2,   system_akao_command_null,
+    system_akao_command_d4,   system_akao_command_d5,   system_akao_command_d6,   system_akao_command_null,
+    system_akao_command_null, system_akao_command_null, system_akao_command_null, system_akao_command_null,
+    system_akao_command_null, system_akao_command_null, system_akao_command_null, system_akao_command_null,
+    system_akao_command_e0,   system_akao_command_null, system_akao_command_null, system_akao_command_null,
+    system_akao_command_e4,   system_akao_command_null, system_akao_command_null, system_akao_command_null,
+    system_akao_command_null, system_akao_command_null, system_akao_command_null, system_akao_command_null,
+    system_akao_command_null, system_akao_command_null, system_akao_command_null, system_akao_command_null,
+    system_akao_command_f0,   system_akao_command_f1,   system_akao_command_f2,   system_akao_command_f3,
+    system_akao_command_f4,   system_akao_command_f5,   system_akao_command_null, system_akao_command_null,
+    system_akao_command_f8,   system_akao_command_f9,   system_akao_command_fa,   system_akao_command_null,
+    system_akao_command_null, system_akao_command_null, system_akao_command_null, system_akao_command_null
+};
+
+AkaoOpcode akao_opcodes[] =
+{
+    system_akao_opcode_a0_finish_channel,         system_akao_opcode_a1_load_instrument,         system_akao_opcode_a2_next_note_length,            system_akao_opcode_a3_master_volume,
+    system_akao_opcode_a4_pitch_bend_slide,       system_akao_opcode_a5_set_octave,              system_akao_opcode_a6_increase_octave,             system_akao_opcode_a7_discrease_octave,
+    system_akao_opcode_a8_set_volume,             system_akao_opcode_a9_set_volume_slide,        system_akao_opcode_aa_set_pan,                     system_akao_opcode_ab_set_pan_slide,
+    system_akao_opcode_ac_noise_clock_freq,       system_akao_opcode_ad_set_ar,                  system_akao_opcode_ae_set_dr,                      system_akao_opcode_af_set_sl,
+    system_akao_opcode_b0_set_voice_dr_sl,        system_akao_opcode_b1_set_sr,                  system_akao_opcode_b2_set_rr,                      system_akao_opcode_b3_reset_adsr,
+    system_akao_opcode_b4_vibrato,                system_akao_opcode_b5_vibrato_depth,           system_akao_opcode_b6_vibrato_off,                 system_akao_opcode_b7_attack_mode,
+    system_akao_opcode_b8_tremolo,                system_akao_opcode_b9_tremolo_depth,           system_akao_opcode_ba_tremolo_off,                 system_akao_opcode_bb_sustain_mode,
+    system_akao_opcode_bc_pan_lfo,                system_akao_opcode_bd_pan_lfo_depth,           system_akao_opcode_be_pan_lfo_off,                 system_akao_opcode_bf_release_mode,
+    system_akao_opcode_c0_transpose_absolute,     system_akao_opcode_c1_transpose_relative,      system_akao_opcode_c2_reverb_on,                   system_akao_opcode_c3_reverb_off,
+    system_akao_opcode_c4_noise_on,               system_akao_opcode_c5_noise_off,               system_akao_opcode_c6_frequency_modulation_on,     system_akao_opcode_c7_frequency_modulation_off,
+    system_akao_opcode_c8_loop_point,             system_akao_opcode_c9_loop_return_times,       system_akao_opcode_ca_loop_return,                 system_akao_opcode_cb_sfx_reset,
+    system_akao_opcode_cc_legato_on,              system_akao_opcode_cd_legato_off,              system_akao_opcode_ce_noise_switch,                system_akao_opcode_cf_noise_switch,
+    system_akao_opcode_d0_full_length_on,         system_akao_opcode_d1_full_length_off,         system_akao_opcode_d2_frequency_modulation_switch, system_akao_opcode_d3_frequency_modulation_switch,
+    system_akao_opcode_d4_side_chain_playback_on, system_akao_opcode_d5_side_chain_playback_off, system_akao_opcode_d6_side_chain_pitch_vol_on,     system_akao_opcode_d7_side_chain_pitch_vol_off,
+    system_akao_opcode_d8_fine_tuning_absolute,   system_akao_opcode_d9_fine_tuning_relative,    system_akao_opcode_da_portamento_on,               system_akao_opcode_db_portamento_off,
+    system_akao_opcode_dc_fix_note_length,        system_akao_opcode_dd_vibrato_depth_slide,     system_akao_opcode_de_tremolo_depth_slide,         system_akao_opcode_df_pan_lfo_depth_slide,
+    system_akao_opcode_null,                      system_akao_opcode_null,                       system_akao_opcode_null,                           system_akao_opcode_null,
+    system_akao_opcode_null,                      system_akao_opcode_null,                       system_akao_opcode_null,                           system_akao_opcode_null,
+    system_akao_opcode_e8_tempo,                  system_akao_opcode_e9_tempo_slide,             system_akao_opcode_ea_reverb_depth,                system_akao_opcode_eb_reverb_depth_slide,
+    system_akao_opcode_ec_drum_mode_on,           system_akao_opcode_ed_drum_mode_off,           system_akao_opcode_ee_jump,                        system_akao_opcode_ef_jump_conditional,
+    system_akao_opcode_f0_loop_jump_times,        system_akao_opcode_f1_loop_break_times,        system_akao_opcode_f2_load_instrument,             system_akao_opcode_f3,
+    system_akao_opcode_f4_overlay_voice_on,       system_akao_opcode_f5_overlay_voice_off,       system_akao_opcode_f6_overlay_volume_balance,      system_akao_opcode_f7_overlay_volume_balance_slide,
+    system_akao_opcode_f8_alt_voice_on,           system_akao_opcode_f9_alt_voice_off,           system_akao_opcode_null,                           system_akao_opcode_null,
+    system_akao_opcode_null,                      system_akao_opcode_fd_time_signature,          system_akao_opcode_fe_measure_number,              system_akao_opcode_null
 };
 
 
@@ -101,7 +202,7 @@ void system_akao_load_instr_files( u8* instr_all, u8* instr_dat )
 
     memcpy( g_akao_instrument, instr_dat, 0x2000 );
 
-    // FILE* check = fopen( "check.dat", "ab" );
+    // FILE* check = fopen( "check.dat", "wb" );
     // fwrite( g_akao_instrument, 1, 0x2000, check);
     // fclose( check );
 }
@@ -125,7 +226,15 @@ void system_akao_init_data()
 
 void system_akao_main()
 {
-    system_akao_main_update();
+    static int timer = 0;
+
+    //if( timer == 0x10 )
+    {
+        ofLog( OF_LOG_NOTICE, "system_akao_main_update" );
+        timer = 0;
+        system_akao_main_update();
+    }
+    ++timer;
 }
 
 
@@ -138,13 +247,15 @@ void system_akao_main_update()
     {
         g_channels_1_config.tempo_update += g_channels_1_config.tempo >> 0x10;
 
-        if( (g_channels_1_config.tempo_update & 0xffff0000) || ((g_akao_control_flags & 0x00000004) != 0) )
+        ofLog( OF_LOG_NOTICE, "tempo_update" +  ofToHex( g_channels_1_config.tempo_update ) );
+
+        if( g_channels_1_config.tempo_update & 0xffff0000 )
         {
             g_channels_1_config.tempo_update &= 0x0000ffff;
 
-            channel_mask = 0x1;
+            u32 channel_mask = 0x1;
             u32 channels_mask = g_channels_1_config.active_mask;
-            ChannelData* channel = &g_channels_1;
+            AkaoChannel* channel = g_channels_1;
             while( channels_mask != 0 )
             {
                 if( channels_mask & channel_mask )
@@ -152,9 +263,11 @@ void system_akao_main_update()
                     channel->length_1 -= 0x1;
                     channel->length_2 -= 0x1;
 
+                    ofLog( OF_LOG_NOTICE, "channel" +  ofToHex( channel->attr.voice_id ) + ": length_1 " +  ofToHex( (int)channel->length_1 ) );
+
                     if( channel->length_1 == 0 )
                     {
-                        system_akao_execute_sequence( channel, g_channels_1_config, channel_mask );
+                        system_akao_execute_sequence( channel, &g_channels_1_config, channel_mask );
                     }
                     else if( channel->length_2 == 0 )
                     {
@@ -176,25 +289,33 @@ void system_akao_main_update()
 
 
 
-void system_akao_execute_sequence( ChannelData* channel, AkaoConfig* config, u32 mask )
+void system_akao_execute_sequence( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    do
+    ofLog( OF_LOG_NOTICE, "system_akao_execute_sequence" );
+
+    u8 opcode = 0;
+    while( opcode != 0xa0 )
     {
-        u32 akao = channel->seq;
+        u8* akao = channel->seq;
         channel->seq = akao + 0x1;
 
-        opcode = bu[akao];
+        opcode = READ_LE_U8( akao );
 
         if( opcode < 0xa0 ) break;
 
-        akao_opcodes[opcode - 0xa0]( channel, config, mask );
+        ofLog( OF_LOG_NOTICE, "channel" +  ofToHex( channel->attr.voice_id ) + ": opcode " +  ofToHex( (int)opcode ) );
 
-    } while( opcode != 0xa0 )
+        akao_opcodes[opcode - 0xa0]( channel, config, mask );
+    }
 
     if( opcode != 0xa0 )
     {
+        ofLog( OF_LOG_NOTICE, "channel" +  ofToHex( channel->attr.voice_id ) + ": note " +  ofToHex( (int)opcode ) );
+
         if( channel->length_1 == 0 )
         {
+            ofLog( OF_LOG_NOTICE, "opcode:0x" +  ofToHex( opcode ) + " note length:0x" +  ofToHex( opcode % 0xb ) );
+
             channel->length_1 = g_akao_length_table[opcode % 0xb] & 0x00ff;
             channel->length_2 = (g_akao_length_table[opcode % 0xb] & 0xff00) >> 0x8;
         }
@@ -203,8 +324,8 @@ void system_akao_execute_sequence( ChannelData* channel, AkaoConfig* config, u32
         {
             config->on_mask |= mask;
 
-            S2 = opcode / 0xb;
-            V1 = S2 / 0xc;
+            u8 S2 = opcode / 0xb;
+            u8 V1 = S2 / 0xc;
 
             u32 pitch_base = g_akao_instrument[channel->instr_id].pitch[S2 % 0xc];
             if( V1 >= 0x7 )
@@ -235,8 +356,8 @@ void system_akao_update_keys_on()
         u32 channel_id = 0;
 
         u32 channel_mask = 1;
-        channels_mask = g_channels_1_config.active_mask;
-        ChannelData* channel = &g_channels_1;
+        u32 channels_mask = g_channels_1_config.active_mask;
+        AkaoChannel* channel = g_channels_1;
         while( channels_mask != 0 )
         {
             if( channels_mask & channel_mask )
@@ -285,9 +406,9 @@ void system_akao_update_keys_off()
 
 
 
-void system_akao_music_update_pitch_and_volume( ChannelData* channel, channel_mask, channel_id )
+void system_akao_music_update_pitch_and_volume( AkaoChannel* channel, u32 channel_mask, u32 channel_id )
 {
-    volume_level = channel->volume >> 0x10;
+    s16 volume_level = channel->volume >> 0x10;
 
     if( channel->attr.mask & AKAO_UPDATE_SPU_VOICE )
     {
@@ -319,7 +440,7 @@ void system_akao_update_channel_params_to_spu( u32 voice_id, AkaoVoiceAttr& attr
 
     if( attr.mask & SPU_VOICE_WDSA )
     {
-        PsyqSpuSetVoiceStartAddr( voice_id. attr.addr );
+        PsyqSpuSetVoiceStartAddr( voice_id, attr.addr );
         attr.mask &= ~SPU_VOICE_WDSA;
     }
 
@@ -363,13 +484,13 @@ void system_akao_copy_music( u8* src, u32 size )
     {
         free( g_akao_music );
     }
-    g_akao_music = malloc( size );
+    g_akao_music = (u8*)malloc( size );
     memcpy( g_akao_music, src, size );
 }
 
 
 
-void system_akao_instr_init( ChannelData* channel, u16 instr_id )
+void system_akao_instr_init( AkaoChannel* channel, u16 instr_id )
 {
     channel->instr_id = instr_id;
     channel->attr.addr = g_akao_instrument[instr_id].addr;
@@ -389,8 +510,8 @@ void system_akao_instr_init( ChannelData* channel, u16 instr_id )
 
 void system_akao_music_channels_init()
 {
-    u32 channels_mask = w[0x80083580] & 0x00ffffff;
-    u32 akao = 0x80083580 + 0x4;
+    u32 channels_mask = READ_LE_U32( g_akao_music + 0x0 ) & 0x00ffffff;
+    u8* akao = g_akao_music + 0x4;
 
     g_channels_1_config.active_mask = channels_mask;
     g_channels_1_config.on_mask = 0;
@@ -398,13 +519,13 @@ void system_akao_music_channels_init()
     g_channels_1_config.tempo = 0xffff0000;
     g_channels_1_config.tempo_update = 0x1;
 
-    ChannelData* channel = &g_channels_1;
-    channel_mask = 0x1;
+    AkaoChannel* channel = g_channels_1;
+    u32 channel_mask = 0x1;
     while( channels_mask != 0 )
     {
         if( channels_mask & channel_mask )
         {
-            channel->seq = akao + 0x2 + hu[akao];
+            channel->seq = akao + 0x2 + READ_LE_U16( akao );
             channel->length_1 = 0x3;
             channel->length_2 = 0x1;
 

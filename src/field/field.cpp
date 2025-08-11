@@ -1,6 +1,7 @@
 #include "field.h"
 #include "../game.h"
 #include "../system/system.h"
+#include "../system/akao.h"
 #include "../psyq/filesystem.h"
 #include "../psyq/libgte.h"
 #include <vector>
@@ -63,7 +64,7 @@ std::vector< u8> field_random =
 void
 field_main()
 {
-    SetDefDrawEnv( &field_draw_env, 0x0, 0x8, 0x140, 0xe0 );
+    PsyqSetDefDrawEnv( &field_draw_env, 0x0, 0x8, 0x140, 0xe0 );
     field_draw_env.dtd = 1;
     field_draw_env.isbg = 0;
 
@@ -85,6 +86,47 @@ field_main_loop()
     //[800e4274] = w(A0); // offset to walkmesh block
     //V0 = w[V0];
     //[80114458] = w(A0 + hu[V0] * 18); // walkmesh triangle access block
+
+    if( 1 )
+    {
+        u32 events_addr = READ_LE_U32( &field_dat[0x0] ) - field_dat_base_addr;
+        u8 number_of_entity = READ_LE_U8( &field_dat[events_addr + 0x2] );
+        u32 music_offset = events_addr + READ_LE_U32( &field_dat[events_addr + 0x20 + number_of_entity * 0x8 + 0 * 0x4] );
+        u16 music_size = READ_LE_U16( &field_dat[music_offset + 0x6] );
+        u8 temp[0x8000];
+        for( int i = 0; i < music_size; ++i )
+        {
+            temp[i] = field_dat[music_offset + 0x10 + i];
+        }
+        system_akao_copy_music( temp, music_size );
+        system_akao_music_channels_init();
+        FILE* check = fopen( "check.dat", "wb" );
+        fwrite( temp, 1, music_size, check );
+        fclose( check );
+    }
+    else
+    {
+        std::vector<u8> music;
+         ReadFile( "Aerith's_Theme.snd", music );
+
+        u16 music_size = READ_LE_U16( &music[0x6] );
+        u8 temp[0x8000];
+        for( int i = 0; i < music_size; ++i )
+        {
+            temp[i] = music[0x10 + i];
+        }
+        system_akao_copy_music( temp, music_size );
+        system_akao_music_channels_init();
+        FILE* check = fopen( "check.dat", "wb" );
+        fwrite( temp, 1, music_size, check );
+        fclose( check );
+    }
+
+
+
+
+
+
 
     u32 walkmesh_addr = READ_LE_U32( &field_dat[ 0x4 ] ) - field_dat_base_addr;
     u32 id_n = READ_LE_U32( &field_dat[ walkmesh_addr ] );
@@ -114,7 +156,9 @@ field_main_loop()
 
     while( true )
     {
-        ClearOTagR( &field_rain_prim[ 0 ].poly[ 0 ], 0 );
+        system_akao_main();
+
+        PsyqClearOTagR( &field_rain_prim[ 0 ].poly[ 0 ], 0 );
 
         field_rain_update();
 
@@ -133,7 +177,7 @@ field_main_loop()
         m.t[ 0 ] = 0xfffffe93;
         m.t[ 1 ] = 0x00000ccf;
         m.t[ 2 ] = 0xffff9669;
-        SetGeomScreen( 0x182 );
+        PsyqSetGeomScreen( 0x182 );
 
 // md1_1
 /*
@@ -156,52 +200,52 @@ field_main_loop()
         // A3 = ot + 17490; // draw_mode_packet
         field_rain_add_to_render( &field_rain_prim[ 0 ].poly[ 0 ], &m );
 
-        PushMatrix();
-        SetRotMatrix( &m );
-        SetTransMatrix( &m );
+        PsyqPushMatrix();
+        PsyqSetRotMatrix( &m );
+        PsyqSetTransMatrix( &m );
         std::array< LINE_F2, 0x1000 > walkmesh_prim;
         for( int i = 0; i < id_n; ++i )
         {
             u32 pt;
             u32 flag;
             DVECTOR sxy1, sxy2, sxy3;
-            RotTransPers( &field_walkmesh[ i ].p1, &sxy1, &pt, &flag );
-            RotTransPers( &field_walkmesh[ i ].p2, &sxy2, &pt, &flag );
-            RotTransPers( &field_walkmesh[ i ].p3, &sxy3, &pt, &flag );
+            PsyqRotTransPers( &field_walkmesh[ i ].p1, &sxy1, &pt, &flag );
+            PsyqRotTransPers( &field_walkmesh[ i ].p2, &sxy2, &pt, &flag );
+            PsyqRotTransPers( &field_walkmesh[ i ].p3, &sxy3, &pt, &flag );
 
-            SetLineF2( &walkmesh_prim[ i * 3 + 0 ] );
-            SetSemiTrans( &walkmesh_prim[ i * 3 + 0 ], 0 );
+            PsyqSetLineF2( &walkmesh_prim[ i * 3 + 0 ] );
+            PsyqSetSemiTrans( &walkmesh_prim[ i * 3 + 0 ], 0 );
             walkmesh_prim[ i * 3 + 0 ].r0 = 0x7f;
             walkmesh_prim[ i * 3 + 0 ].g0 = 0x0;
             walkmesh_prim[ i * 3 + 0 ].b0 = 0x0;
             walkmesh_prim[ i * 3 + 0 ].x0y0 = sxy1;
             walkmesh_prim[ i * 3 + 0 ].x1y1 = sxy2;
-            AddPrim( &field_rain_prim[ 0 ].poly[ 0 ], &walkmesh_prim[ i * 3 + 0 ] );
+            PsyqAddPrim( &field_rain_prim[ 0 ].poly[ 0 ], &walkmesh_prim[ i * 3 + 0 ] );
 
-            SetLineF2( &walkmesh_prim[ i * 3 + 1 ] );
-            SetSemiTrans( &walkmesh_prim[ i * 3 + 1 ], 0 );
+            PsyqSetLineF2( &walkmesh_prim[ i * 3 + 1 ] );
+            PsyqSetSemiTrans( &walkmesh_prim[ i * 3 + 1 ], 0 );
             walkmesh_prim[ i * 3 + 1 ].r0 = 0x7f;
             walkmesh_prim[ i * 3 + 1 ].g0 = 0x0;
             walkmesh_prim[ i * 3 + 1 ].b0 = 0x0;
             walkmesh_prim[ i * 3 + 1 ].x0y0 = sxy1;
             walkmesh_prim[ i * 3 + 1 ].x1y1 = sxy3;
-            AddPrim( &field_rain_prim[ 0 ].poly[ 0 ], &walkmesh_prim[ i * 3 + 1 ] );
+            PsyqAddPrim( &field_rain_prim[ 0 ].poly[ 0 ], &walkmesh_prim[ i * 3 + 1 ] );
 
-            SetLineF2( &walkmesh_prim[ i * 3 + 2 ] );
-            SetSemiTrans( &walkmesh_prim[ i * 3 + 2 ], 0 );
+            PsyqSetLineF2( &walkmesh_prim[ i * 3 + 2 ] );
+            PsyqSetSemiTrans( &walkmesh_prim[ i * 3 + 2 ], 0 );
             walkmesh_prim[ i * 3 + 2 ].r0 = 0x7f;
             walkmesh_prim[ i * 3 + 2 ].g0 = 0x0;
             walkmesh_prim[ i * 3 + 2 ].b0 = 0x0;
             walkmesh_prim[ i * 3 + 2 ].x0y0 = sxy2;
             walkmesh_prim[ i * 3 + 2 ].x1y1 = sxy3;
-            AddPrim( &field_rain_prim[ 0 ].poly[ 0 ], &walkmesh_prim[ i * 3 + 2 ] );
+            PsyqAddPrim( &field_rain_prim[ 0 ].poly[ 0 ], &walkmesh_prim[ i * 3 + 2 ] );
         }
-        PopMatrix();
+        PsyqPopMatrix();
 
-        PutDispEnv( &global_dispenv );
-        PutDrawEnv( &field_draw_env );
+        PsyqPutDispEnv( &global_dispenv );
+        PsyqPutDrawEnv( &field_draw_env );
 
-        DrawOTag( &field_rain_prim[ 0 ].poly[ 0 ] );
+        PsyqDrawOTag( &field_rain_prim[ 0 ].poly[ 0 ] );
 
         GameRender();
         if( g_AppRunning == false ) return;
@@ -231,8 +275,8 @@ void field_rain_init( sFieldRainPrim* prim )
         field_rain[ i ].m12_seed = i * 4;
         field_rain[ i ].m16_render = false;
 
-        SetLineF2( &prim->poly[ i ] );
-        SetSemiTrans( &prim->poly[ i ], 1 );
+        PsyqSetLineF2( &prim->poly[ i ] );
+        PsyqSetSemiTrans( &prim->poly[ i ], 1 );
 
         LINE_F2* p = &prim->poly[ i ];
         p->r0 = 0x10;
@@ -333,10 +377,10 @@ void field_rain_add_to_render( sTag* ot, MATRIX* m )
     //S1 = A1;
     //packet = A3;
 
-    PushMatrix();
+    PsyqPushMatrix();
 
-    SetRotMatrix( m );
-    SetTransMatrix( m );
+    PsyqSetRotMatrix( m );
+    PsyqSetTransMatrix( m );
 
     for( int i = 0; i < 0x40; ++i )
     {
@@ -347,7 +391,7 @@ void field_rain_add_to_render( sTag* ot, MATRIX* m )
             DVECTOR sxy;
 
             //A1 = S1 + i * 10 + 8;
-            RotTransPers( &field_rain[ i ].m0_p1, &sxy, &pt, &flag );
+            PsyqRotTransPers( &field_rain[ i ].m0_p1, &sxy, &pt, &flag );
 
             LINE_F2* p = &field_rain_prim[ 0 ].poly[ i ];
             //p->x0y0.vx = 500 + field_rain[ i ].m0_p1.vx / 3;
@@ -355,15 +399,15 @@ void field_rain_add_to_render( sTag* ot, MATRIX* m )
             p->x0y0 = sxy;
 
             //A1 = S1 + i * 10 + c;
-            RotTransPers( &field_rain[ i ].m8_p2, &sxy, &pt, &flag );
+            PsyqRotTransPers( &field_rain[ i ].m8_p2, &sxy, &pt, &flag );
 
             p->x1y1 = sxy;
 
-            if( i != 0 ) AddPrim( ot, p );
+            if( i != 0 ) PsyqAddPrim( ot, p );
         }
     }
 
-    PopMatrix();
+    PsyqPopMatrix();
 
     //[packet] = w((w[packet] & ff000000) | (w[otag] & 00ffffff));
     //[otag] = w((w[otag] & ff000000) | (packet & 00ffffff));
