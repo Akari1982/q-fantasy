@@ -39,23 +39,33 @@ void system_init_akao_engine()
     {
         ofLog( OF_LOG_ERROR, "File SOUND/INSTR.ALL not found." );
     }
+    u8 instr_all_b[0x75fa0];
+    fseek( instr_all, 0, SEEK_SET );
+    fread( instr_all_b, 1, 0x75fa0, instr_all );
+    fclose( instr_all );
+
     FILE* instr_dat = fopen( "data/SOUND/INSTR.DAT", "rb" );
     if( instr_dat == NULL )
     {
         ofLog( OF_LOG_ERROR, "File SOUND/INSTR.DAT not found." );
     }
+    u8 instr_dat_b[0x2000];
+    fseek( instr_dat, 0, SEEK_SET );
+    fread( instr_dat_b, 1, 0x2000, instr_dat );
+    fclose( instr_dat );
+
     FILE* effect_all = fopen( "data/SOUND/EFFECT.ALL", "rb" );
     if( effect_all == NULL )
     {
         ofLog( OF_LOG_ERROR, "File SOUND/EFFECT.ALL not found." );
     }
+    u8 effect_all_b[0xc800];
+    fseek( effect_all, 0, SEEK_SET );
+    fread( effect_all_b, 1, 0xc800, effect_all );
+    fclose( effect_all );
 
     system_akao_init( instr_all, instr_dat );
     system_akao_load_effect_file( effect_all );
-
-    fclose( instr_all );
-    fclose( instr_dat );
-    fclose( effect_all );
 }
 
 
