@@ -1,0 +1,86 @@
+414b414f AKAO
+0x0d - id
+0x944 - size
+0x4 - reverb type
+96 - year
+12 - month
+18 - day
+22 - hour
+45 - minutes
+10 - seconds
+
+mask = 0x7fff
+
+ch 0 off: 0x001C
+E8E23B      tempo
+FD3004      time signature
+FE0100      time measure
+EA0032      reverb depth
+A37F        master volume
+C2          reverb on
+AA34        set pan
+A12E        load instrument
+B4600106    vibrato
+B50A        vibrato depth
+FD3004      time signature
+FE0100      time measure
+A831        volume
+ - 8F 8F 8F 8F
+A505        set octave
+ - 45 66
+A6          increase octave
+ - 17 86 03
+A7          discrease octave
+ - 66 2D 87
+CC          legato on
+ - 1A 30 17
+CD          legato off
+ - 3A 2F 19 2F 16 84 85
+A96000      volume slide
+ - 85 8F 8F 8F 8F 8F 8F 8F 8F 8F 8F 8F
+A81D        volume
+A6          increase octave
+ - 91
+A91831      volume slide
+ - 18 0D
+A7          discrease octave
+ - 7B 64 43 87 92
+A6          increase octave
+ - 18 0D
+A7          discrease octave
+ - 7B
+A6          increase octave
+ - 0D 87 45 43 87 92 18 0D
+A7          discrease octave
+ - 7B 64 2D 85 91 2F 45 50 45 2F 17 87 86 87 92 50 45 19 2F 17 86
+A94818      volume slide
+ - 86 87 90 91 92 8F 8F 8F
+EE 8CFF     jump
+
+ch 1 off: 0x00A7
+
+ch 2 off: 0x010C
+
+ch 3 off: 0x01DE
+
+ch 4 off: 0x0244
+
+ch 5 off: 0x02A1
+
+ch 6 off: 0x030C
+
+ch 7 off: 0x036C
+
+ch 8 off: 0x03EC
+
+ch 9 off: 0x0458
+
+ch a off: 0x0577
+
+ch b off: 0x0643
+
+ch c off: 0x0743
+
+ch d off: 0x07E8
+
+ch e off: 0x0870

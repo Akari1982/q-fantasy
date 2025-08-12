@@ -200,11 +200,32 @@ void system_akao_load_instr_files( u8* instr_all, u8* instr_dat )
     PsyqSpuSetTransferStartAddr( READ_LE_U32( instr_all + 0x0 ) );
     PsyqSpuWrite( instr_all + 0x10, READ_LE_U32( instr_all + 0x4 ) );
 
-    memcpy( g_akao_instrument, instr_dat, 0x2000 );
-
-    // FILE* check = fopen( "check.dat", "wb" );
-    // fwrite( g_akao_instrument, 1, 0x2000, check);
-    // fclose( check );
+    for( int i = 0; i < 0x80; ++i )
+    {
+        READ_LE_U32( instr_dat + i * 0x40 + 0x0 );
+        g_akao_instrument[i].addr = READ_LE_U32( instr_dat + i * 0x40 + 0x0 );
+        g_akao_instrument[i].loop_addr = READ_LE_U32( instr_dat + i * 0x40 + 0x4 );
+        g_akao_instrument[i].ar = READ_LE_U8( instr_dat + i * 0x40 + 0x8 );
+        g_akao_instrument[i].dr = READ_LE_U8( instr_dat + i * 0x40 + 0x9 );
+        g_akao_instrument[i].sl = READ_LE_U8( instr_dat + i * 0x40 + 0xa );
+        g_akao_instrument[i].sr = READ_LE_U8( instr_dat + i * 0x40 + 0xb );
+        g_akao_instrument[i].rr = READ_LE_U8( instr_dat + i * 0x40 + 0xc );
+        g_akao_instrument[i].a_mode = READ_LE_S8( instr_dat + i * 0x40 + 0xd );
+        g_akao_instrument[i].s_mode = READ_LE_S8( instr_dat + i * 0x40 + 0xe );
+        g_akao_instrument[i].r_mode = READ_LE_S8( instr_dat + i * 0x40 + 0xf );
+        g_akao_instrument[i].pitch[0x0] = READ_LE_S32( instr_dat + i * 0x40 + 0x10 );
+        g_akao_instrument[i].pitch[0x1] = READ_LE_S32( instr_dat + i * 0x40 + 0x14 );
+        g_akao_instrument[i].pitch[0x2] = READ_LE_S32( instr_dat + i * 0x40 + 0x18 );
+        g_akao_instrument[i].pitch[0x3] = READ_LE_S32( instr_dat + i * 0x40 + 0x1c );
+        g_akao_instrument[i].pitch[0x4] = READ_LE_S32( instr_dat + i * 0x40 + 0x20 );
+        g_akao_instrument[i].pitch[0x5] = READ_LE_S32( instr_dat + i * 0x40 + 0x24 );
+        g_akao_instrument[i].pitch[0x6] = READ_LE_S32( instr_dat + i * 0x40 + 0x28 );
+        g_akao_instrument[i].pitch[0x7] = READ_LE_S32( instr_dat + i * 0x40 + 0x2c );
+        g_akao_instrument[i].pitch[0x8] = READ_LE_S32( instr_dat + i * 0x40 + 0x30 );
+        g_akao_instrument[i].pitch[0x9] = READ_LE_S32( instr_dat + i * 0x40 + 0x34 );
+        g_akao_instrument[i].pitch[0xa] = READ_LE_S32( instr_dat + i * 0x40 + 0x38 );
+        g_akao_instrument[i].pitch[0xb] = READ_LE_S32( instr_dat + i * 0x40 + 0x3c );
+    }
 }
 
 
