@@ -12,14 +12,8 @@ void SpuPlayer::setup()
 {
     int bufferSize = 512;
     sampleRate = 44100;
-    phase = 0;
-    phaseAdder = 0.0f;
-    phaseAdderTarget = 0.0f;
     volume = 0.1f;
     bNoise = false;
-
-    lAudio.assign( bufferSize, 0.0 );
-    rAudio.assign( bufferSize, 0.0 );
 
     soundStream.printDeviceList();
 
@@ -41,18 +35,11 @@ void SpuPlayer::audioOut( ofSoundBuffer & buffer )
     float leftScale = 1 - pan;
     float rightScale = pan;
 
-    // sin (n) seems to have trouble when n is very large, so we
-    // keep phase in the range of 0-TWO_PI like this:
-    while( phase > TWO_PI )
-    {
-        phase -= TWO_PI;
-    }
-
     if( bNoise == true )
     {
         for( size_t i = 0; i < buffer.getNumFrames(); i++ )
         {
-            lAudio[i] = buffer[i*buffer.getNumChannels()    ] = ofRandom( 0, 1 ) * volume * leftScale;
+            lAudio[i] = buffer[i*buffer.getNumChannels() + 0] = ofRandom( 0, 1 ) * volume * leftScale;
             rAudio[i] = buffer[i*buffer.getNumChannels() + 1] = ofRandom( 0, 1 ) * volume * rightScale;
         }
     }
@@ -63,13 +50,13 @@ void SpuPlayer::audioOut( ofSoundBuffer & buffer )
         int numSamples = std::min<int>( 44100, buffer.getNumFrames() );
 
         //spuMutex.lock();
-        emulatedSpuDevice.generate(temp, numSamples * 4); 
+        emulatedSpuDevice.generate( temp, numSamples * 4 );
         //spuMutex.unlock();
 
         for( size_t i = 0; i < buffer.getNumFrames(); i++ )
         {
-            lAudio[i] = buffer[i*buffer.getNumChannels()    ] = temp[i][0] / (float)0x7fff;
-            rAudio[i] = buffer[i*buffer.getNumChannels() + 1] = temp[i][1] / (float)0x7fff;
+            buffer[i*buffer.getNumChannels() + 0] = temp[i][0] / (float)0x7fff;
+            buffer[i*buffer.getNumChannels() + 1] = temp[i][1] / (float)0x7fff;
         }
     }
 }
@@ -100,6 +87,13 @@ void PsyqSpuWrite( u8* addr, u32 size )
     //spuMutex.lock();
     emulatedSpuDevice.dma_write( (u32*)addr, 0, size / 4 );
     //spuMutex.unlock();
+}
+
+
+
+void PsyqSpuRead( u8* addr, u32 size )
+{
+    emulatedSpuDevice.dma_read( (u32*)addr, 0, size / 4 );
 }
 
 
@@ -231,5 +225,20 @@ void PsyqSpuSetKey( s32 on_off, u32 voice_bit )
     {
         emulatedSpuDevice.write( 0x188 / 0x2, voice_bit & 0xffff );
         emulatedSpuDevice.write( 0x18a / 0x2, voice_bit >> 0x10 );
+    }
+}
+
+
+
+void PsyqSpuSetReverbDepth( SpuReverbAttr* attr )
+{
+    if( (attr->mask < 1) || (attr->mask & 0x2) )
+    {
+        emulatedSpuDevice.write( 0x184 / 0x2, attr->depth.left );
+    }
+
+    if( (attr->mask < 1) || (attr->mask & 0x4) )
+    {
+        emulatedSpuDevice.write( 0x186 / 0x2, attr->depth.right );
     }
 }

@@ -123,10 +123,8 @@ void system_akao_opcode_a3_master_volume( AkaoChannel* channel, AkaoConfig* conf
     u8* akao = channel->seq;
     channel->seq = akao + 0x1;
 
-    /*
-    channel->vol_master = bu[akao + 0];
+    channel->vol_master = READ_LE_U8( akao );
     channel->attr.mask |= AKAO_UPDATE_SPU_VOICE;
-    */
 }
 
 
@@ -1137,11 +1135,9 @@ void system_akao_opcode_ea_reverb_depth( AkaoChannel* channel, AkaoConfig* confi
     u8* akao = channel->seq;
     channel->seq = akao + 0x2;
 
-    /*
     config->update_flags |= AKAO_UPDATE_REVERB;
-    config->reverb_depth = hu[akao] << 0x10;
-    config->reverb_depth_slide_steps = 0;
-    */
+    config->reverb_depth = READ_LE_U16( akao ) << 0x10;
+    //config->reverb_depth_slide_steps = 0;
 }
 
 
@@ -1190,7 +1186,7 @@ void system_akao_opcode_ed_drum_mode_off( AkaoChannel* channel, AkaoConfig* conf
 void system_akao_opcode_ee_jump( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
     u8* akao = channel->seq;
-    channel->seq = akao + 0x3 /*+ h[akao]*/;
+    channel->seq = akao + 0x3 + READ_LE_S16( akao );
 }
 
 

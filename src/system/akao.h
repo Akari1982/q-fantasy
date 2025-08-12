@@ -46,10 +46,10 @@ struct AkaoInstrument
     u8 sl;
     s8 sr;
     u8 rr;
-    s8 a_mode;
-    s8 s_mode;
-    s8 r_mode;
-    s32 pitch[0xc];
+    u8 a_mode;
+    u8 s_mode;
+    u8 r_mode;
+    u32 pitch[0xc];
 };
 
 struct AkaoVoiceAttr
@@ -65,7 +65,7 @@ struct AkaoVoiceAttr
     u16 ar;
     u16 dr;
     u16 sl;
-    s16 sr;
+    u16 sr;
     u16 rr;
     s16 vol_l;
     s16 vol_r;
@@ -79,6 +79,7 @@ struct AkaoChannel
     u8 length_2;
 
     s32 volume;
+    u32 vol_master;
     u32 pitch_base;
 
     u16 instr_id;
@@ -93,6 +94,9 @@ struct AkaoConfig
 
     u32 tempo;
     u32 tempo_update;
+
+    u32 update_flags;
+    s32 reverb_depth;
 };
 
 struct AkaoCommandData

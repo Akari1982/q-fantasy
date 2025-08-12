@@ -4,12 +4,16 @@
 #include "akao_opcodes.h"
 #include "akao_commands.h"
 
+u16 g_akao_reverb_pan;
+
 AkaoInstrument g_akao_instrument[0x80];
 u8 g_effect_all[0xc800];
 
 AkaoChannel g_channels_1[0x18];
 AkaoConfig g_channels_1_config;
 u8* g_akao_music;
+
+SpuReverbAttr g_spu_reverb_attr;
 
 u8 g_akao_default_sound[0x20] =
 {
@@ -232,9 +236,12 @@ void system_akao_load_instr_files( u8* instr_all, u8* instr_dat )
 
 void system_akao_init_data()
 {
+    g_akao_reverb_pan = 0x40;
+
     g_channels_1_config.active_mask = 0;
     g_channels_1_config.on_mask = 0;
     g_channels_1_config.off_mask = 0;
+    g_channels_1_config.reverb_depth = 0;
 
     for( int i = 0; i < 0x18; ++i )
     {
@@ -251,7 +258,6 @@ void system_akao_main()
 
     //if( timer == 0x10 )
     {
-        ofLog( OF_LOG_NOTICE, "system_akao_main_update" );
         timer = 0;
         system_akao_main_update();
     }
@@ -268,7 +274,7 @@ void system_akao_main_update()
     {
         g_channels_1_config.tempo_update += g_channels_1_config.tempo >> 0x10;
 
-        ofLog( OF_LOG_NOTICE, "tempo_update" +  ofToHex( g_channels_1_config.tempo_update ) );
+        //ofLog( OF_LOG_NOTICE, "tempo_update" +  ofToHex( g_channels_1_config.tempo_update ) );
 
         if( g_channels_1_config.tempo_update & 0xffff0000 )
         {
@@ -284,7 +290,7 @@ void system_akao_main_update()
                     channel->length_1 -= 0x1;
                     channel->length_2 -= 0x1;
 
-                    ofLog( OF_LOG_NOTICE, "channel" +  ofToHex( channel->attr.voice_id ) + ": length_1 " +  ofToHex( (int)channel->length_1 ) );
+                    //ofLog( OF_LOG_NOTICE, "channel" +  ofToHex( channel->attr.voice_id ) + ": length_1 " +  ofToHex( (int)channel->length_1 ) );
 
                     if( channel->length_1 == 0 )
                     {
@@ -346,16 +352,16 @@ void system_akao_execute_sequence( AkaoChannel* channel, AkaoConfig* config, u32
             config->on_mask |= mask;
 
             u8 S2 = opcode / 0xb;
-            u8 V1 = S2 / 0xc;
+            u8 mod = S2 / 0xc;
 
             u32 pitch_base = g_akao_instrument[channel->instr_id].pitch[S2 % 0xc];
-            if( V1 >= 0x7 )
+            if( mod >= 0x7 )
             {
-                pitch_base <<= V1 - 0x6;
+                pitch_base <<= mod - 0x6;
             }
-            else if( V1 < 0x6 )
+            else if( mod < 0x6 )
             {
-                pitch_base >>= 0x6 - V1;
+                pitch_base >>= 0x6 - mod;
             }
             channel->pitch_base = pitch_base;
 
@@ -369,6 +375,28 @@ void system_akao_execute_sequence( AkaoChannel* channel, AkaoConfig* config, u32
 void system_akao_update_keys_on()
 {
     u32 updated_mask = 0;
+
+    if( g_channels_1_config.update_flags & AKAO_UPDATE_REVERB )
+    {
+        s16 reverb_depth = g_channels_1_config.reverb_depth >> 0x10;
+
+        g_spu_reverb_attr.mask = SPU_REV_DEPTHL | SPU_REV_DEPTHR;
+
+        if( g_akao_reverb_pan < 0x40 )
+        {
+            g_spu_reverb_attr.depth.left = reverb_depth;
+            g_spu_reverb_attr.depth.right = reverb_depth - ((reverb_depth * (g_akao_reverb_pan ^ 0x3f)) >> 0x6);
+        }
+        else
+        {
+            g_spu_reverb_attr.depth.left = reverb_depth - ((reverb_depth * (g_akao_reverb_pan & 0x3f)) >> 0x6);
+            g_spu_reverb_attr.depth.right = reverb_depth;
+        }
+
+        PsyqSpuSetReverbDepth( &g_spu_reverb_attr );
+
+        g_channels_1_config.update_flags ^= AKAO_UPDATE_REVERB;
+    }
 
     if( g_channels_1_config.active_mask != 0 )
     {
@@ -429,7 +457,7 @@ void system_akao_update_keys_off()
 
 void system_akao_music_update_pitch_and_volume( AkaoChannel* channel, u32 channel_mask, u32 channel_id )
 {
-    s16 volume_level = channel->volume >> 0x10;
+    s32 volume_level = ((channel->volume >> 0x10) * channel->vol_master) >> 0x7;
 
     if( channel->attr.mask & AKAO_UPDATE_SPU_VOICE )
     {
@@ -525,6 +553,19 @@ void system_akao_instr_init( AkaoChannel* channel, u16 instr_id )
     channel->attr.sr = g_akao_instrument[instr_id].sr;
     channel->attr.rr = g_akao_instrument[instr_id].rr;
     channel->attr.mask |= AKAO_UPDATE_SPU_BASE;
+
+    ofLog( OF_LOG_NOTICE, "instr_id:0x" +  ofToHex( instr_id ) );
+    ofLog( OF_LOG_NOTICE, "addr:0x" +  ofToHex( g_akao_instrument[instr_id].addr ) );
+    ofLog( OF_LOG_NOTICE, "loop_addr:0x" +  ofToHex( g_akao_instrument[instr_id].loop_addr ) );
+    ofLog( OF_LOG_NOTICE, "a_mode:0x" +  ofToHex( g_akao_instrument[instr_id].a_mode ) );
+    ofLog( OF_LOG_NOTICE, "s_mode:0x" +  ofToHex( g_akao_instrument[instr_id].s_mode ) );
+    ofLog( OF_LOG_NOTICE, "r_mode:0x" +  ofToHex( g_akao_instrument[instr_id].r_mode ) );
+    ofLog( OF_LOG_NOTICE, "ar:0x" +  ofToHex( g_akao_instrument[instr_id].ar ) );
+    ofLog( OF_LOG_NOTICE, "dr:0x" +  ofToHex( g_akao_instrument[instr_id].dr ) );
+    ofLog( OF_LOG_NOTICE, "sl:0x" +  ofToHex( g_akao_instrument[instr_id].sl ) );
+    ofLog( OF_LOG_NOTICE, "sr:0x" +  ofToHex( g_akao_instrument[instr_id].sr ) );
+    ofLog( OF_LOG_NOTICE, "rr:0x" +  ofToHex( g_akao_instrument[instr_id].rr ) );
+    ofLog( OF_LOG_NOTICE, "pitch0:0x" +  ofToHex( g_akao_instrument[instr_id].pitch[0] ) );
 }
 
 
@@ -539,6 +580,7 @@ void system_akao_music_channels_init()
     g_channels_1_config.off_mask |= 0x00ffffff;
     g_channels_1_config.tempo = 0xffff0000;
     g_channels_1_config.tempo_update = 0x1;
+    g_channels_1_config.reverb_depth = 0;
 
     AkaoChannel* channel = g_channels_1;
     u32 channel_mask = 0x1;
@@ -553,6 +595,7 @@ void system_akao_music_channels_init()
             system_akao_instr_init( channel, 0x14 );
 
             channel->volume = 0x3fff0000;
+            channel->vol_master = 0x7f;
 
             akao += 0x2;
             channels_mask ^= channel_mask;

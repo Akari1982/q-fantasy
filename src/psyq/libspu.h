@@ -27,6 +27,27 @@
 #define SPU_VOICE_ADSR_ADSR1    (0x01 << 17)
 #define SPU_VOICE_ADSR_ADSR2    (0x01 << 18)
 
+#define SPU_REV_MODE            (0x01 <<  0)
+#define SPU_REV_DEPTHL          (0x01 <<  1)
+#define SPU_REV_DEPTHR          (0x01 <<  2)
+#define SPU_REV_DELAYTIME       (0x01 <<  3)
+#define SPU_REV_FEEDBACK        (0x01 <<  4)
+
+struct SpuVolume
+{
+    s16 left;
+    s16 right;
+};
+
+struct SpuReverbAttr
+{
+    u32 mask;
+    s32 mode;
+    SpuVolume depth;
+    s32 delay;
+    s32 feedback;
+};
+
 
 
 class SpuPlayer : public ofBaseApp
@@ -55,8 +76,10 @@ public:
 
 
 void PsyqSpuInit();
+
 void PsyqSpuSetTransferStartAddr( u32 addr );
 void PsyqSpuWrite( u8* addr, u32 size );
+void PsyqSpuRead( u8* addr, u32 size );
 
 void PsyqSpuSetVoicePitch( s32 voiceNum, u16 pitch );
 void PsyqSpuSetVoiceVolume( s32 voiceNum, s16 volumeL, s16 volumeR );
@@ -68,4 +91,6 @@ void PsyqSpuSetVoiceARAttr( s32 voiceNum, u16 AR, s32 Armode );
 void PsyqSpuSetVoiceDR( s32 voiceNum, u16 DR );
 void PsyqSpuSetVoiceSL( s32 voiceNum, u16 SL );
 void PsyqSpuSetVoiceVolumeAttr( s32 voiceNum, s16 volumeL, s16 volumeR, s16 volModeL, s16 volModeR );
+
 void PsyqSpuSetKey( s32 on_off, u32 voice_bit );
+void PsyqSpuSetReverbDepth( SpuReverbAttr* attr );
