@@ -107,13 +107,11 @@ void system_akao_opcode_a2_next_note_length( AkaoChannel* channel, AkaoConfig* c
     u8* akao = channel->seq;
     channel->seq = akao + 0x1;
 
-    /*
-    length = bu[akao];
+    u8 length = READ_LE_U8( akao );
     channel->length_1 = length;
     channel->length_2 = length;
     channel->length_stored = length;
     channel->length_fixed = 0;
-    */
 }
 
 
@@ -152,29 +150,23 @@ void system_akao_opcode_a5_set_octave( AkaoChannel* channel, AkaoConfig* config,
     u8* akao = channel->seq;
     channel->seq = akao + 0x1;
 
-    /*
-    channel->octave = bu[akao];
-    */
+    channel->octave = READ_LE_U8( akao );
 }
 
 
 
 void system_akao_opcode_a6_increase_octave( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    /*
     channel->octave += 0x1;
     channel->octave &= 0xf;
-    */
 }
 
 
 
 void system_akao_opcode_a7_discrease_octave( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    /*
     channel->octave -= 0x1;
     channel->octave &= 0xf;
-    */
 }
 
 
@@ -348,10 +340,10 @@ void system_akao_opcode_b1_set_sr( AkaoChannel* channel, AkaoConfig* config, u32
     u8* akao = channel->seq;
     channel->seq = akao + 0x1;
 
-    /*
-    channel->attr.mode |= SPU_VOICE_ADSR_SMODE | SPU_VOICE_ADSR_SR;
-    channel->attr.sr = bu[akao];
+    channel->attr.mask |= SPU_VOICE_ADSR_SMODE | SPU_VOICE_ADSR_SR;
+    channel->attr.sr = READ_LE_U8( akao );
 
+    /*
     if( channel->update_flags & AKAO_UPDATE_OVERLAY )
     {
         g_channels_1[channel->over_voice_id].attr.sr = channel->attr.sr;
@@ -673,15 +665,17 @@ void system_akao_opcode_c2_reverb_on( AkaoChannel* channel, AkaoConfig* config, 
     /*
     if( channel->type == AKAO_MUSIC )
     {
+    */
         config->reverb_mask |= mask;
+    /*
     }
     else
     {
         g_channels_3_reverb_mask |= mask;
     }
+    */
 
     system_akao_update_reverb_voices();
-    */
 }
 
 

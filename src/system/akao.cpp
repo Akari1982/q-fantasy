@@ -241,6 +241,7 @@ void system_akao_init_data()
     g_channels_1_config.active_mask = 0;
     g_channels_1_config.on_mask = 0;
     g_channels_1_config.off_mask = 0;
+    g_channels_1_config.reverb_mask = 0;
     g_channels_1_config.reverb_depth = 0;
 
     for( int i = 0; i < 0x18; ++i )
@@ -259,6 +260,8 @@ void system_akao_main()
     //if( timer == 0x10 )
     {
         timer = 0;
+        system_akao_main_update();
+        system_akao_main_update();
         system_akao_main_update();
     }
     ++timer;
@@ -337,21 +340,19 @@ void system_akao_execute_sequence( AkaoChannel* channel, AkaoConfig* config, u32
 
     if( opcode != 0xa0 )
     {
-        //ofLog( OF_LOG_NOTICE, "channel" +  ofToHex( channel->attr.voice_id ) + ": note " +  ofToHex( (int)opcode ) );
-
         if( channel->length_1 == 0 )
         {
-            //ofLog( OF_LOG_NOTICE, "opcode:0x" +  ofToHex( opcode ) + " note length:0x" +  ofToHex( opcode % 0xb ) );
-
             channel->length_1 = g_akao_length_table[opcode % 0xb] & 0x00ff;
             channel->length_2 = (g_akao_length_table[opcode % 0xb] & 0xff00) >> 0x8;
         }
+
+        channel->length_stored = channel->length_1;
 
         if( opcode < 0x84 )
         {
             config->on_mask |= mask;
 
-            u8 S2 = opcode / 0xb;
+            u8 S2 = channel->octave * 0xc + opcode / 0xb;
             u8 mod = S2 / 0xc;
 
             u32 pitch_base = g_akao_instrument[channel->instr_id].pitch[S2 % 0xc];
@@ -393,6 +394,7 @@ void system_akao_update_keys_on()
             g_spu_reverb_attr.depth.right = reverb_depth;
         }
 
+        ofLog( OF_LOG_NOTICE, "left" +  ofToHex( g_spu_reverb_attr.depth.left ) + ": right " +  ofToHex( g_spu_reverb_attr.depth.right ) );
         PsyqSpuSetReverbDepth( &g_spu_reverb_attr );
 
         g_channels_1_config.update_flags ^= AKAO_UPDATE_REVERB;
@@ -541,6 +543,8 @@ void system_akao_copy_music( u8* src, u32 size )
 
 void system_akao_instr_init( AkaoChannel* channel, u16 instr_id )
 {
+    ofLog( OF_LOG_NOTICE, "instr_id: 0x" +  ofToHex( instr_id ) );
+
     channel->instr_id = instr_id;
     channel->attr.addr = g_akao_instrument[instr_id].addr;
     channel->attr.loop_addr = g_akao_instrument[instr_id].loop_addr;
@@ -559,12 +563,13 @@ void system_akao_instr_init( AkaoChannel* channel, u16 instr_id )
 
 void system_akao_music_channels_init()
 {
-    u32 channels_mask = READ_LE_U32( g_akao_music + 0x0 ) & 0x00ffffff & 1;
+    u32 channels_mask = READ_LE_U32( g_akao_music + 0x0 ) & 0x00ffffff;
     u8* akao = g_akao_music + 0x4;
 
     g_channels_1_config.active_mask = channels_mask;
     g_channels_1_config.on_mask = 0;
     g_channels_1_config.off_mask |= 0x00ffffff;
+    g_channels_1_config.reverb_mask = 0;
     g_channels_1_config.tempo = 0xffff0000;
     g_channels_1_config.tempo_update = 0x1;
     g_channels_1_config.reverb_depth = 0;
@@ -578,6 +583,8 @@ void system_akao_music_channels_init()
             channel->seq = akao + 0x2 + READ_LE_U16( akao );
             channel->length_1 = 0x3;
             channel->length_2 = 0x1;
+            channel->length_stored = 0;
+            channel->length_fixed = 0;
 
             system_akao_instr_init( channel, 0x14 );
 
@@ -591,6 +598,16 @@ void system_akao_music_channels_init()
         channel += 1;
         channel_mask <<= 1;
     }
+}
+
+
+
+void system_akao_update_reverb_voices()
+{
+    ofLog( OF_LOG_NOTICE, "reverb_mask: 0x" +  ofToHex( g_channels_1_config.reverb_mask ) );
+
+    PsyqSpuSetReverbVoice( SPU_ON, g_channels_1_config.reverb_mask );
+    PsyqSpuSetReverbVoice( SPU_OFF, ~g_channels_1_config.reverb_mask );
 }
 
 

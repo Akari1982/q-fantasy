@@ -87,7 +87,7 @@ field_main_loop()
     //V0 = w[V0];
     //[80114458] = w(A0 + hu[V0] * 18); // walkmesh triangle access block
 
-    if( 0 )
+    if( 1 )
     {
         u32 events_addr = READ_LE_U32( &field_dat[0x0] ) - field_dat_base_addr;
         u8 number_of_entity = READ_LE_U8( &field_dat[events_addr + 0x2] );
@@ -107,7 +107,7 @@ field_main_loop()
     else
     {
         std::vector<u8> music;
-         //ReadFile( "Aerith's_Theme.snd", music );
+        //ReadFile( "Aerith's_Theme.snd", music );
         ReadFile( "Lurking_In_The_Darkness.snd", music );
 
         u16 music_size = READ_LE_U16( &music[0x6] );

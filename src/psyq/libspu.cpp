@@ -218,13 +218,29 @@ void PsyqSpuSetKey( s32 on_off, u32 voice_bit )
 
 void PsyqSpuSetReverbDepth( SpuReverbAttr* attr )
 {
-    if( (attr->mask < 1) || (attr->mask & 0x2) )
+    if( (attr->mask < 1) || (attr->mask & SPU_REV_DEPTHL) )
     {
         emulatedSpuDevice.write( 0x184 / 0x2, attr->depth.left );
     }
 
-    if( (attr->mask < 1) || (attr->mask & 0x4) )
+    if( (attr->mask < 1) || (attr->mask & SPU_REV_DEPTHR) )
     {
         emulatedSpuDevice.write( 0x186 / 0x2, attr->depth.right );
+    }
+}
+
+
+
+void PsyqSpuSetReverbVoice( s32 on_off, u32 voice_bit )
+{
+    if( on_off == SPU_OFF )
+    {
+        emulatedSpuDevice.write( 0xcc, emulatedSpuDevice.read( 0xcc ) & ~(voice_bit & 0xffff) );
+        emulatedSpuDevice.write( 0xcd, emulatedSpuDevice.read( 0xcd ) & ~((voice_bit >> 0x10) & 0xff) );
+    }
+    else if( on_off == SPU_ON )
+    {
+        emulatedSpuDevice.write( 0xcc, emulatedSpuDevice.read( 0xcc ) | (voice_bit & 0xffff) );
+        emulatedSpuDevice.write( 0xcd, emulatedSpuDevice.read( 0xcd ) | ((voice_bit >> 0x10) & 0xff) );
     }
 }

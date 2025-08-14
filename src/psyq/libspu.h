@@ -80,3 +80,4 @@ void PsyqSpuSetVoiceVolumeAttr( s32 voiceNum, s16 volumeL, s16 volumeR, s16 volM
 
 void PsyqSpuSetKey( s32 on_off, u32 voice_bit );
 void PsyqSpuSetReverbDepth( SpuReverbAttr* attr );
+void PsyqSpuSetReverbVoice( s32 on_off, u32 voice_bit );

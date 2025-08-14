@@ -77,10 +77,13 @@ struct AkaoChannel
 
     u8 length_1;
     u8 length_2;
+    s16 length_stored;
+    s16 length_fixed;
 
     s32 volume;
     u32 vol_master;
     u32 pitch_base;
+    u16 octave;
 
     u16 instr_id;
     AkaoVoiceAttr attr;
@@ -91,6 +94,7 @@ struct AkaoConfig
     u32 active_mask;
     u32 on_mask;
     u32 off_mask;
+    u32 reverb_mask;
 
     u32 tempo;
     u32 tempo_update;
@@ -125,5 +129,6 @@ void system_akao_update_channel_params_to_spu( u32 voice_id, AkaoVoiceAttr& attr
 void system_akao_copy_music( u8* src, u32 size );
 void system_akao_instr_init( AkaoChannel* channel, u16 instr_id );
 void system_akao_music_channels_init();
+void system_akao_update_reverb_voices();
 
 void DumpSequenceData(u8* music);
