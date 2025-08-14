@@ -125,3 +125,5 @@ void system_akao_update_channel_params_to_spu( u32 voice_id, AkaoVoiceAttr& attr
 void system_akao_copy_music( u8* src, u32 size );
 void system_akao_instr_init( AkaoChannel* channel, u16 instr_id );
 void system_akao_music_channels_init();
+
+void DumpSequenceData(u8* music);

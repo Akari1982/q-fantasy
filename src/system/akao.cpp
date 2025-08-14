@@ -318,7 +318,7 @@ void system_akao_main_update()
 
 void system_akao_execute_sequence( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "system_akao_execute_sequence" );
+    //ofLog( OF_LOG_NOTICE, "system_akao_execute_sequence" );
 
     u8 opcode = 0;
     while( opcode != 0xa0 )
@@ -330,18 +330,18 @@ void system_akao_execute_sequence( AkaoChannel* channel, AkaoConfig* config, u32
 
         if( opcode < 0xa0 ) break;
 
-        ofLog( OF_LOG_NOTICE, "channel" +  ofToHex( channel->attr.voice_id ) + ": opcode " +  ofToHex( (int)opcode ) );
+        //ofLog( OF_LOG_NOTICE, "channel" +  ofToHex( channel->attr.voice_id ) + ": opcode " +  ofToHex( (int)opcode ) );
 
         akao_opcodes[opcode - 0xa0]( channel, config, mask );
     }
 
     if( opcode != 0xa0 )
     {
-        ofLog( OF_LOG_NOTICE, "channel" +  ofToHex( channel->attr.voice_id ) + ": note " +  ofToHex( (int)opcode ) );
+        //ofLog( OF_LOG_NOTICE, "channel" +  ofToHex( channel->attr.voice_id ) + ": note " +  ofToHex( (int)opcode ) );
 
         if( channel->length_1 == 0 )
         {
-            ofLog( OF_LOG_NOTICE, "opcode:0x" +  ofToHex( opcode ) + " note length:0x" +  ofToHex( opcode % 0xb ) );
+            //ofLog( OF_LOG_NOTICE, "opcode:0x" +  ofToHex( opcode ) + " note length:0x" +  ofToHex( opcode % 0xb ) );
 
             channel->length_1 = g_akao_length_table[opcode % 0xb] & 0x00ff;
             channel->length_2 = (g_akao_length_table[opcode % 0xb] & 0xff00) >> 0x8;
@@ -553,26 +553,13 @@ void system_akao_instr_init( AkaoChannel* channel, u16 instr_id )
     channel->attr.sr = g_akao_instrument[instr_id].sr;
     channel->attr.rr = g_akao_instrument[instr_id].rr;
     channel->attr.mask |= AKAO_UPDATE_SPU_BASE;
-
-    ofLog( OF_LOG_NOTICE, "instr_id:0x" +  ofToHex( instr_id ) );
-    ofLog( OF_LOG_NOTICE, "addr:0x" +  ofToHex( g_akao_instrument[instr_id].addr ) );
-    ofLog( OF_LOG_NOTICE, "loop_addr:0x" +  ofToHex( g_akao_instrument[instr_id].loop_addr ) );
-    ofLog( OF_LOG_NOTICE, "a_mode:0x" +  ofToHex( g_akao_instrument[instr_id].a_mode ) );
-    ofLog( OF_LOG_NOTICE, "s_mode:0x" +  ofToHex( g_akao_instrument[instr_id].s_mode ) );
-    ofLog( OF_LOG_NOTICE, "r_mode:0x" +  ofToHex( g_akao_instrument[instr_id].r_mode ) );
-    ofLog( OF_LOG_NOTICE, "ar:0x" +  ofToHex( g_akao_instrument[instr_id].ar ) );
-    ofLog( OF_LOG_NOTICE, "dr:0x" +  ofToHex( g_akao_instrument[instr_id].dr ) );
-    ofLog( OF_LOG_NOTICE, "sl:0x" +  ofToHex( g_akao_instrument[instr_id].sl ) );
-    ofLog( OF_LOG_NOTICE, "sr:0x" +  ofToHex( g_akao_instrument[instr_id].sr ) );
-    ofLog( OF_LOG_NOTICE, "rr:0x" +  ofToHex( g_akao_instrument[instr_id].rr ) );
-    ofLog( OF_LOG_NOTICE, "pitch0:0x" +  ofToHex( g_akao_instrument[instr_id].pitch[0] ) );
 }
 
 
 
 void system_akao_music_channels_init()
 {
-    u32 channels_mask = READ_LE_U32( g_akao_music + 0x0 ) & 0x00ffffff;
+    u32 channels_mask = READ_LE_U32( g_akao_music + 0x0 ) & 0x00ffffff & 1;
     u8* akao = g_akao_music + 0x4;
 
     g_channels_1_config.active_mask = channels_mask;
@@ -604,4 +591,113 @@ void system_akao_music_channels_init()
         channel += 1;
         channel_mask <<= 1;
     }
+}
+
+
+
+void DumpSequenceData( u8* music )
+{
+    std::ofstream oF;
+    oF.open( "dump_seq.txt", std::ios_base::binary | std::ios_base::out );
+    if ( !oF.is_open() )
+    {
+        return;
+    }
+
+    u16 offset_to_akao = 0;
+
+    oF << std::setfill( '0' );
+    oF << std::hex;
+    oF << "*** Frame ID: 0x" << std::setw( 4 ) << READ_LE_U16( music + 4 ) << std::endl;
+    oF << std::dec;
+    oF << "*** Frame Length: " << READ_LE_U16( music + 6 ) << " bytes" << std::endl;
+    oF << std::hex;
+    oF << "*** Reverb Mode: 0x" << std::setw( 4 ) << READ_LE_U16( music + 8 ) << std::endl;
+    oF << std::endl;
+
+    oF << std::hex;
+    oF << "*** Channels mask: " <<std:: setw( 8 ) << READ_LE_U32( music + 16 ) << std::endl << std::endl;
+
+    for ( int i = 0; i < 24; ++i )
+    {
+        if ( ( ( READ_LE_U32( music + 16 ) ) & ( 1 << i ) ) == 0 )
+        {
+            continue;
+        }
+
+        oF << std::dec;
+        oF << "*** Channel " << std::setw( 2 ) << ( int )i << " sequence: " << std::endl;
+
+        oF << std::hex;
+        bool work = true;
+
+        u32 j = 20 + offset_to_akao + 2 + READ_LE_U16( music + 20 + offset_to_akao );
+        offset_to_akao += 2;
+
+        while ( work )
+        {
+            u8 opcode = READ_LE_U8( music + j );
+            switch ( opcode )
+            {
+                case 0xa0:
+                    oF << std::setw( 2 ) << ( int )READ_LE_U8( music + j + 0 );
+                    oF << std::endl;
+                    work = false;
+                    break;
+                // no parameters
+                case 0xa6: case 0xa7: case 0xb3: case 0xb6: case 0xba: case 0xbe: case 0xc2: case 0xc3:
+                case 0xc4: case 0xc5: case 0xc6: case 0xc7: case 0xc8: case 0xca: case 0xcb: case 0xcc:
+                case 0xcd: case 0xd0: case 0xd1: case 0xd4: case 0xd5: case 0xd6: case 0xd7: case 0xdb:
+                case 0xe0: case 0xe1: case 0xe2: case 0xe3: case 0xe4: case 0xe5: case 0xe6: case 0xe7:
+                case 0xed: case 0xf3: case 0xf5: case 0xf9: case 0xfa: case 0xfb: case 0xfc: case 0xff:
+                    oF << std::setw( 2 ) << ( int )READ_LE_U8( music + j + 0 );
+                    oF << std::endl;
+                    ++j;
+                    break;
+                // one parameter
+                case 0xa1: case 0xa2: case 0xa3: case 0xa5: case 0xa8: case 0xaa: case 0xac: case 0xad:
+                case 0xae: case 0xaf: case 0xb1: case 0xb2: case 0xb5: case 0xb7: case 0xb9: case 0xbb:
+                case 0xbd: case 0xbf: case 0xc0: case 0xc1: case 0xc9: case 0xce: case 0xcf: case 0xd2:
+                case 0xd3: case 0xd8: case 0xd9: case 0xda: case 0xdc: case 0xf2: case 0xf6: case 0xf8:
+                    oF << std::setw( 2 ) << ( int )READ_LE_U8( music + j + 0 ) << ' ';
+                    oF << std::setw( 2 ) << ( int )READ_LE_U8( music + j + 1 );
+                    oF << std::endl;
+                    j += 2;
+                    break;
+                // two parameters
+                case 0xa4: case 0xa9: case 0xab: case 0xb0: case 0xbc: case 0xdd: case 0xde: case 0xdf:
+                case 0xe8: case 0xea: case 0xec: case 0xee: case 0xf4: case 0xf7: case 0xfd: case 0xfe:
+                    oF << std::setw( 2 ) << ( int )READ_LE_U8( music + j + 0 ) << ' ';
+                    oF << std::setw( 2 ) << ( int )READ_LE_U8( music + j + 1 ) << ' ';
+                    oF << std::setw( 2 ) << ( int )READ_LE_U8( music + j + 2 );
+                    oF << std::endl;
+                    j += 3;
+                    break;
+                // three parameters
+                case 0xb4: case 0xb8: case 0xe9: case 0xeb: case 0xef: case 0xf0: case 0xf1:
+                    oF << std::setw( 2 ) << ( int )READ_LE_U8( music + j + 0 ) << ' ';
+                    oF << std::setw( 2 ) << ( int )READ_LE_U8( music + j + 1 ) << ' ';
+                    oF << std::setw( 2 ) << ( int )READ_LE_U8( music + j + 2 ) << ' ';
+                    oF << std::setw( 2 ) << ( int )READ_LE_U8( music + j + 3 );
+                    oF << std::endl;
+                    j += 4;
+                    break;
+                default:
+                    oF << std::setw( 2 ) << ( int )READ_LE_U8( music + j + 0 );
+                    if ( READ_LE_U8( music + j + 1 ) < 0xa0)
+                    {
+                        oF << ' ';
+                    }
+                    else
+                    {
+                        oF << std::endl;
+                    }
+                    ++j;
+            }
+        }
+
+        oF << std::endl;
+    }
+
+    oF.close();
 }

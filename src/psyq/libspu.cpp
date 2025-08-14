@@ -5,25 +5,23 @@ SpuPlayer* spu_player;
 
 machine_config dummy;
 spu_device emulatedSpuDevice( dummy, "SPU", nullptr, 33800000 );
+std::mutex spuMutex;
 
 
 
 void SpuPlayer::setup()
 {
-    int bufferSize = 512;
-    sampleRate = 44100;
-    volume = 0.1f;
-    bNoise = false;
-
     soundStream.printDeviceList();
 
     ofSoundStreamSettings settings;
 
     settings.setOutListener( this );
-    settings.sampleRate = sampleRate;
-    settings.numOutputChannels = 2;
+
+    settings.setApi(ofSoundDevice::MS_DS);
+    settings.sampleRate = 44100;
+    settings.numOutputChannels = 1;
     settings.numInputChannels = 0;
-    settings.bufferSize = bufferSize;
+    settings.bufferSize = 512;
     soundStream.setup( settings );
 }
 
@@ -31,34 +29,22 @@ void SpuPlayer::setup()
 
 void SpuPlayer::audioOut( ofSoundBuffer & buffer )
 {
-    pan = 0.5f;
-    float leftScale = 1 - pan;
-    float rightScale = pan;
+    int16_t temp[44100][2];
 
-    if( bNoise == true )
+    int numSamples = std::min<int>( 44100, buffer.getNumFrames() );
+
+    spuMutex.lock();
+    emulatedSpuDevice.generate( temp, numSamples * 4 );
+    spuMutex.unlock();
+
+    //ofLog( OF_LOG_ERROR, "START" );
+    for( size_t i = 0; i < buffer.getNumFrames(); i++ )
     {
-        for( size_t i = 0; i < buffer.getNumFrames(); i++ )
-        {
-            lAudio[i] = buffer[i*buffer.getNumChannels() + 0] = ofRandom( 0, 1 ) * volume * leftScale;
-            rAudio[i] = buffer[i*buffer.getNumChannels() + 1] = ofRandom( 0, 1 ) * volume * rightScale;
-        }
+        buffer[i] = temp[i][0] / (float)0x7fff;
+        //buffer[i*buffer.getNumChannels() + 1] = temp[i][0] / (float)0x7fff;
+        //ofLog(OF_LOG_ERROR, "frame:0x" +  ofToHex( i ) + " val:0x" + ofToHex( temp[i][0] ) + " float:" + ofToString(temp[i][0] / (float)0x7fff ) );
     }
-    else
-    {
-        int16_t temp[44100][2];
-
-        int numSamples = std::min<int>( 44100, buffer.getNumFrames() );
-
-        //spuMutex.lock();
-        emulatedSpuDevice.generate( temp, numSamples * 4 );
-        //spuMutex.unlock();
-
-        for( size_t i = 0; i < buffer.getNumFrames(); i++ )
-        {
-            buffer[i*buffer.getNumChannels() + 0] = temp[i][0] / (float)0x7fff;
-            buffer[i*buffer.getNumChannels() + 1] = temp[i][1] / (float)0x7fff;
-        }
-    }
+    //ofLog(OF_LOG_ERROR, "END" );
 }
 
 
