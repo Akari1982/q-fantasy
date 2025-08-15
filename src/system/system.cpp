@@ -20,6 +20,8 @@ void system_main()
     system_init_dispenv_drawenv();
 
     field_main();
+
+    AkaoDeinit();
 }
 
 
@@ -64,8 +66,8 @@ void system_init_akao_engine()
     fread( effect_all_b, 1, 0xc800, effect_all );
     fclose( effect_all );
 
-    system_akao_init( instr_all_b, instr_dat_b );
-    system_akao_load_effect_file( effect_all_b );
+    AkaoInit( instr_all_b, instr_dat_b );
+    AkaoLoadEffect( effect_all_b );
 }
 
 

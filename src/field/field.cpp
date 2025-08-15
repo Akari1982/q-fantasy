@@ -98,11 +98,12 @@ field_main_loop()
         {
             temp[i] = field_dat[music_offset + 0x10 + i];
         }
-        system_akao_copy_music( temp, music_size );
-        system_akao_music_channels_init();
-        FILE* check = fopen( "check.dat", "wb" );
-        fwrite( temp, 1, music_size, check );
-        fclose( check );
+        AkaoCopyMusic( temp, music_size );
+        AkaoMusicChannelsInit();
+
+        //FILE* check = fopen( "check.dat", "wb" );
+        //fwrite( temp, 1, music_size, check );
+        //fclose( check );
     }
     else
     {
@@ -114,16 +115,11 @@ field_main_loop()
         u8 temp[0x8000];
         for( int i = 0; i < music_size; ++i )
         {
-            temp[i] = music[i];
+            temp[i] = music[0x10 + i];
         }
 
-        DumpSequenceData( temp );
-
-        system_akao_copy_music( temp + 0x10, music_size );
-        system_akao_music_channels_init();
-        FILE* check = fopen( "check.dat", "wb" );
-        fwrite( temp, 1, music_size, check );
-        fclose( check );
+        AkaoCopyMusic( temp, music_size );
+        AkaoMusicChannelsInit();
     }
 
 
@@ -160,8 +156,6 @@ field_main_loop()
 
     while( true )
     {
-        system_akao_main();
-
         PsyqClearOTagR( &field_rain_prim[ 0 ].poly[ 0 ], 0 );
 
         field_rain_update();

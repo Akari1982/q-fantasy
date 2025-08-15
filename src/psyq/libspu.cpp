@@ -19,7 +19,7 @@ void SpuPlayer::setup()
 
     settings.setApi(ofSoundDevice::MS_DS);
     settings.sampleRate = 44100;
-    settings.numOutputChannels = 1;
+    settings.numOutputChannels = 2;
     settings.numInputChannels = 0;
     settings.bufferSize = 512;
     soundStream.setup( settings );
@@ -37,14 +37,11 @@ void SpuPlayer::audioOut( ofSoundBuffer & buffer )
     emulatedSpuDevice.generate( temp, numSamples * 4 );
     spuMutex.unlock();
 
-    //ofLog( OF_LOG_ERROR, "START" );
     for( size_t i = 0; i < buffer.getNumFrames(); i++ )
     {
-        buffer[i] = temp[i][0] / (float)0x7fff;
-        //buffer[i*buffer.getNumChannels() + 1] = temp[i][0] / (float)0x7fff;
-        //ofLog(OF_LOG_ERROR, "frame:0x" +  ofToHex( i ) + " val:0x" + ofToHex( temp[i][0] ) + " float:" + ofToString(temp[i][0] / (float)0x7fff ) );
+        buffer[i*buffer.getNumChannels() + 0] = temp[i][0] / (float)0x7fff;
+        buffer[i*buffer.getNumChannels() + 1] = temp[i][1] / (float)0x7fff;
     }
-    //ofLog(OF_LOG_ERROR, "END" );
 }
 
 
@@ -61,18 +58,18 @@ void PsyqSpuInit()
 
 void PsyqSpuSetTransferStartAddr( u32 addr )
 {
-    //spuMutex.lock();
+    spuMutex.lock();
     emulatedSpuDevice.write( 0x1a6 / 0x2, addr >> 0x3 );
-    //spuMutex.unlock();
+    spuMutex.unlock();
 }
 
 
 
 void PsyqSpuWrite( u8* addr, u32 size )
 {
-    //spuMutex.lock();
+    spuMutex.lock();
     emulatedSpuDevice.dma_write( (u32*)addr, 0, size / 4 );
-    //spuMutex.unlock();
+    spuMutex.unlock();
 }
 
 

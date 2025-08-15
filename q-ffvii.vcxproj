@@ -12,7 +12,7 @@
   </ItemGroup>
   <PropertyGroup Condition="'$(WindowsTargetPlatformVersion)'==''">
     <LatestTargetPlatformVersion>$([Microsoft.Build.Utilities.ToolLocationHelper]::GetLatestSDKTargetPlatformVersion('Windows', '10.0'))</LatestTargetPlatformVersion>
-    <WindowsTargetPlatformVersion Condition="'$(WindowsTargetPlatformVersion)' == ''">10.0.19041.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion Condition="'$(WindowsTargetPlatformVersion)' == ''">10.0</WindowsTargetPlatformVersion>
     <TargetPlatformVersion>$(WindowsTargetPlatformVersion)</TargetPlatformVersion>
   </PropertyGroup>
   <PropertyGroup Label="Globals">
@@ -109,6 +109,7 @@
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\application.cpp" />
     <ClCompile Include="src\psyq\filesystem.cpp" />
+    <ClCompile Include="src\psyq\libapi.cpp" />
     <ClCompile Include="src\psyq\libgpu.cpp" />
     <ClCompile Include="src\psyq\libgte.cpp" />
     <ClCompile Include="src\psyq\libspu.cpp" />
@@ -143,6 +144,7 @@
     <ClInclude Include="src\field\field.h" />
     <ClInclude Include="src\game.h" />
     <ClInclude Include="src\psyq\filesystem.h" />
+    <ClInclude Include="src\psyq\libapi.h" />
     <ClInclude Include="src\psyq\libgpu.h" />
     <ClInclude Include="src\psyq\libgte.h" />
     <ClInclude Include="src\psyq\libspu.h" />

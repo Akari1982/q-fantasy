@@ -1,25 +1,25 @@
 ﻿typedef void (*AkaoCommand) ( AkaoCommandData* data );
 
-void system_akao_command_null( AkaoCommandData* data )
+void AkaoCommandNull( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_10( AkaoCommandData* data )
+void AkaoCommand10( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_14( AkaoCommandData* data )
+void AkaoCommand14( AkaoCommandData* data )
 {
 }
 
 
 
 // field_event_opcode_f4_musvm
-void system_akao_command_15( AkaoCommandData* data )
+void AkaoCommand15( AkaoCommandData* data )
 {
 }
 
@@ -27,439 +27,439 @@ void system_akao_command_15( AkaoCommandData* data )
 
 // called when field starts from battle
 // continue music?
-void system_akao_command_18( AkaoCommandData* data )
+void AkaoCommand18( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_19( AkaoCommandData* data )
+void AkaoCommand19( AkaoCommandData* data )
 {
 }
 
 
 
 // field_event_opcode_f1_se
-void system_akao_command_20( AkaoCommandData* data )
+void AkaoCommand20( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_21( AkaoCommandData* data )
+void AkaoCommand21( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_22( AkaoCommandData* data )
+void AkaoCommand22( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_23( AkaoCommandData* data )
+void AkaoCommand23( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_29( AkaoCommandData* data )
+void AkaoCommand29( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_2a( AkaoCommandData* data )
+void AkaoCommand2a( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_2b( AkaoCommandData* data )
+void AkaoCommand2b( AkaoCommandData* data )
 {
 }
 
 
 
 // sound from menu
-void system_akao_command_30( AkaoCommandData* data )
+void AkaoCommand30( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_34( AkaoCommandData* data )
+void AkaoCommand34( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_80( AkaoCommandData* data )
+void AkaoCommand80( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_81( AkaoCommandData* data )
+void AkaoCommand81( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_82( AkaoCommandData* data )
+void AkaoCommand82( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_90( AkaoCommandData* data )
+void AkaoCommand90( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_92( AkaoCommandData* data )
+void AkaoCommand92( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_9a( AkaoCommandData* data )
+void AkaoCommand9a( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_9b( AkaoCommandData* data )
+void AkaoCommand9b( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_9c( AkaoCommandData* data )
+void AkaoCommand9c( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_9d( AkaoCommandData* data )
+void AkaoCommand9d( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_a0( AkaoCommandData* data )
+void AkaoCommanda0( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_a1( AkaoCommandData* data )
+void AkaoCommanda1( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_a2( AkaoCommandData* data )
+void AkaoCommanda2( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_a3( AkaoCommandData* data )
+void AkaoCommanda3( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_a4( AkaoCommandData* data )
+void AkaoCommanda4( AkaoCommandData* data )
 {
 }
 
 
-void system_akao_command_a5( AkaoCommandData* data )
-{
-}
-
-
-
-void system_akao_command_a6( AkaoCommandData* data )
+void AkaoCommanda5( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_a7( AkaoCommandData* data )
+void AkaoCommanda6( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_a8( AkaoCommandData* data )
+void AkaoCommanda7( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_a9( AkaoCommandData* data )
+void AkaoCommanda8( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_aa( AkaoCommandData* data )
+void AkaoCommanda9( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_ab( AkaoCommandData* data )
+void AkaoCommandaa( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_ac( AkaoCommandData* data )
+void AkaoCommandab( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_ad( AkaoCommandData* data )
+void AkaoCommandac( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_ae( AkaoCommandData* data )
+void AkaoCommandad( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_af( AkaoCommandData* data )
+void AkaoCommandae( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_b0( AkaoCommandData* data )
+void AkaoCommandaf( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_b1( AkaoCommandData* data )
+void AkaoCommandb0( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_b2( AkaoCommandData* data )
+void AkaoCommandb1( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_b3( AkaoCommandData* data )
+void AkaoCommandb2( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_b4( AkaoCommandData* data )
+void AkaoCommandb3( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_b5( AkaoCommandData* data )
+void AkaoCommandb4( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_b6( AkaoCommandData* data )
+void AkaoCommandb5( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_b7( AkaoCommandData* data )
+void AkaoCommandb6( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_b8( AkaoCommandData* data )
+void AkaoCommandb7( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_b9( AkaoCommandData* data )
+void AkaoCommandb8( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_ba( AkaoCommandData* data )
+void AkaoCommandb9( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_bb( AkaoCommandData* data )
+void AkaoCommandba( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_bc( AkaoCommandData* data )
+void AkaoCommandbb( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_bd( AkaoCommandData* data )
+void AkaoCommandbc( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_c0( AkaoCommandData* data )
+void AkaoCommandbd( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_c1( AkaoCommandData* data )
+void AkaoCommandc0( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_c2( AkaoCommandData* data )
+void AkaoCommandc1( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_c8( AkaoCommandData* data )
+void AkaoCommandc2( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_c9( AkaoCommandData* data )
+void AkaoCommandc8( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_ca( AkaoCommandData* data )
+void AkaoCommandc9( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_d0( AkaoCommandData* data )
+void AkaoCommandca( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_d1( AkaoCommandData* data )
+void AkaoCommandd0( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_d2( AkaoCommandData* data )
+void AkaoCommandd1( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_d4( AkaoCommandData* data )
+void AkaoCommandd2( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_d5( AkaoCommandData* data )
+void AkaoCommandd4( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_d6( AkaoCommandData* data )
+void AkaoCommandd5( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_e0( AkaoCommandData* data )
+void AkaoCommandd6( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_e4( AkaoCommandData* data )
+void AkaoCommande0( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_f0( AkaoCommandData* data )
+void AkaoCommande4( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_f1( AkaoCommandData* data )
+void AkaoCommandf0( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_f2( AkaoCommandData* data )
+void AkaoCommandf1( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_f3( AkaoCommandData* data )
+void AkaoCommandf2( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_f4( AkaoCommandData* data )
+void AkaoCommandf3( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_f5( AkaoCommandData* data )
+void AkaoCommandf4( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_f8( AkaoCommandData* data )
+void AkaoCommandf5( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_f9( AkaoCommandData* data )
+void AkaoCommandf8( AkaoCommandData* data )
 {
 }
 
 
 
-void system_akao_command_fa( AkaoCommandData* data )
+void AkaoCommandf9( AkaoCommandData* data )
+{
+}
+
+
+
+void AkaoCommandfa( AkaoCommandData* data )
 {
 }
