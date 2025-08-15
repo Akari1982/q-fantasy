@@ -1,5 +1,5 @@
 ================================================================================
-Q-FFVII v0.01 (first steps) | 2025-01-??
+Q-FFVII v0.01 (first steps) | 2026-12-??
 --------------------------------------------------------------------------------
 
 To Do
@@ -11,6 +11,11 @@ To Do
 - Add line transparency (for rain).
 - Finalize screen rendering borders.
 - Add akao support.
+- Add imgui akao viewer.
+
+2025-08-15
+----------
+- First AKAO sequence works. Implement base flow.
 
 2025-08-08
 ----------

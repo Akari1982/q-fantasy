@@ -35,10 +35,32 @@ void Application::draw()
     //g_GameVram.draw( 0, 0, ofGetWidth(), ofGetHeight() );
     g_GameVram.draw( 0, 0, 640, 480 );
 
-    // Show the ImGui test window. Most of the sample code is in ImGui::ShowDemoWindow()
-    //ImGui::SetNextWindowPos( ofVec2f( ofGetWindowPositionX(), ofGetWindowPositionY()), ImGuiCond_Once);
-    //ImGui::SetNextWindowSize( ofVec2f(ofGetWidth(), ofGetHeight()), ImGuiCond_Once);
-    //ImGui::ShowDemoWindow();
+    std::string popup_to_open = "";
+    if( ImGui::BeginMainMenuBar() )
+    {
+        if( ImGui::BeginMenu( "AKAO" ) )
+        {
+            if( ImGui::BeginListBox( "Akao list" ) )
+            {
+                for( int i = 0; i < 0x10; ++i )
+                {
+                    bool is_selected = false;
+                    std::string name = "blah_";
+                    name.append( ofToHex( i ) );
+
+                    if( ImGui::Selectable( name.c_str(), &is_selected))
+                    {
+                    }
+                }
+
+                ImGui::EndListBox();
+            }
+
+            ImGui::EndMenu();
+        }
+
+        ImGui::EndMainMenuBar();
+    }
 
     g_GameVram.begin();
     ofClear( 100, 100, 100, 255 );

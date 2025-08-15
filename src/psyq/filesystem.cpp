@@ -2,66 +2,9 @@
 
 
 
-void ReadFileLZS( const std::string& name, std::vector<u8>& output )
-{
-    std::vector<u8> temp_dat;
-    ReadFile( name, temp_dat );
-    LzsExtract( temp_dat, output );
-
-    //WriteFile( name + "_orig", temp_dat );
-    //WriteFile( name + "_extr", output );
-}
-
-
-
-void ReadFile( const std::string& name, std::vector<u8>& output )
-{
-    printf( "Load file: %s\n", name.c_str() );
-
-    FILE* file = fopen( name.c_str(), "rb" );
-
-    if( file == NULL )
-    {
-        printf( "Cant read file: %s\n", name.c_str() );
-        return;
-    }
-
-    fseek( file, 0, SEEK_END );
-    u32 size = ftell( file );
-    output.resize( size );
-
-    fseek( file, 0, SEEK_SET );
-    fread( &output[ 0 ], 1, size, file );
-    fclose( file );
-}
-
-
-
-void WriteFile( const std::string& name, std::vector<u8>& input )
-{
-    printf( "Write file: %s\n", name.c_str() );
-
-    FILE* file = fopen( name.c_str(), "ab" );
-
-    if( file == NULL )
-    {
-        printf( "Cant write file: %s\n", name.c_str() );
-        return;
-    }
-
-    fwrite( &input[ 0 ], 1, input.size(), file );
-    fclose( file );
-}
-
-
-
 void LzsExtract( std::vector<u8>& input, std::vector<u8>& output )
 {
-    printf( "Input: %02x %02x %02x %02x\n", input[ 0 ], input[ 1 ], input[ 2 ], input[ 3 ] );
-
     u32 input_length = READ_LE_U32( &input[ 0 ] );
-
-    printf( "Extract file size: 0x%04x\n", input_length );
 
     u32 extract_size = input_length + 0x100;
     output.resize( extract_size );
@@ -125,4 +68,57 @@ void LzsExtract( std::vector<u8>& input, std::vector<u8>& output )
     }
 
     output.resize( output_offset );
+}
+
+
+
+void FileLZS( const std::string& name, std::vector<u8>& output )
+{
+    std::vector<u8> temp_dat;
+    FileRead( name, temp_dat );
+    LzsExtract( temp_dat, output );
+
+    //WriteFile( name + "_orig", temp_dat );
+    //WriteFile( name + "_extr", output );
+}
+
+
+
+void FileRead( const std::string& name, std::vector<u8>& output )
+{
+    printf( "Load file: %s\n", name.c_str() );
+
+    FILE* file = fopen( name.c_str(), "rb" );
+
+    if( file == NULL )
+    {
+        printf( "Cant read file: %s\n", name.c_str() );
+        return;
+    }
+
+    fseek( file, 0, SEEK_END );
+    u32 size = ftell( file );
+    output.resize( size );
+
+    fseek( file, 0, SEEK_SET );
+    fread( &output[ 0 ], 1, size, file );
+    fclose( file );
+}
+
+
+
+void FileWrite( const std::string& name, std::vector<u8>& input )
+{
+    printf( "Write file: %s\n", name.c_str() );
+
+    FILE* file = fopen( name.c_str(), "ab" );
+
+    if( file == NULL )
+    {
+        printf( "Cant write file: %s\n", name.c_str() );
+        return;
+    }
+
+    fwrite( &input[ 0 ], 1, input.size(), file );
+    fclose( file );
 }

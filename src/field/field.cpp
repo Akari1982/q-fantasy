@@ -39,7 +39,7 @@ std::vector< sWalkMeshAccess > field_walkmesh_access;
 std::array< sFieldRain, 0x40 > field_rain;
 std::array< sFieldRainPrim, 2 > field_rain_prim;
 
-std::vector< u8> field_random =
+std::vector<u8> field_random =
 {
     0xb1, 0xca, 0xee, 0x6c, 0x5a, 0x71, 0x2e, 0x55, 0xd6, 0x00, 0xcc, 0x99, 0x90, 0x6b, 0x7d, 0xeb,
     0x4f, 0xa0, 0x07, 0xac, 0xdf, 0x8a, 0x56, 0x9e, 0xf1, 0x9a, 0x63, 0x75, 0x11, 0x91, 0xa3, 0xb8,
@@ -87,38 +87,25 @@ field_main_loop()
     //V0 = w[V0];
     //[80114458] = w(A0 + hu[V0] * 18); // walkmesh triangle access block
 
-    if( 0 )
+    if( 1 )
     {
         u32 events_addr = READ_LE_U32( &field_dat[0x0] ) - field_dat_base_addr;
         u8 number_of_entity = READ_LE_U8( &field_dat[events_addr + 0x2] );
-        u32 music_offset = events_addr + READ_LE_U32( &field_dat[events_addr + 0x20 + number_of_entity * 0x8 + 1 * 0x4] );
+        u32 music_offset = events_addr + READ_LE_U32( &field_dat[events_addr + 0x20 + number_of_entity * 0x8 + 0 * 0x4] );
         u16 music_size = READ_LE_U16( &field_dat[music_offset + 0x6] );
-        u8 temp[0x8000];
-        for( int i = 0; i < music_size; ++i )
-        {
-            temp[i] = field_dat[music_offset + 0x10 + i];
-        }
-        AkaoCopyMusic( temp, music_size );
-        AkaoMusicChannelsInit();
 
-        //FILE* check = fopen( "check.dat", "wb" );
-        //fwrite( temp, 1, music_size, check );
-        //fclose( check );
+        AkaoCopyMusic( &field_dat[music_offset + 0x10], music_size );
+        //AkaoMusicChannelsInit();
     }
     else
     {
         std::vector<u8> music;
-        ReadFile( "Aerith's_Theme.snd", music );
+        FileRead( "Aerith's_Theme.snd", music );
         //ReadFile( "Lurking_In_The_Darkness.snd", music );
 
         u16 music_size = READ_LE_U16( &music[0x6] );
-        u8 temp[0x8000];
-        for( int i = 0; i < music_size; ++i )
-        {
-            temp[i] = music[0x10 + i];
-        }
 
-        AkaoCopyMusic( temp, music_size );
+        AkaoCopyMusic( &music[0x10], music_size );
         AkaoMusicChannelsInit();
     }
 
@@ -260,7 +247,7 @@ void field_update_drawenv()
 
 void field_load_mim_dat_files()
 {
-    ReadFileLZS( "data/FIELD/MD1STIN.DAT", field_dat );
+    FileLZS( "data/FIELD/MD1STIN.DAT", field_dat );
 }
 
 

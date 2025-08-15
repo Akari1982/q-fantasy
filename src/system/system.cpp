@@ -1,6 +1,7 @@
 #include "akao.h"
 #include "system.h"
 #include "../field/field.h"
+#include "../psyq/filesystem.h"
 #include "../psyq/libgte.h"
 #include "../psyq/libspu.h"
 
@@ -36,38 +37,17 @@ void system_init_base()
 
 void system_init_akao_engine()
 {
-    FILE* instr_all = fopen( "data/SOUND/INSTR.ALL", "rb" );
-    if( instr_all == NULL )
-    {
-        ofLog( OF_LOG_ERROR, "File SOUND/INSTR.ALL not found." );
-    }
-    u8 instr_all_b[0x75fa0];
-    fseek( instr_all, 0, SEEK_SET );
-    fread( instr_all_b, 1, 0x75fa0, instr_all );
-    fclose( instr_all );
+    std::vector<u8> instr_all;
+    FileRead( "data/SOUND/INSTR.ALL", instr_all );
 
-    FILE* instr_dat = fopen( "data/SOUND/INSTR.DAT", "rb" );
-    if( instr_dat == NULL )
-    {
-        ofLog( OF_LOG_ERROR, "File SOUND/INSTR.DAT not found." );
-    }
-    u8 instr_dat_b[0x2000];
-    fseek( instr_dat, 0, SEEK_SET );
-    fread( instr_dat_b, 1, 0x2000, instr_dat );
-    fclose( instr_dat );
+    std::vector<u8> instr_dat;
+    FileRead( "data/SOUND/INSTR.DAT", instr_dat );
 
-    FILE* effect_all = fopen( "data/SOUND/EFFECT.ALL", "rb" );
-    if( effect_all == NULL )
-    {
-        ofLog( OF_LOG_ERROR, "File SOUND/EFFECT.ALL not found." );
-    }
-    u8 effect_all_b[0xc800];
-    fseek( effect_all, 0, SEEK_SET );
-    fread( effect_all_b, 1, 0xc800, effect_all );
-    fclose( effect_all );
+    std::vector<u8> effect_all;
+    FileRead( "data/SOUND/EFFECT.ALL", effect_all );
 
-    AkaoInit( instr_all_b, instr_dat_b );
-    AkaoLoadEffect( effect_all_b );
+    AkaoInit( &instr_all[0], &instr_dat[0] );
+    AkaoLoadEffect( &effect_all[0] );
 }
 
 
