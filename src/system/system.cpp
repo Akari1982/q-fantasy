@@ -22,7 +22,8 @@ void system_main()
 
     field_main();
 
-    AkaoDeinit();
+    AkaoQuit();
+    PsyqSpuQuit();
 }
 
 

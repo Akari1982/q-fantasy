@@ -199,7 +199,7 @@ struct AkaoCommandData
 
 
 void AkaoInit( u8* instr_all, u8* instr_dat );
-void AkaoDeinit();
+void AkaoQuit();
 void AkaoLoadEffect( u8* effect_all );
 void AkaoLoadInstr( u8* instr_all, u8* instr_dat );
 void AkaoInitData();

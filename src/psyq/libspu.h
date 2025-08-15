@@ -54,6 +54,7 @@ class SpuPlayer : public ofBaseApp
 {
 public:
     void setup();
+    void quit();
     void audioOut( ofSoundBuffer& buffer );
 
     ofSoundStream soundStream;
@@ -62,6 +63,7 @@ public:
 
 
 void PsyqSpuInit();
+void PsyqSpuQuit();
 
 void PsyqSpuSetTransferStartAddr( u32 addr );
 void PsyqSpuWrite( u8* addr, u32 size );

@@ -3,6 +3,7 @@
 #include <array>
 #include <assert.h>
 #include <thread>
+#include <mutex>
 
 
 
@@ -37,34 +38,39 @@ enum event_flag
     EVENT_FLAG_PENDING  = 0x4000,
 };
 
-struct sEventState {
+struct sEventState
+{
     u32 m_class = 0;
     u32 m_flags = EVENT_FLAG_FREE;
     u32 m_spec = 0;
-    u32 m_mode = 0;;
+    u32 m_mode = 0;
     eventFunc m_function = nullptr;
 };
 
-std::vector<sEventState> g_Events(10, sEventState());
+std::vector<sEventState> g_Events( 10 );
+std::mutex g_EventMutex;
 
 
 
 sEventState* getEventForDesc( u32 desc )
 {
-    for( int i = 0; i < g_Events.size(); ++i )
+    std::lock_guard<std::mutex> lock( g_EventMutex );
+
+    for( auto& e : g_Events )
     {
-        if( g_Events[i].m_class == desc )
+        if( e.m_class == desc )
         {
-            return &g_Events[i];
+            return &e;
         }
     }
-
     return nullptr;
 }
 
 int getFreeEvCBSlot()
 {
-    for( int i = 0; i < g_Events.size(); ++i )
+    std::lock_guard<std::mutex> lock( g_EventMutex );
+
+    for( int i = 0; i < (int)g_Events.size(); ++i )
     {
         if( g_Events[i].m_flags == EVENT_FLAG_FREE )
         {
@@ -75,10 +81,12 @@ int getFreeEvCBSlot()
     return -1;
 }
 
-u32 PsyqOpenEvent( u32 desc, u32 spec, u32 mode, eventFunc func )
+s32 PsyqOpenEvent( u32 desc, u32 spec, u32 mode, eventFunc func )
 {
     int eventSlot = getFreeEvCBSlot();
     if( eventSlot == -1 ) return -1;
+
+    std::lock_guard<std::mutex> lock( g_EventMutex );
 
     sEventState* pEventState = &g_Events[eventSlot];
     pEventState->m_class = desc;
@@ -91,22 +99,25 @@ u32 PsyqOpenEvent( u32 desc, u32 spec, u32 mode, eventFunc func )
 
 
 
-u32 PsyqCloseEvent( u32 event )
+s32 PsyqCloseEvent( u32 event )
 {
     if( (event & 0xffff0000) != 0xf1000000 ) return 0;
+
+    std::lock_guard<std::mutex> lock( g_EventMutex );
 
     sEventState* pEventState = &g_Events[event & 0xffff];
     pEventState->m_flags = EVENT_FLAG_FREE;
     return 1;
 }
 
-u32 PsyqEnableEvent(u32 event)
+s32 PsyqEnableEvent(u32 event)
 {
     sEventState* pEventState = &g_Events[event & 0xffff];
-    if( pEventState->m_flags )
+    if( pEventState->m_flags != EVENT_FLAG_FREE )
     {
-        pEventState->m_flags = EVENT_FLAG_FREE;
+        pEventState->m_flags = EVENT_FLAG_ENABLED;
     }
+
     return 1;
 }
 
@@ -118,7 +129,8 @@ struct TMR_DOTCLOCK {
 
 std::array<TMR_DOTCLOCK, 3> Counters;
 std::array<std::thread, 3> CounterThreads;
- 
+std::array<bool, 3> CounterRunning;
+
 u32 COUNTER_OBJ_74( u32 param_1, u32 param_2, u32 param_3 )
 {
     u16 uVar1;
@@ -133,7 +145,7 @@ u32 COUNTER_OBJ_74( u32 param_1, u32 param_2, u32 param_3 )
 }
 
 
-u32 PsyqSetRCnt( u32 spec, u16 target, u32 mode )
+s32 PsyqSetRCnt( u32 spec, u16 target, u32 mode )
 {
     u32 counterIndex = spec & 0xffff;
     if( counterIndex > 2 ) return 0;
@@ -168,14 +180,15 @@ u32 PsyqSetRCnt( u32 spec, u16 target, u32 mode )
 
 void rootCounterThread( u32 spec )
 {
-    while( true )
+    u32 counterIndex = spec & 0xffff;
+    while( CounterRunning[counterIndex] )
     {
         sEventState* pEventState = getEventForDesc( spec );
-        assert( pEventState );
 
-        pEventState->m_function();
-
-        u32 counterIndex = spec & 0xffff;
+        if( pEventState && pEventState->m_function )
+        {
+            pEventState->m_function();
+        }
 
         int baseFreq = 33800000;
         int baseFreq8 = baseFreq / 8;
@@ -186,11 +199,27 @@ void rootCounterThread( u32 spec )
     }
 }
 
-u32 PsyqStartRCnt( u32 spec )
+s32 PsyqStartRCnt( u32 spec )
 {
     u32 counterIndex = spec & 0xffff;
     if( counterIndex > 2 ) return 0;
 
+    CounterRunning[counterIndex] = true;
     CounterThreads[counterIndex] = std::thread( rootCounterThread, spec );
+    return 1;
+}
+
+
+
+s32 PsyqStopRCnt( u32 spec )
+{
+    u32 counterIndex = spec & 0xffff;
+    if( counterIndex > 2 ) return 0;
+
+    CounterRunning[counterIndex] = false;
+    if( CounterThreads[counterIndex].joinable() )
+    {
+        CounterThreads[counterIndex].join();
+    }
     return 1;
 }

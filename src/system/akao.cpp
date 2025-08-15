@@ -5,6 +5,8 @@
 #include "akao_opcodes.h"
 #include "akao_commands.h"
 
+
+
 u32 g_akao_sound_event;
 // u32 g_akao_control_flags;               // 0x80062ff8
 // u32 g_akao_effects_all;                 // 0x80062f74
@@ -193,9 +195,9 @@ void AkaoInit( u8* instr_all, u8* instr_dat )
 
 
 
-void AkaoDeinit()
+void AkaoQuit()
 {
-//    while( system_psyq_stop_r_cnt(  ) == 0 ) {}
+    while( PsyqStopRCnt( RCntCNT2 ) == 0 ) {}
 //    system_bios_undeliver_event( RCntCNT2, EvSpINT );
 //    while( system_bios_disable_event( g_akao_sound_event ) == 0 ) {}
 

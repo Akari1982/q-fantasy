@@ -3,16 +3,14 @@
 
 
 
-void
-GameRun()
+void GameRun()
 {
     system_main();
 }
 
 
 
-void
-GameRender()
+void GameRender()
 {
     if( g_AppWindow->getWindowShouldClose() ) g_AppRunning = false;
 

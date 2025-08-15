@@ -1,5 +1,7 @@
 #include "application.h"
 
+#include <filesystem>
+
 
 
 ofFbo g_GameVram;
@@ -42,14 +44,25 @@ void Application::draw()
         {
             if( ImGui::BeginListBox( "Akao list" ) )
             {
-                for( int i = 0; i < 0x10; ++i )
-                {
-                    bool is_selected = false;
-                    std::string name = "blah_";
-                    name.append( ofToHex( i ) );
+                std::string path = "./data/FIELD";
 
-                    if( ImGui::Selectable( name.c_str(), &is_selected))
+                for( const auto& entry : std::filesystem::directory_iterator( path ) )
+                {
+                    if( entry.is_regular_file() )
                     {
+                        auto ext = entry.path().extension().string();
+
+                        // Приведение к верхнему регистру для нечувствительности к регистру
+                        for( auto& c : ext ) c = std::toupper( static_cast<unsigned char>( c ) );
+
+                        if( ext == ".DAT" )
+                        {
+                            bool is_selected = false;
+
+                            if( ImGui::Selectable( entry.path().filename().string().c_str(), &is_selected))
+                            {
+                            }
+                        }
                     }
                 }
 

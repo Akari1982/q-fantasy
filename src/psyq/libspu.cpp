@@ -27,6 +27,14 @@ void SpuPlayer::setup()
 
 
 
+void SpuPlayer::quit()
+{
+    soundStream.stop();
+    soundStream.close();
+}
+
+
+
 void SpuPlayer::audioOut( ofSoundBuffer & buffer )
 {
     int16_t temp[44100][2];
@@ -54,6 +62,17 @@ void PsyqSpuInit()
     spu_player = new SpuPlayer();
     spu_player->setup();
 }
+
+
+
+void PsyqSpuQuit()
+{
+    spu_player->quit();
+    delete spu_player;
+
+    emulatedSpuDevice.device_stop();
+}
+
 
 
 void PsyqSpuSetTransferStartAddr( u32 addr )

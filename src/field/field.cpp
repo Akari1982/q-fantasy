@@ -87,7 +87,7 @@ field_main_loop()
     //V0 = w[V0];
     //[80114458] = w(A0 + hu[V0] * 18); // walkmesh triangle access block
 
-    if( 1 )
+    if( 0 )
     {
         u32 events_addr = READ_LE_U32( &field_dat[0x0] ) - field_dat_base_addr;
         u8 number_of_entity = READ_LE_U8( &field_dat[events_addr + 0x2] );
@@ -95,7 +95,7 @@ field_main_loop()
         u16 music_size = READ_LE_U16( &field_dat[music_offset + 0x6] );
 
         AkaoCopyMusic( &field_dat[music_offset + 0x10], music_size );
-        //AkaoMusicChannelsInit();
+        AkaoMusicChannelsInit();
     }
     else
     {
