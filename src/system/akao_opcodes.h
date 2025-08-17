@@ -1159,20 +1159,15 @@ void AkaoOpcode_ec_drum_mode_on( AkaoChannel* channel, AkaoConfig* config, u32 m
     u8* akao = channel->seq;
     channel->seq = akao + 0x2;
 
-    /*
     channel->update_flags |= AKAO_UPDATE_DRUM_MODE;
-
-    channel->drum_offset = akao + 0x2 + h[akao];
-    */
+    channel->drum_offset = akao + 0x2 + READ_LE_S16( akao );
 }
 
 
 
 void AkaoOpcode_ed_drum_mode_off( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    /*
     channel->update_flags &= ~AKAO_UPDATE_DRUM_MODE;
-    */
 }
 
 

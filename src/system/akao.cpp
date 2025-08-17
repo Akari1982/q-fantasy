@@ -665,7 +665,7 @@ void AkaoMusicChannelsInit()
 
             AkaoInstrInit( channel, 0x14 );
 
-//            channel->drum_offset = 0x80083580;
+            channel->drum_offset = g_akao_music;
 //            channel->pitch_slide = 0;
 //            channel->update_flags = 0;
             channel->volume = 0x3fff0000;
@@ -747,7 +747,7 @@ void AkaoExecuteSequence( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 
         if( opcode < 0xa0 ) break;
 
-        //ofLog( OF_LOG_NOTICE, "channel" +  ofToHex( channel->attr.voice_id ) + ": opcode " +  ofToHex( (int)opcode ) );
+        ofLog( OF_LOG_NOTICE, "channel" +  ofToHex( channel->attr.voice_id ) + ": opcode " +  ofToHex( (int)opcode ) );
 
         akao_opcodes[opcode - 0xa0]( channel, config, mask );
     }
@@ -764,8 +764,9 @@ void AkaoExecuteSequence( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 
         if( channel->length_1 == 0 )
         {
-            channel->length_1 = g_akao_length_table[opcode % 0xb] & 0x00ff;
-            channel->length_2 = (g_akao_length_table[opcode % 0xb] & 0xff00) >> 0x8;
+            u8 length_id = opcode % 0xb;
+            channel->length_1 = g_akao_length_table[length_id] & 0x00ff;
+            channel->length_2 = (g_akao_length_table[length_id] & 0xff00) >> 0x8;
         }
 
 //        if( ((next_note - 0x84) >= 0xb) && (channel->sfx_mask & (AKAO_SFX_FULL_LENGTH | AKAO_SFX_LEGATO)) == 0) )
@@ -784,78 +785,77 @@ void AkaoExecuteSequence( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 //        }
 /*else*/if( opcode < 0x84 )
         {
-//            if( channel->update_flags & AKAO_UPDATE_DRUM_MODE )
-//            {
+            u32 pitch_base = 0;
+            u8 semitone = opcode / 0xb;
+
+            if( channel->update_flags & AKAO_UPDATE_DRUM_MODE )
+            {
 //                if( channel->type == AKAO_MUSIC )
 //                {
-//                    config->on_mask |= mask;
+                    config->on_mask |= mask;
 //                }
 //                else
 //                {
 //                    g_channels_3_on_mask |= mask;
 //                }
 //
-//                S2 = opcode / 0xb;
-//                V1 = S2 / 0xc;
-//                A0 = S2 % 0xc
-//
-//                A2 = channel->drum_offset + A0 * 0x5;
-//                u8 instr_id = bu[A2 + 0x0];
-//
-//                if( instr_id != channel->instr_id )
-//                {
-//                    channel->instr_id = instr_id;
-//                    channel->attr.addr = g_akao_instrument[instr_id].addr;
-//                    channel->attr.loop_addr = g_akao_instrument[instr_id].loop_addr;
-//                    channel->attr.a_mode = g_akao_instrument[instr_id].a_mode;
-//                    channel->attr.s_mode = g_akao_instrument[instr_id].s_mode;
-//                    channel->attr.ar = g_akao_instrument[instr_id].ar;
-//                    channel->attr.dr = g_akao_instrument[instr_id].dr;
-//                    channel->attr.sl = g_akao_instrument[instr_id].sl;
-//                    channel->attr.sr = g_akao_instrument[instr_id].sr;
-//                    channel->attr.mask |= AKAO_UPDATE_SPU_BASE_WOR;
-//
+                u8 drum_id = semitone % 0xc;
+
+                u8 instr_id = READ_LE_U8( channel->drum_offset + drum_id * 0x5 + 0x0 );
+
+                if( instr_id != channel->instr_id )
+                {
+                    channel->instr_id = instr_id;
+                    channel->attr.addr = g_akao_instrument[instr_id].addr;
+                    channel->attr.loop_addr = g_akao_instrument[instr_id].loop_addr;
+                    channel->attr.a_mode = g_akao_instrument[instr_id].a_mode;
+                    channel->attr.s_mode = g_akao_instrument[instr_id].s_mode;
+                    channel->attr.ar = g_akao_instrument[instr_id].ar;
+                    channel->attr.dr = g_akao_instrument[instr_id].dr;
+                    channel->attr.sl = g_akao_instrument[instr_id].sl;
+                    channel->attr.sr = g_akao_instrument[instr_id].sr;
+                    channel->attr.mask |= AKAO_UPDATE_SPU_BASE_WOR;
+
 //                    if( (channel->update_flags & AKAO_UPDATE_ALTERNATIVE) == 0 )
 //                    {
 //                        channel->attr.r_mode = g_akao_instrument[instr_id].r_mode;
 //                        channel->attr.rr = g_akao_instrument[instr_id].rr;
 //                        channel->attr.mask |= SPU_VOICE_ADSR_RMODE | SPU_VOICE_ADSR_RR;
 //                    }
-//                }
-//
-//                V1 = bu[A2 + 0x1];
-//
-//                A1 = S2 / 0xc;
-//                A0 = g_akao_instrument[instr_id].pitch[S2 % 0xc];
-//
-//                if( A1 >= 0x7 )
-//                {
-//                    A0 <<= A1 - 0x6;
-//                }
-//                else if( A1 < 0x6 )
-//                {
-//                    A0 >>= 0x6 - A1;
-//                }
-//
-//                channel->volume = hu[A2 + 0x2] << 0x10;
-//                channel->vol_pan = bu[A2 + 0x4] << 0x8;
-//            }
-//            else
-//            {
+                }
 
-                u8 S2 = channel->octave * 0xc + opcode / 0xb;
+                u8 key = READ_LE_U8( channel->drum_offset + drum_id * 0x5 + 0x1 );
+
+                pitch_base = g_akao_instrument[instr_id].pitch[key % 0xc];
+
+                u8 octave = key / 0xc;
+                if( octave >= 0x7 )
+                {
+                    pitch_base <<= octave - 0x6;
+                }
+                else if( octave < 0x6 )
+                {
+                    pitch_base >>= 0x6 - octave;
+                }
+
+                channel->volume = READ_LE_U16( channel->drum_offset + drum_id * 0x5 + 0x2 ) << 0x10;
+//                channel->vol_pan = bu[channel->drum_offset + drum_id * 0x5 + 0x4] << 0x8;
+            }
+            else
+            {
+                u8 key = channel->octave * 0xc + semitone;
 
 //                if( ( channel->portamento_steps != 0 ) && ( hu[channel + 0x6a] != 0 ) )
 //                {
 //                    channel->pitch_slide_steps = channel->portamento_steps;
-//                    channel->pitch_slide_dst = (S2 & 0xff) + channel->transpose - hu[channel + 0x6a] - hu[channel + 0xd4];
+//                    channel->pitch_slide_dst = (key & 0xff) + channel->transpose - hu[channel + 0x6a] - hu[channel + 0xd4];
 //                    [channel + 0xd0] = h(hu[channel + 0x6a] - channel->transpose - hu[channel + 0xd4]);
-//                    S2 = bu[channel + 0x6a] + bu[channel + 0xd4];
+//                    key = bu[channel + 0x6a] + bu[channel + 0xd4];
 //                }
 //                else
 //                {
-//                    [channel + 0xd0] = h(S2 & 0xff);
-//                    S2 += channel->transpose & 0xff;
+//                    [channel + 0xd0] = h(key & 0xff);
+//                    key += channel->transpose & 0xff;
 //                }
 //
 //                if( ( channel->sfx_mask & 0x0002 ) == 0 )
@@ -878,18 +878,20 @@ void AkaoExecuteSequence( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 //                    channel->pitch_slide_steps_cur = 0;
 //                }
 //
-                u8 mod = S2 / 0xc;
 
-                u32 pitch_base = g_akao_instrument[channel->instr_id].pitch[S2 % 0xc];
-                if( mod >= 0x7 )
+                u8 semitone = key % 0xc;
+                pitch_base = g_akao_instrument[channel->instr_id].pitch[semitone];
+
+                u8 octave = key / 0xc;
+                if( octave >= 0x7 )
                 {
-                    pitch_base <<= mod - 0x6;
+                    pitch_base <<= octave - 0x6;
                 }
-                else if( mod < 0x6 )
+                else if( octave < 0x6 )
                 {
-                    pitch_base >>= 0x6 - mod;
+                    pitch_base >>= 0x6 - octave;
                 }
-//            }
+            }
 //
 //            if( channel->type == AKAO_MUSIC )
 //            {

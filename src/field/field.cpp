@@ -100,8 +100,8 @@ field_main_loop()
     else
     {
         std::vector<u8> music;
-        FileRead( "Aerith's_Theme.snd", music );
-        //ReadFile( "Lurking_In_The_Darkness.snd", music );
+        //FileRead( "Aerith's_Theme.snd", music );
+        FileRead( "Lurking_In_The_Darkness.snd", music );
 
         u16 music_size = READ_LE_U16( &music[0x6] );
 

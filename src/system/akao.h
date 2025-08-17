@@ -75,7 +75,7 @@ struct AkaoChannel
 {
     u8* seq;
 //    u32 loop_point[0x4];                // 0x4
-//    u32 drum_offset;                    // 0x14
+    u8* drum_offset;
 //    u32 vibrato_wave;                   // 0x18
 //    u32 tremolo_wave;                   // 0x1c
 //    u32 pan_lfo_wave;                   // 0x20
@@ -88,7 +88,7 @@ struct AkaoChannel
     u16 octave;
 //    s32 pitch_slide;                    // 0x34
 //                                        // 0x36 [][]     pitch addition. summarize 0x30, 0x36 and 0xd6 it to get real pitch.
-//    s32 update_flags;                   // 0x38
+    u32 update_flags;
 //    u32 pitch_mul_sound;                // 0x3c
 //    s32 pitch_mul_sound_slide_step;     // 0x40
 //    s32 vol_slide_step;                 // 0x48
