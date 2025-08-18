@@ -291,20 +291,16 @@ void AkaoOpcode_ad_set_ar( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 
 void AkaoOpcode_ae_set_dr( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xae" );
-
     u8* akao = channel->seq;
     channel->seq = akao + 0x1;
 
-    /*
     channel->attr.mask |= SPU_VOICE_ADSR_DR;
-    channel->attr.dr = bu[akao];
+    channel->attr.dr = READ_LE_U8( akao );
 
-    if( channel->update_flags & AKAO_UPDATE_OVERLAY )
-    {
-        g_channels_1[channel->over_voice_id].attr.dr = channel->attr.dr;
-    }
-    */
+//    if( channel->update_flags & AKAO_UPDATE_OVERLAY )
+//    {
+//        g_channels_1[channel->over_voice_id].attr.dr = channel->attr.dr;
+//    }
 }
 
 
@@ -838,12 +834,8 @@ void AkaoOpcode_c9_loop_return_times( AkaoChannel* channel, AkaoConfig* config, 
 
 void AkaoOpcode_ca_loop_return( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xca" );
-
-    /*
     channel->seq = channel->loop_point[channel->loop_id];
     channel->loop_times[ channel->loop_id] += 0x1;
-    */
 }
 
 
