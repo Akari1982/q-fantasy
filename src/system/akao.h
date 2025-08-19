@@ -82,7 +82,6 @@ struct AkaoChannel
 
     u32 update_flags;
 
-//    u32 tremolo_wave;                   // 0x1c
 //    u32 pan_lfo_wave;                   // 0x20
 //    u32 over_voice_id;                  // 0x24
 //    u32 alt_voice_id;                   // 0x28
@@ -96,17 +95,25 @@ struct AkaoChannel
     s16 vol_pan_slide_step;
     u16 vol_pan_slide_steps;
 
+    u16 key;
+    u16 key_stored;
+    s16 key_add;
+    u16 transpose;
+    u16 transpose_stored;
+
     u32 pitch_base;
     u16 octave;
-//    s32 pitch_slide;                    // 0x34
+    s32 pitch_slide;
+    s32 pitch_slide_step;
+    u16 pitch_slide_steps;
+    u16 pitch_slide_steps_cur;
     s16 fine_tuning;
 
 //                                        // 0x36 [][]     pitch addition. summarize 0x30, 0x36 and 0xd6 it to get real pitch.
 //    u32 pitch_mul_sound;                // 0x3c
 //    s32 pitch_mul_sound_slide_step;     // 0x40
-//    s32 pitch_slide_step;               // 0x4c
 //                                        // 0x50 [][][][] ???.
-//    u16 type;                           // 0x54
+    u16 type;
 
     u8 length_1;
     u8 length_2;
@@ -117,13 +124,11 @@ struct AkaoChannel
 
 //    u16 pitch_mul_sound_slide_steps;    // 0x5a
 //    u16 vol_balance_slide_steps;        // 0x5e
-//    u16 pitch_slide_steps_cur;          // 0x64
-//    u16 pitch_slide_steps;              // 0x68
-//                                        // 0x6a [][]     ???
 //    u16 portamento_steps;               // 0x6c
     u16 sfx_mask;
 //                                        // 0x70
 
+    s16 vibrato_pitch;
     u16 vibrato_delay;
     u16 vibrato_delay_cur;
     u16 vibrato_rate;
@@ -132,19 +137,22 @@ struct AkaoChannel
     u16 vibrato_base;
     u32 vibrato_wave_id;
     u16 vibrato_depth;
-    s16 vibrato_pitch;
 //    u16 vibrato_depth_slide_steps;      // 0x80
 //    s16 vibrato_depth_slide_step;       // 0x82
 
 //                                        // 0x84
-//    u16 tremolo_delay;                  // 0x86
-//    u16 tremolo_delay_cur;              // 0x88
-//    u16 tremolo_rate;                   // 0x8a
-//    u16 tremolo_rate_cur;               // 0x8c
-//    u16 tremolo_type;                   // 0x8e
-//    u16 tremolo_depth;                  // 0x90
+
+    s16 tremolo_vol;
+    u16 tremolo_delay;
+    u16 tremolo_delay_cur;
+    u16 tremolo_rate;
+    u16 tremolo_rate_cur;
+    u16 tremolo_type;
+    u32 tremolo_wave_id;
+    u16 tremolo_depth;
 //    u16 tremolo_depth_slide_steps;      // 0x92
 //    s16 tremolo_depth_slide_step;       // 0x94
+
 //    u16 pan_lfo_rate;                   // 0x98
 //    u16 pan_lfo_rate_cur;               // 0x9a
 //    u16 pan_lfo_type;                   // 0x9c
@@ -155,11 +163,6 @@ struct AkaoChannel
 //    u16 pitch_lfo_switch_delay;         // 0xa6
 //    s16 vol_balance;                    // 0xc6
 //    s16 vol_balance_slide_step;         // 0xc8
-//    u16 transpose;                      // 0xcc
-//                                        // 0xd0 [][]     pitch saved parameters.
-//    s16 pitch_slide_dst;                // 0xd2
-//                                        // 0xd4 [][]     ???
-//    s16 tremolo_vol;                    // 0xd8
 //    s16 pan_lfo_vol                     // 0xda
 
     AkaoVoiceAttr attr;

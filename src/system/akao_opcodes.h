@@ -132,18 +132,14 @@ void AkaoOpcode_a3_master_volume( AkaoChannel* channel, AkaoConfig* config, u32 
 // Pitch slide for the next note. First parameter is the slide speed (0-127), second is the destination pitch. 
 void AkaoOpcode_a4_pitch_bend_slide( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xa4" );
-
     u8* akao = channel->seq;
     channel->seq = akao + 0x2;
 
-    /*
-    u16 steps = bu[akao + 0x0];
+    u16 steps = READ_LE_U8( akao + 0x0 );
     if( steps == 0 ) steps = 0x100;
     channel->pitch_slide_steps = steps;
 
-    channel->pitch_slide_dst = b[akao + 0x1];
-    */
+    channel->key_add = READ_LE_S8( akao + 0x1 );
 }
 
 
@@ -337,12 +333,10 @@ void AkaoOpcode_b1_set_sr( AkaoChannel* channel, AkaoConfig* config, u32 mask )
     channel->attr.mask |= SPU_VOICE_ADSR_SMODE | SPU_VOICE_ADSR_SR;
     channel->attr.sr = READ_LE_U8( akao );
 
-    /*
-    if( channel->update_flags & AKAO_UPDATE_OVERLAY )
-    {
-        g_channels_1[channel->over_voice_id].attr.sr = channel->attr.sr;
-    }
-    */
+//    if( channel->update_flags & AKAO_UPDATE_OVERLAY )
+//    {
+//        g_channels_1[channel->over_voice_id].attr.sr = channel->attr.sr;
+//    }
 }
 
 
@@ -350,30 +344,23 @@ void AkaoOpcode_b1_set_sr( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 
 void AkaoOpcode_b2_set_rr( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xb2" );
-
     u8* akao = channel->seq;
     channel->seq = akao + 0x1;
 
-    /*
-    channel->attr.mode |= SPU_VOICE_ADSR_RMODE | SPU_VOICE_ADSR_RR;
-    channel->attr.rr = bu[akao];
+    channel->attr.mask |= SPU_VOICE_ADSR_RMODE | SPU_VOICE_ADSR_RR;
+    channel->attr.rr = READ_LE_U8( akao );
 
-    if( channel->update_flags & AKAO_UPDATE_OVERLAY )
-    {
-        g_channels_1[channel->over_voice_id].attr.rr = channel->attr.rr;
-    }
-    */
+//    if( channel->update_flags & AKAO_UPDATE_OVERLAY )
+//    {
+//        g_channels_1[channel->over_voice_id].attr.rr = channel->attr.rr;
+//    }
 }
 
 
 
 void AkaoOpcode_b3_reset_adsr( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xb3" );
-
-    /*
-    intsr_id = channel->instr_id;
+    u16 intsr_id = channel->instr_id;
 
     channel->attr.a_mode = g_akao_instrument[intsr_id].a_mode;
     channel->attr.s_mode = g_akao_instrument[intsr_id].s_mode;
@@ -384,20 +371,19 @@ void AkaoOpcode_b3_reset_adsr( AkaoChannel* channel, AkaoConfig* config, u32 mas
     channel->attr.sr = g_akao_instrument[intsr_id].sr;
     channel->attr.rr = g_akao_instrument[intsr_id].rr;
 
-    channel->attr.mode |= AKAO_UPDATE_SPU_ADSR;
+    channel->attr.mask |= AKAO_UPDATE_SPU_ADSR;
 
-    if( channel->update_flags & AKAO_UPDATE_OVERLAY )
-    {
-        g_channels_1[channel->over_voice_id].attr.a_mode = channel->attr.a_mode;
-        g_channels_1[channel->over_voice_id].attr.s_mode = channel->attr.s_mode;
-        g_channels_1[channel->over_voice_id].attr.r_mode = channel->attr.r_mode;
-        g_channels_1[channel->over_voice_id].attr.ar = channel->attr.ar;
-        g_channels_1[channel->over_voice_id].attr.dr = channel->attr.dr;
-        g_channels_1[channel->over_voice_id].attr.sl = channel->attr.sl;
-        g_channels_1[channel->over_voice_id].attr.sr = channel->attr.sr;
-        g_channels_1[channel->over_voice_id].attr.rr = channel->attr.rr;
-    }
-    */
+//    if( channel->update_flags & AKAO_UPDATE_OVERLAY )
+//    {
+//        g_channels_1[channel->over_voice_id].attr.a_mode = channel->attr.a_mode;
+//        g_channels_1[channel->over_voice_id].attr.s_mode = channel->attr.s_mode;
+//        g_channels_1[channel->over_voice_id].attr.r_mode = channel->attr.r_mode;
+//        g_channels_1[channel->over_voice_id].attr.ar = channel->attr.ar;
+//        g_channels_1[channel->over_voice_id].attr.dr = channel->attr.dr;
+//        g_channels_1[channel->over_voice_id].attr.sl = channel->attr.sl;
+//        g_channels_1[channel->over_voice_id].attr.sr = channel->attr.sr;
+//        g_channels_1[channel->over_voice_id].attr.rr = channel->attr.rr;
+//    }
 }
 
 
@@ -409,10 +395,10 @@ void AkaoOpcode_b4_vibrato( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 
     channel->update_flags |= AKAO_UPDATE_VIBRATO;
 
-//    if( channel->type == AKAO_MUSIC )
-//    {
+    if( channel->type == AKAO_MUSIC )
+    {
         channel->vibrato_delay = READ_LE_U8( akao + 0x0 );
-//    }
+    }
 //    else
 //    {
 //        channel->vibrato_delay = 0;
@@ -466,20 +452,16 @@ void AkaoOpcode_b6_vibrato_off( AkaoChannel* channel, AkaoConfig* config, u32 ma
 
 void AkaoOpcode_b7_attack_mode( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xb7" );
-
     u8* akao = channel->seq;
     channel->seq = akao + 0x1;
 
-    /*
     channel->attr.mask |= SPU_VOICE_ADSR_AMODE;
-    channel->attr.a_mode = bu[akao];
+    channel->attr.a_mode = READ_LE_U8( akao );
 
-    if( channel->update_flags & AKAO_UPDATE_OVERLAY )
-    {
-        g_channels_1[channel->over_voice_id].attr.a_mode = channel->attr.a_mode;
-    }
-    */
+//    if( channel->update_flags & AKAO_UPDATE_OVERLAY )
+//    {
+//        g_channels_1[channel->over_voice_id].attr.a_mode = channel->attr.a_mode;
+//    }
 }
 
 
@@ -487,84 +469,67 @@ void AkaoOpcode_b7_attack_mode( AkaoChannel* channel, AkaoConfig* config, u32 ma
 
 void AkaoOpcode_b8_tremolo( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xb8" );
-
     u8* akao = channel->seq;
     channel->seq = akao + 0x3;
 
-    /*
     channel->update_flags |= AKAO_UPDATE_TREMOLO;
 
     if( channel->type == AKAO_MUSIC )
     {
-        channel->tremolo_delay = bu[akao + 0x0];
+        channel->tremolo_delay = READ_LE_U8( akao + 0x0 );
     }
-    else
-    {
-        channel->tremolo_delay = 0;
-        if( bu[akao + 0x0] != 0 )
-        (
-            channel->tremolo_depth = bu[akao + 0x0] << 0x8;
-        }
-    }
+//    else
+//    {
+//        channel->tremolo_delay = 0;
+//        if( bu[akao + 0x0] != 0 )
+//        (
+//            channel->tremolo_depth = bu[akao + 0x0] << 0x8;
+//        }
+//    }
 
-    u16 rate = bu[akao + 1];
+    u16 rate = READ_LE_U8( akao + 1 );
     if( rate == 0 ) rate = 0x100;
     channel->tremolo_rate = rate;
     channel->tremolo_rate_cur = 1;
 
-    u8 type = bu[akao + 0x2];
-    channel->tremolo_type = type;
+    channel->tremolo_type = READ_LE_U8(akao + 0x2);
     channel->tremolo_delay_cur = channel->tremolo_delay;
-    channel->tremolo_wave = w[0x8004a5cc + type * 0x4];
-    */
+    channel->tremolo_wave_id = g_akao_wave_table_key[channel->tremolo_type];
 }
 
 
 
 void AkaoOpcode_b9_tremolo_depth( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xb9" );
-
     u8* akao = channel->seq;
     channel->seq = akao + 0x1;
 
-    /*
-    channel->tremolo_depth = bu[akao] << 0x8;
-    */
+    channel->tremolo_depth = READ_LE_U8( akao ) << 0x8;
 }
 
 
 
 void AkaoOpcode_ba_tremolo_off( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xba" );
-
-    /*
-    channel->update_flags &= ~AKAO_UPDATE_TREMOLO);
+    channel->update_flags &= ~AKAO_UPDATE_TREMOLO;
     channel->tremolo_vol = 0;
     channel->attr.mask |= AKAO_UPDATE_SPU_VOICE;
-    */
 }
 
 
 
 void AkaoOpcode_bb_sustain_mode( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xbb" );
-
     u8* akao = channel->seq;
     channel->seq = akao + 0x1;
 
-    /*
     channel->attr.mask |= SPU_VOICE_ADSR_SMODE;
-    channel->attr.s_mode = bu[akao];
+    channel->attr.s_mode = READ_LE_U8( akao );
 
-    if( channel->update_flags & AKAO_UPDATE_OVERLAY )
-    {
-        g_channels_1[channel->over_voice_id].attr.s_mode = channel->attr.s_mode;
-    }
-    */
+//    if( channel->update_flags & AKAO_UPDATE_OVERLAY )
+//    {
+//        g_channels_1[channel->over_voice_id].attr.s_mode = channel->attr.s_mode;
+//    }
 }
 
 
@@ -621,20 +586,16 @@ void AkaoOpcode_be_pan_lfo_off( AkaoChannel* channel, AkaoConfig* config, u32 ma
 
 void AkaoOpcode_bf_release_mode( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xbf" );
-
     u8* akao = channel->seq;
     channel->seq = akao + 0x1;
 
-    /*
     channel->attr.mask |= SPU_VOICE_ADSR_RMODE;
-    channel->attr.r_mode = bu[akao];
+    channel->attr.r_mode = READ_LE_U8( akao );
 
-    if( channel->update_flags & AKAO_UPDATE_OVERLAY )
-    {
-        g_channels_1[channel->over_voice_id].attr.r_mode = channel->attr.r_mode;
-    }
-    */
+//    if( channel->update_flags & AKAO_UPDATE_OVERLAY )
+//    {
+//        g_channels_1[channel->over_voice_id].attr.r_mode = channel->attr.r_mode;
+//    }
 }
 
 
@@ -676,10 +637,10 @@ void AkaoOpcode_c1_transpose_relative( AkaoChannel* channel, AkaoConfig* config,
 // Play the following notes on a reverbered channel, if reverb enabled
 void AkaoOpcode_c2_reverb_on( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-//    if( channel->type == AKAO_MUSIC )
-//    {
+    if( channel->type == AKAO_MUSIC )
+    {
         config->reverb_mask |= mask;
-//    }
+    }
 //    else
 //    {
 //        g_channels_3_reverb_mask |= mask;
@@ -693,10 +654,10 @@ void AkaoOpcode_c2_reverb_on( AkaoChannel* channel, AkaoConfig* config, u32 mask
 // Play the following notes on a non-reverbered channel (default)
 void AkaoOpcode_c3_reverb_off( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-//    if( channel->type == AKAO_MUSIC )
-//    {
+    if( channel->type == AKAO_MUSIC )
+    {
         config->reverb_mask &= ~mask;
-//    }
+    }
 //    else
 //    {
 //        g_channels_3_reverb_mask &= ~mask;
@@ -996,6 +957,8 @@ void AkaoOpcode_d7_side_chain_pitch_vol_off( AkaoChannel* channel, AkaoConfig* c
 // Otherwise it's made lower, counting from 0xFF to 0x80 (reversed).
 void AkaoOpcode_d8_fine_tuning_absolute( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
+    ofLog( OF_LOG_NOTICE, "FINE TUNING ABS 0xd8" );
+
     u8* akao = channel->seq;
     channel->seq = akao + 0x1;
 
@@ -1007,6 +970,8 @@ void AkaoOpcode_d8_fine_tuning_absolute( AkaoChannel* channel, AkaoConfig* confi
 // Relative fine tuning. It's the same as D8, except that it adds the value to the existing global tuning.
 void AkaoOpcode_d9_fine_tuning_relative( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
+    ofLog( OF_LOG_NOTICE, "FINE TUNING REL 0xd9" );
+
     u8* akao = channel->seq;
     channel->seq = akao + 0x1;
 
@@ -1025,10 +990,10 @@ void AkaoOpcode_da_portamento_on( AkaoChannel* channel, AkaoConfig* config, u32 
 //    u16 steps = bu[akao];
 //    if( steps == 0 ) steps = 0x100;
 //    channel->portamento_steps = steps;
-//
-//    [channel + 0x6a] = h(0x0);
+
     channel->sfx_mask = AKAO_SFX_LEGATO;
-//    [channel + 0xd4] = h(0x0);
+    channel->key_stored = 0;
+    channel->transpose_stored = 0;
 }
 
 
@@ -1280,15 +1245,12 @@ void AkaoOpcode_f1_loop_break_times( AkaoChannel* channel, AkaoConfig* config, u
 
 void AkaoOpcode_f2_load_instrument( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xf2" );
-
     u8* akao = channel->seq;
     channel->seq = akao + 0x1;
 
-    /*
-    u16 instr_id = bu[akao];
+    u16 instr_id = READ_LE_U8( akao );
 
-    if( (channel->type != AKAO_MUSIC) || ((mask & w[config + 0xc] & g_channels_3_active_mask) == 0) )
+    if( (channel->type != AKAO_MUSIC) /*|| ((mask & w[config + 0xc] & g_channels_3_active_mask) == 0)*/ )
     {
         u16 prev = channel->instr_id;
         channel->pitch_base *= g_akao_instrument[instr_id].pitch[0] / g_akao_instrument[prev].pitch[0];
@@ -1308,13 +1270,12 @@ void AkaoOpcode_f2_load_instrument( AkaoChannel* channel, AkaoConfig* config, u3
 
     channel->attr.mask |= AKAO_UPDATE_SPU_BASE_WOR;
 
-    if( (channel->update_flags & AKAO_UPDATE_ALTERNATIVE) == 0 )
-    {
-        channel->attr.r_mode = g_akao_instrument[instr_id].r_mode;
-        channel->attr.rr = g_akao_instrument[instr_id].rr;
-        channel->attr.mask |= SPU_VOICE_ADSR_RMODE | SPU_VOICE_ADSR_RR;
-    }
-    */
+//    if( (channel->update_flags & AKAO_UPDATE_ALTERNATIVE) == 0 )
+//    {
+//        channel->attr.r_mode = g_akao_instrument[instr_id].r_mode;
+//        channel->attr.rr = g_akao_instrument[instr_id].rr;
+//        channel->attr.mask |= SPU_VOICE_ADSR_RMODE | SPU_VOICE_ADSR_RR;
+//    }
 }
 
 
