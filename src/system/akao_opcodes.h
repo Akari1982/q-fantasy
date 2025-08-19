@@ -140,6 +140,8 @@ void AkaoOpcode_a4_pitch_bend_slide( AkaoChannel* channel, AkaoConfig* config, u
     channel->pitch_slide_steps = steps;
 
     channel->key_add = READ_LE_S8( akao + 0x1 );
+
+    //ofLog( OF_LOG_NOTICE, "PITCH BEND 0xa4( steps: " + ofToString( channel->pitch_slide_steps ) + ", key_add: " + ofToString( channel->key_add ) );
 }
 
 
@@ -452,6 +454,8 @@ void AkaoOpcode_b6_vibrato_off( AkaoChannel* channel, AkaoConfig* config, u32 ma
 
 void AkaoOpcode_b7_attack_mode( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
+    ofLog( OF_LOG_NOTICE, "MISSING 0xb7" );
+
     u8* akao = channel->seq;
     channel->seq = akao + 0x1;
 
@@ -520,6 +524,8 @@ void AkaoOpcode_ba_tremolo_off( AkaoChannel* channel, AkaoConfig* config, u32 ma
 
 void AkaoOpcode_bb_sustain_mode( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
+    ofLog( OF_LOG_NOTICE, "MISSING 0xbb" );
+
     u8* akao = channel->seq;
     channel->seq = akao + 0x1;
 
@@ -586,6 +592,8 @@ void AkaoOpcode_be_pan_lfo_off( AkaoChannel* channel, AkaoConfig* config, u32 ma
 
 void AkaoOpcode_bf_release_mode( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
+    ofLog( OF_LOG_NOTICE, "MISSING 0xbf" );
+
     u8* akao = channel->seq;
     channel->seq = akao + 0x1;
 
@@ -957,8 +965,6 @@ void AkaoOpcode_d7_side_chain_pitch_vol_off( AkaoChannel* channel, AkaoConfig* c
 // Otherwise it's made lower, counting from 0xFF to 0x80 (reversed).
 void AkaoOpcode_d8_fine_tuning_absolute( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "FINE TUNING ABS 0xd8" );
-
     u8* akao = channel->seq;
     channel->seq = akao + 0x1;
 
@@ -970,8 +976,6 @@ void AkaoOpcode_d8_fine_tuning_absolute( AkaoChannel* channel, AkaoConfig* confi
 // Relative fine tuning. It's the same as D8, except that it adds the value to the existing global tuning.
 void AkaoOpcode_d9_fine_tuning_relative( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "FINE TUNING REL 0xd9" );
-
     u8* akao = channel->seq;
     channel->seq = akao + 0x1;
 

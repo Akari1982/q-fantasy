@@ -1026,6 +1026,9 @@ void AkaoExecuteSequence( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 
         if( channel->key_add != 0 )
         {
+            //ofLog( OF_LOG_NOTICE, "channel->key: " + ofToString( channel->key ) );
+            //ofLog( OF_LOG_NOTICE, "channel->key_add: " + ofToString( channel->key_add ) );
+
             channel->key += channel->key_add;
 
             u16 key = (channel->key & 0xff) + (channel->transpose & 0xff);
@@ -1063,7 +1066,12 @@ void AkaoExecuteSequence( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 
             channel->pitch_slide_steps_cur = channel->pitch_slide_steps;
             channel->key_add = 0;
-            channel->pitch_slide_step = ((s32)(pitch - (channel->pitch_base << 0x10)) + channel->pitch_slide) / channel->pitch_slide_steps;
+            channel->pitch_slide_step = ((s32)(pitch - (channel->pitch_base << 0x10)) - channel->pitch_slide) / channel->pitch_slide_steps;
+
+            //ofLog( OF_LOG_NOTICE, "pitch: " + ofToString( pitch >> 0x10 ) );
+            //ofLog( OF_LOG_NOTICE, "channel->pitch_base: " + ofToString( channel->pitch_base ) );
+            //ofLog( OF_LOG_NOTICE, "channel->pitch_slide: " + ofToString( channel->pitch_slide >> 0x10 ) );
+            //ofLog( OF_LOG_NOTICE, "channel->pitch_slide_step: " + ofToString( channel->pitch_slide_step >> 0x10 ) );
         }
 
         channel->transpose_stored = channel->transpose;
@@ -1567,7 +1575,7 @@ void AkaoMusicUpdateSlideAndDelay( AkaoChannel* channel, AkaoConfig* config, u32
     {
         channel->pitch_slide_steps_cur -= 1;
 
-        u32 pitch_slide = channel->pitch_slide + channel->pitch_slide_step;
+        s32 pitch_slide = channel->pitch_slide + channel->pitch_slide_step;
         if( (pitch_slide & 0xffff0000) != (channel->pitch_slide & 0xffff0000) )
         {
             channel->attr.mask |= SPU_VOICE_PITCH;
@@ -1721,6 +1729,8 @@ void AkaoMusicUpdatePitchAndVolume( AkaoChannel* channel, u32 channel_mask, u32 
 //    }
 /*else*/if( channel->attr.mask & SPU_VOICE_PITCH )
     {
+        //ofLog( OF_LOG_NOTICE, "Update pitch channel->pitch_slide: " + ofToString( (channel->pitch_slide >> 0x10) ) );
+
         u32 pitch_base = channel->pitch_base + channel->vibrato_pitch + (channel->pitch_slide >> 0x10);
 
 //        u8 pitch_mul_music = (g_akao_pitch_mul_music >> 0x10) & 0xff;
