@@ -1407,8 +1407,6 @@ void AkaoOpcode_f7_overlay_volume_balance_slide( AkaoChannel* channel, AkaoConfi
 // Check "Opening - Bombing Mission", "Tifa's Theme" and "Fortress of the Condor" for actual usage.
 void AkaoOpcode_f8_alt_voice_on( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xf8" );
-
     u8* akao = channel->seq;
     channel->seq = akao + 0x1;
 
@@ -1418,7 +1416,7 @@ void AkaoOpcode_f8_alt_voice_on( AkaoChannel* channel, AkaoConfig* config, u32 m
     {
         u8 channel_id = 0;
         u32 channel_mask = 0x1;
-        u32 = config->active_mask | /*config->over_mask |*/ config->alt_mask;
+        u32 channels_mask = config->active_mask | /*config->over_mask |*/ config->alt_mask;
 
         while( channel_mask & 0x00ffffff )
         {
@@ -1441,8 +1439,6 @@ void AkaoOpcode_f8_alt_voice_on( AkaoChannel* channel, AkaoConfig* config, u32 m
 
 void AkaoOpcode_f9_alt_voice_off( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xf9" );
-
     config->alt_mask &= ~(1 << channel->alt_voice_id);
     channel->update_flags &= ~AKAO_UPDATE_ALTERNATIVE;
 

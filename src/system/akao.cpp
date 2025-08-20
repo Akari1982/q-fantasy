@@ -1215,7 +1215,7 @@ void AkaoUpdateKeysOn()
     if( g_channels_1_config.active_mask != 0 )
     {
         u32 exclude_mask = ~(/*w[0x80062f68] | g_channels_3_active_mask |*/ g_akao_stream_mask);
-        updated_mask |= exclude_mask & g_channels_1_config.on_mask;
+        updated_mask |= /*exclude_mask &*/ g_channels_1_config.on_mask;
 
         u32 channel_id = 0;
 

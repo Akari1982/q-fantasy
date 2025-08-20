@@ -23,16 +23,26 @@ void AkaoDebugSequence()
     {
         if( channels_mask & (0x1 << i) )
         {
+            std::string info = "Channel: %02x";
+            if( g_channels_1[i].update_flags & AKAO_UPDATE_ALTERNATIVE )
+            {
+                info += std::string( " ALT" );
+                info += ( g_channels_1[i].update_flags & AKAO_UPDATE_ALTERNATIVE_CUR ) ? std::string( "2" ) : std::string( "1" );
+            }
+            if( g_channels_1[i].update_flags & AKAO_UPDATE_DRUM_MODE ) info += std::string( " DRUM" );
+            if( g_channels_1[i].update_flags & AKAO_UPDATE_VIBRATO ) info += std::string( " VIBRATO" );
+            if( g_channels_1[i].update_flags & AKAO_UPDATE_TREMOLO ) info += std::string( " TREMOLO" );
+
             ImGui::SetCursorPos( ImVec2( base_x, i * line_height + add_y ) );
-            ImGui::TextColored( color, "Channel: %02x", i );
+            ImGui::TextColored( ImVec4( 1.0f, 1.0f, 1.0f, 1.0f ), info.c_str(), i );
             add_y += line_height;
 
-            u8* akao = g_channels_1[ i ].seq_start;
+            u8* akao = g_channels_1[i].seq_start;
 
             int x = base_x;
             bool read = true;
 
-            while( read && (akao < g_channels_1[ i ].seq_end) )
+            while( read && (akao < g_channels_1[i].seq_end) )
             {
                 if( akao == g_channels_1[ i ].seq )
                 {
@@ -62,7 +72,9 @@ void AkaoDebugSequence()
                 if( opcode  < 0xa0 )
                 {
                     ImGui::SetCursorPos( ImVec2( x, i * line_height + add_y ) );
-                    ImGui::TextColored( color, "|" );
+                    if( opcode < 0x84 ) ImGui::TextColored( color, "|" );
+                    else if( opcode >= 0x8f ) ImGui::TextColored( color, ":" );
+                    else ImGui::TextColored( color, "." );
                     x += 1 * size;
                 }
                 else
@@ -74,11 +86,13 @@ void AkaoDebugSequence()
                         case 0xa7:
                         case 0xb6:
                         case 0xc2:
+                        case 0xc3:
                         case 0xc8:
                         case 0xcc:
                         case 0xcd:
                         case 0xd0:
                         case 0xd1:
+                        case 0xf9:
                         {
                             ImGui::SetCursorPos( ImVec2( x, i * line_height + add_y ) );
                             ImGui::TextColored( color, "%02x", opcode );
@@ -99,9 +113,12 @@ void AkaoDebugSequence()
                         case 0xaf:
                         case 0xb1:
                         case 0xb5:
+                        case 0xb9:
                         case 0xc9:
                         case 0xd8:
                         case 0xd9:
+                        case 0xf2:
+                        case 0xf8:
                         {
                             ImGui::SetCursorPos( ImVec2( x, i * line_height + add_y ) );
                             ImGui::TextColored( color, "%02x", opcode );
@@ -115,6 +132,7 @@ void AkaoDebugSequence()
                         case 0xab:
                         case 0xe8:
                         case 0xea:
+                        case 0xec:
                         case 0xee:
                         {
                             ImGui::SetCursorPos( ImVec2( x, i * line_height + add_y ) );
@@ -127,6 +145,8 @@ void AkaoDebugSequence()
                         break;
 
                         case 0xb4:
+                        case 0xb8:
+                        case 0xf0:
                         {
                             ImGui::SetCursorPos( ImVec2( x, i * line_height + add_y ) );
                             ImGui::TextColored( color, "%02x", opcode );

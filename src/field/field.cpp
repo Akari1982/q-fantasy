@@ -103,7 +103,7 @@ field_main_loop()
         //FileRead( "Aerith's_Theme.snd", music );
         //FileRead( "Lurking_In_The_Darkness.snd", music );
         //FileRead( "Fighting.snd", music );
-        FileRead( "1_12_Flowers_Blooming_In_The_Church.snd", music );
+        FileRead( "fortress_of_the_condor.snd", music );
 
         u16 music_size = READ_LE_U16( &music[0x6] );
 
