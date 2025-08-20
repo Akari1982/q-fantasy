@@ -32,6 +32,7 @@
 #define AKAO_UPDATE_SIDE_CHAIN_VOL   0x20
 #define AKAO_UPDATE_OVERLAY          0x100
 #define AKAO_UPDATE_ALTERNATIVE      0x200
+#define AKAO_UPDATE_ALTERNATIVE_CUR  0x400
 
 #define AKAO_UPDATE_NOISE_CLOCK 0x10
 #define AKAO_UPDATE_REVERB      0x80
@@ -86,7 +87,7 @@ struct AkaoChannel
 
 //    u32 pan_lfo_wave;                   // 0x20
 //    u32 over_voice_id;                  // 0x24
-//    u32 alt_voice_id;                   // 0x28
+    u32 alt_voice_id;
 
     s32 volume;
     u32 vol_master;
@@ -182,7 +183,7 @@ struct AkaoConfig
 //    s32 tempo_slide_step;           // 0x1c
     u32 tempo_update;
 //    u32 over_mask;                  // 0x24
-//    u32 alt_mask;                   // 0x28
+    u32 alt_mask;
 //    u32 noise_mask;                 // 0x2c
     u32 reverb_mask;
 //    u32 pitch_lfo_mask;             // 0x34
@@ -241,3 +242,5 @@ u8 AkaoGetNextKey( AkaoChannel* channel );
 
 extern AkaoChannel g_channels_1[0x18];
 extern AkaoConfig g_channels_1_config;
+
+extern u8* g_akao_music;

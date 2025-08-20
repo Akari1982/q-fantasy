@@ -4,51 +4,47 @@
 
 void AkaoOpcode_a0_finish_channel( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xa0" );
-
-    /*
     if( channel->type == AKAO_MUSIC )
     {
         config->active_mask &= mask ^ 0x00ffffff;
 
-        if( config->active_mask == 0 ) config->music_id = 0;
+//        if( config->active_mask == 0 ) config->music_id = 0;
 
-        config->noise_mask &= mask ^ 0x00ffffff;
+//        config->noise_mask &= mask ^ 0x00ffffff;
         config->reverb_mask &= mask ^ 0x00ffffff;
-        config->pitch_lfo_mask &= mask ^ 0x00ffffff;
+//        config->pitch_lfo_mask &= mask ^ 0x00ffffff;
 
-        if( channel->update_flags & AKAO_UPDATE_OVERLAY )
-        {
-            V1 = channel->over_voice_id;
-            if( w[0x80062f04] != 0 ) V1 -= 0x18;
-            config->over_mask &= ~(1 << V1);
-        }
-
+//        if( channel->update_flags & AKAO_UPDATE_OVERLAY )
+//        {
+//            V1 = channel->over_voice_id;
+//            if( w[0x80062f04] != 0 ) V1 -= 0x18;
+//            config->over_mask &= ~(1 << V1);
+//        }
+//
         if( channel->update_flags & AKAO_UPDATE_ALTERNATIVE )
         {
             config->alt_mask &= ~(1 << channel->alt_voice_id);
         }
     }
-    else
-    {
-        g_channels_3_active_mask &= mask ^ 0x00ff0000;
-        g_channels_3_noise_mask &= mask ^ 0x00ff0000;
-        g_channels_3_reverb_mask &= mask ^ 0x00ff0000;
-        g_channels_3_pitch_lfo_mask &= mask ^ 0x00ff0000;
-        g_channels_1_config.on_mask &= ~mask;
-        [0x8009a104 + 0xc] = w(w[0x8009a104 + 0xc] & (~mask));
-        g_channels_1_config.off_mask &= ~mask;
-        g_channels_1[channel->alt_voice_id].attr.mask |= AKAO_UPDATE_SPU_BASE;
-    }
+//    else
+//    {
+//        g_channels_3_active_mask &= mask ^ 0x00ff0000;
+//        g_channels_3_noise_mask &= mask ^ 0x00ff0000;
+//        g_channels_3_reverb_mask &= mask ^ 0x00ff0000;
+//        g_channels_3_pitch_lfo_mask &= mask ^ 0x00ff0000;
+//        g_channels_1_config.on_mask &= ~mask;
+//        [0x8009a104 + 0xc] = w(w[0x8009a104 + 0xc] & (~mask));
+//        g_channels_1_config.off_mask &= ~mask;
+//        g_channels_1[channel->alt_voice_id].attr.mask |= AKAO_UPDATE_SPU_BASE;
+//    }
 
     channel->update_flags = 0;
 
-    g_channels_1_config.update_flags |= AKAO_UPDATE_NOISE_CLOCK;
-
-    system_akao_update_noise_voices();
+//    g_channels_1_config.update_flags |= AKAO_UPDATE_NOISE_CLOCK;
+//
+//    system_akao_update_noise_voices();
     AkaoUpdateReverbVoices();
-    system_akao_update_pitch_lfo_voices();
-    */
+//    system_akao_update_pitch_lfo_voices();
 }
 
 
@@ -1274,12 +1270,12 @@ void AkaoOpcode_f2_load_instrument( AkaoChannel* channel, AkaoConfig* config, u3
 
     channel->attr.mask |= AKAO_UPDATE_SPU_BASE_WOR;
 
-//    if( (channel->update_flags & AKAO_UPDATE_ALTERNATIVE) == 0 )
-//    {
-//        channel->attr.r_mode = g_akao_instrument[instr_id].r_mode;
-//        channel->attr.rr = g_akao_instrument[instr_id].rr;
-//        channel->attr.mask |= SPU_VOICE_ADSR_RMODE | SPU_VOICE_ADSR_RR;
-//    }
+    if( (channel->update_flags & AKAO_UPDATE_ALTERNATIVE) == 0 )
+    {
+        channel->attr.r_mode = g_akao_instrument[instr_id].r_mode;
+        channel->attr.rr = g_akao_instrument[instr_id].rr;
+        channel->attr.mask |= SPU_VOICE_ADSR_RMODE | SPU_VOICE_ADSR_RR;
+    }
 }
 
 
@@ -1416,14 +1412,13 @@ void AkaoOpcode_f8_alt_voice_on( AkaoChannel* channel, AkaoConfig* config, u32 m
     u8* akao = channel->seq;
     channel->seq = akao + 0x1;
 
-    /*
-    channel->attr.rr = bu[akao];
+    channel->attr.rr = READ_LE_U8( akao );
 
     if( (channel->update_flags & AKAO_UPDATE_ALTERNATIVE) == 0 )
     {
         u8 channel_id = 0;
         u32 channel_mask = 0x1;
-        u32 channels_mask = config->active_mask | config->over_mask | config->alt_mask;
+        u32 = config->active_mask | /*config->over_mask |*/ config->alt_mask;
 
         while( channel_mask & 0x00ffffff )
         {
@@ -1440,7 +1435,6 @@ void AkaoOpcode_f8_alt_voice_on( AkaoChannel* channel, AkaoConfig* config, u32 m
             channel->update_flags |= AKAO_UPDATE_ALTERNATIVE;
         }
     }
-    */
 }
 
 
@@ -1449,13 +1443,11 @@ void AkaoOpcode_f9_alt_voice_off( AkaoChannel* channel, AkaoConfig* config, u32 
 {
     ofLog( OF_LOG_NOTICE, "MISSING 0xf9" );
 
-    /*
     config->alt_mask &= ~(1 << channel->alt_voice_id);
     channel->update_flags &= ~AKAO_UPDATE_ALTERNATIVE;
 
-    channel->attr.rr = g_akao_instrument[channel->intsr_id].rr;
+    channel->attr.rr = g_akao_instrument[channel->instr_id].rr;
     channel->attr.mask |= SPU_VOICE_ADSR_RMODE | SPU_VOICE_ADSR_RR;
-    */
 }
 
 
