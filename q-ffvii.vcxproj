@@ -119,6 +119,7 @@
     <ClCompile Include="src\psyq\psxspu\spu_tables.cpp" />
     <ClCompile Include="src\psyq\typedef.cpp" />
     <ClCompile Include="src\system\akao.cpp" />
+    <ClCompile Include="src\system\akao_debug.cpp" />
     <ClCompile Include="src\system\system.cpp" />
     <ClCompile Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_glfw.cpp" />
     <ClCompile Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_glfw_context_support.cpp" />
@@ -154,6 +155,7 @@
     <ClInclude Include="src\psyq\typedef.h" />
     <ClInclude Include="src\system\akao.h" />
     <ClInclude Include="src\system\akao_commands.h" />
+    <ClInclude Include="src\system\akao_debug.h" />
     <ClInclude Include="src\system\akao_opcodes.h" />
     <ClInclude Include="src\system\system.h" />
     <ClInclude Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_glfw.h" />

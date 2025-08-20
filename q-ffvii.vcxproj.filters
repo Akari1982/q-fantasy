@@ -103,6 +103,9 @@
     <ClCompile Include="src\psyq\libapi.cpp">
       <Filter>src\psyq</Filter>
     </ClCompile>
+    <ClCompile Include="src\system\akao_debug.cpp">
+      <Filter>src\system</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="third_party\ofxImGui\src\BaseEngine.h">
@@ -233,6 +236,9 @@
     </ClInclude>
     <ClInclude Include="src\psyq\libapi.h">
       <Filter>src\psyq</Filter>
+    </ClInclude>
+    <ClInclude Include="src\system\akao_debug.h">
+      <Filter>src\system</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

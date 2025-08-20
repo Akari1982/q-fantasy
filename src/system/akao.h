@@ -75,6 +75,8 @@ struct AkaoVoiceAttr
 struct AkaoChannel
 {
     u8* seq;
+    u8* seq_start;
+    u8* seq_end;
     u16 loop_id;
     u16 loop_times[0x4];
     u8* loop_point[0x4];
@@ -235,3 +237,7 @@ void AkaoUpdateChannelParamsToSpu( u32 voice_id, AkaoVoiceAttr& attr );
 
 u8 AkaoGetNextKey( AkaoChannel* channel );
 
+
+
+extern AkaoChannel g_channels_1[0x18];
+extern AkaoConfig g_channels_1_config;

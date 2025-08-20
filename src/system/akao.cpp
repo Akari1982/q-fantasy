@@ -49,6 +49,7 @@ SpuReverbAttr g_spu_reverb_attr;
 AkaoInstrument g_akao_instrument[0x80];
 u8 g_effect_all[0xc800];
 u8* g_akao_music;
+u32 g_akao_music_size;
 
 u8 g_akao_default_sound[0x20] =
 {
@@ -696,6 +697,7 @@ void AkaoCopyMusic( u8* src, u32 size )
         free( g_akao_music );
     }
     g_akao_music = (u8*)malloc( size );
+    g_akao_music_size = size;
     memcpy( g_akao_music, src, size );
 }
 
@@ -737,6 +739,19 @@ void AkaoMusicChannelsInit()
         if( channels_mask & channel_mask )
         {
             channel->seq = akao + 0x2 + READ_LE_U16( akao );
+            // for debug purpose
+            {
+                channel->seq_start = channel->seq;
+                if( (channels_mask ^ channel_mask) != 0 )
+                {
+                    channel->seq_end = akao + 0x4 + READ_LE_U16( akao + 0x2 ) - 1;
+                }
+                else
+                {
+                    channel->seq_end = g_akao_music + g_akao_music_size - 1;
+                }
+            }
+
             channel->vol_master = 0x7f;
             channel->length_1 = 0x3;
             channel->length_2 = 0x1;

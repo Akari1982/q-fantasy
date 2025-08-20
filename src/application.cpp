@@ -1,4 +1,5 @@
 #include "application.h"
+#include "system/akao_debug.h"
 
 #include <filesystem>
 
@@ -37,6 +38,9 @@ void Application::draw()
     //g_GameVram.draw( 0, 0, ofGetWidth(), ofGetHeight() );
     g_GameVram.draw( 0, 0, 640, 480 );
 
+    AkaoDebugSequence();
+
+/*
     std::string popup_to_open = "";
     if( ImGui::BeginMainMenuBar() )
     {
@@ -74,6 +78,7 @@ void Application::draw()
 
         ImGui::EndMainMenuBar();
     }
+*/
 
     g_GameVram.begin();
     ofClear( 100, 100, 100, 255 );
