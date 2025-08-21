@@ -705,7 +705,7 @@ void AkaoCopyMusic( u8* src, u32 size )
 
 void AkaoMusicChannelsInit()
 {
-    u32 channels_mask = READ_LE_U32( g_akao_music + 0x0 ) & 0x00ffffff;
+    u32 channels_mask = READ_LE_U32( g_akao_music + 0x0 ) & 0x00ffffff & 0x20;
     u8* akao = g_akao_music + 0x4;
 
     g_channels_1_config.active_mask = channels_mask;
@@ -714,7 +714,7 @@ void AkaoMusicChannelsInit()
     g_channels_1_config.off_mask |= 0x00ffffff;
     g_channels_1_config.tempo = 0xffff0000;
     g_channels_1_config.tempo_update = 0x1;
-//    g_channels_1_config.over_mask = 0;
+    g_channels_1_config.over_mask = 0;
     g_channels_1_config.alt_mask = 0;
 //    g_channels_1_config.noise_mask = 0;
     g_channels_1_config.reverb_mask = 0;
@@ -780,7 +780,7 @@ void AkaoMusicChannelsInit()
             channel->loop_id = 0;
             channel->length_stored = 0;
             channel->length_fixed = 0;
-//            channel->vol_balance = 0x4000;
+            channel->vol_balance = 0x4000;
             channel->transpose = 0;
             channel->fine_tuning = 0;
             channel->key_add = 0;
@@ -952,13 +952,11 @@ void AkaoExecuteSequence( AkaoChannel* channel, AkaoConfig* config, u32 mask )
                     if( channel->type == AKAO_MUSIC )
                     {
                         config->on_mask |= mask;
-//
-//                        if( channel->update_flags & AKAO_UPDATE_OVERLAY )
-//                        {
-//                            V1 = channel->over_voice_id;
-//                            if( channel->over_voice_id >= 0x18 ) V1 -= 0x18;
-//                            config->on_mask |= 0x1 << V1;
-//                        }
+
+                        if( channel->update_flags & AKAO_UPDATE_OVERLAY )
+                        {
+                            config->on_mask |= 0x1 << (( channel->over_voice_id >= 0x18 ) ? channel->over_voice_id - 0x18 : channel->over_voice_id);
+                        }
                     }
 //                    else
 //                    {
@@ -1167,7 +1165,7 @@ void AkaoUpdateKeysOn()
 //
 //                    if( channel->update_flags & AKAO_UPDATE_OVERLAY )
 //                    {
-//                        system_akao_update_channel_and_overlay_params_to_spu( channel, S5, channel->over_voice_id - 0x18 );
+//                        AkaoUpdateChannelAndOverlayParamsToSpu( channel, S5, channel->over_voice_id - 0x18 );
 //                    }
 //                    else if( (channel->update_flags & AKAO_UPDATE_ALTERNATIVE) == 0 )
 //                    {
@@ -1215,12 +1213,12 @@ void AkaoUpdateKeysOn()
     if( g_channels_1_config.active_mask != 0 )
     {
         u32 exclude_mask = ~(/*w[0x80062f68] | g_channels_3_active_mask |*/ g_akao_stream_mask);
-        updated_mask |= /*exclude_mask &*/ g_channels_1_config.on_mask;
+        updated_mask |= exclude_mask & g_channels_1_config.on_mask;
 
         u32 channel_id = 0;
 
         u32 channel_mask = 1;
-        u32 channels_mask = g_channels_1_config.active_mask /*& (exclude_mask & w[0x8009a104 + 0xc])*/;
+        u32 channels_mask = g_channels_1_config.active_mask & exclude_mask /*& w[0x8009a104 + 0xc]*/;
         AkaoChannel* channel = g_channels_1;
         while( channels_mask != 0 )
         {
@@ -1235,12 +1233,12 @@ void AkaoUpdateKeysOn()
 //                        channel->attr.vol_l = 0;
 //                        channel->attr.vol_r = 0;
 //                    }
-//
-//                    if( channel->update_flags & AKAO_UPDATE_OVERLAY )
-//                    {
-//                        system_akao_update_channel_and_overlay_params_to_spu( channel, exclude_mask, channel->over_voice_id );
-//                    }
-                    /*else*/ if( channel->update_flags & AKAO_UPDATE_ALTERNATIVE )
+
+                    if( channel->update_flags & AKAO_UPDATE_OVERLAY )
+                    {
+                        AkaoUpdateChannelAndOverlayParamsToSpu( channel, exclude_mask, channel->over_voice_id );
+                    }
+                    else if( channel->update_flags & AKAO_UPDATE_ALTERNATIVE )
                     {
                         if( g_channels_1_config.on_mask & channel_mask )
                         {
@@ -1405,16 +1403,16 @@ void AkaoCollectChannelsVoicesMask( AkaoChannel* channel, u32& ret_mask, u32 cha
     {
         if( channels_mask & channel_mask )
         {
-//            if( channel->update_flags & AKAO_UPDATE_OVERLAY )
-//            {
-//                u32 over_voice_id = channel->over_voice_id;
-//                if( over_voice_id >= 0x18 ) over_voice_id -= 0x18;
-//                if( exclude_mask & (1 << over_voice_id) )
-//                {
-//                    ret_mask |= 0x1 << over_voice_id;
-//                }
-//            }
-            /*else*/ if( channel->update_flags & AKAO_UPDATE_ALTERNATIVE )
+            if( channel->update_flags & AKAO_UPDATE_OVERLAY )
+            {
+                u32 over_voice_id = channel->over_voice_id;
+                if( over_voice_id >= 0x18 ) over_voice_id -= 0x18;
+                if( exclude_mask & (1 << over_voice_id) )
+                {
+                    ret_mask |= 0x1 << over_voice_id;
+                }
+            }
+            else if( channel->update_flags & AKAO_UPDATE_ALTERNATIVE )
             {
                 if( exclude_mask & (0x1 << channel->alt_voice_id) )
                 {
@@ -1761,6 +1759,31 @@ void AkaoMusicUpdatePitchAndVolume( AkaoChannel* channel, u32 channel_mask, u32 
 //            }
 //        }
         channel->attr.pitch = pitch_base & 0x3fff;
+    }
+}
+
+
+
+void AkaoUpdateChannelAndOverlayParamsToSpu( AkaoChannel* channel, u32 mask, u32 over_voice_id )
+{
+    AkaoChannel* channel_2 = &g_channels_1[channel->over_voice_id];
+
+    s16 volume_mod = 0x7f - (channel->vol_balance >> 0x8);
+
+    channel_2->attr.vol_l = (channel->attr.vol_l * channel->vol_balance) >> 0x10;
+    channel->attr.vol_l = (channel->attr.vol_l * volume_mod) >> 0x8;
+    channel_2->attr.vol_r = (channel->attr.vol_r * channel->vol_balance) >> 0x10;
+    channel->attr.vol_r = (channel->attr.vol_r * volume_mod) >> 0x8;
+
+    channel_2->attr.pitch = channel->attr.pitch;
+
+    channel_2->attr.mask |= channel->attr.mask;
+
+    AkaoUpdateChannelParamsToSpu( channel->attr.voice_id, channel->attr );
+
+    if( mask & ( 0x1 << over_voice_id ) )
+    {
+        AkaoUpdateChannelParamsToSpu( over_voice_id, channel_2->attr );
     }
 }
 

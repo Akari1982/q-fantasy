@@ -39,7 +39,7 @@ void AkaoDebugSequence()
             if( g_channels_1[i].update_flags & AKAO_UPDATE_DRUM_MODE ) info += std::string( " DRUM" );
             if( g_channels_1[i].update_flags & AKAO_UPDATE_VIBRATO ) info += std::string( " VIBRATO_" ) + std::to_string( g_channels_1[i].vibrato_type );
             if( g_channels_1[i].update_flags & AKAO_UPDATE_TREMOLO ) info += std::string( " TREMOLO_" ) + std::to_string( g_channels_1[i].tremolo_type );
-
+            if( g_channels_1[i].update_flags & AKAO_UPDATE_OVERLAY ) info += std::string( " OVER_" ) + std::to_string( g_channels_1[i].over_voice_id );
             if( g_channels_1[i].pitch_slide_steps_cur != 0 ) info += std::string( " PITCH SLIDE:" ) + std::to_string( g_channels_1[i].pitch_slide_steps_cur );
 
             ImGui::SetCursorPos( ImVec2( base_x, add_y ) );

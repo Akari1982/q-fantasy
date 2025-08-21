@@ -85,8 +85,7 @@ struct AkaoChannel
 
     u32 update_flags;
 
-//    u32 pan_lfo_wave;                   // 0x20
-//    u32 over_voice_id;                  // 0x24
+    u32 over_voice_id;
     u32 alt_voice_id;
 
     s32 volume;
@@ -97,6 +96,7 @@ struct AkaoChannel
     u16 vol_pan;
     s16 vol_pan_slide_step;
     u16 vol_pan_slide_steps;
+    s16 vol_balance;
 
     u16 key;
     u16 key_stored;
@@ -164,9 +164,9 @@ struct AkaoChannel
 //    s16 pan_lfo_depth_slide_step;       // 0xa2
 //    u16 noise_switch_delay;             // 0xa4
 //    u16 pitch_lfo_switch_delay;         // 0xa6
-//    s16 vol_balance;                    // 0xc6
 //    s16 vol_balance_slide_step;         // 0xc8
 //    s16 pan_lfo_vol                     // 0xda
+//    u32 pan_lfo_wave;                   // 0x20
 
     AkaoVoiceAttr attr;
 };
@@ -182,7 +182,7 @@ struct AkaoConfig
     u32 tempo;
 //    s32 tempo_slide_step;           // 0x1c
     u32 tempo_update;
-//    u32 over_mask;                  // 0x24
+    u32 over_mask;
     u32 alt_mask;
 //    u32 noise_mask;                 // 0x2c
     u32 reverb_mask;
@@ -234,6 +234,7 @@ void AkaoCollectChannelsVoicesMask( AkaoChannel* channel, u32& ret_mask, u32 cha
 
 void AkaoMusicUpdateSlideAndDelay(AkaoChannel* channel, AkaoConfig* config, u32 channel_mask);
 void AkaoMusicUpdatePitchAndVolume( AkaoChannel* channel, u32 channel_mask, u32 channel_id );
+void AkaoUpdateChannelAndOverlayParamsToSpu( AkaoChannel* channel, u32 mask, u32 over_voice_id );
 void AkaoUpdateChannelParamsToSpu( u32 voice_id, AkaoVoiceAttr& attr );
 
 u8 AkaoGetNextKey( AkaoChannel* channel );
