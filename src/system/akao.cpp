@@ -386,10 +386,10 @@ void AkaoInitData()
     g_channels_1_config.reverb_depth = 0;
 //    g_channels_1_config.music_id = 0;
 //    g_channels_1_config.reverb_depth_slide_steps = 0;
-//    g_channels_1_config.timer_upper = 0;
-//    g_channels_1_config.timer_upper_cur = 0;
-//    g_channels_1_config.timer_lower = 0;
-//    g_channels_1_config.timer_top_cur = 0;
+    g_channels_1_config.timer_upper = 0;
+    g_channels_1_config.timer_upper_cur = 0;
+    g_channels_1_config.timer_lower = 0;
+    g_channels_1_config.timer_top_cur = 0;
 
 //    g_channels_2_config.active_mask = 0;
 //    g_channels_2_config.music_id = 0;
@@ -547,23 +547,23 @@ void AkaoMainUpdate()
 //                g_channels_1_config.reverb_depth += g_channels_1_config.reverb_depth_slide_step;
 //                g_channels_1_config.update_flags |= AKAO_UPDATE_REVERB;
 //            }
-//
-//            if( g_channels_1_config.timer_lower != 0 )
-//            {
-//                g_channels_1_config.timer_lower_cur += 1;
-//
-//                if( g_channels_1_config.timer_lower_cur == g_channels_1_config.timer_lower )
-//                {
-//                    g_channels_1_config.timer_lower_cur = 0;
-//                    g_channels_1_config.timer_upper_cur += 1;
-//
-//                    if( g_channels_1_config.timer_upper_cur == g_channels_1_config.timer_upper )
-//                    {
-//                        g_channels_1_config.timer_upper_cur = 0;
-//                        g_channels_1_config.timer_top_cur += 1;
-//                    }
-//                }
-//            }
+
+            if( g_channels_1_config.timer_lower != 0 )
+            {
+                g_channels_1_config.timer_lower_cur += 1;
+
+                if( g_channels_1_config.timer_lower_cur == g_channels_1_config.timer_lower )
+                {
+                    g_channels_1_config.timer_lower_cur = 0;
+                    g_channels_1_config.timer_upper_cur += 1;
+
+                    if( g_channels_1_config.timer_upper_cur == g_channels_1_config.timer_upper )
+                    {
+                        g_channels_1_config.timer_upper_cur = 0;
+                        g_channels_1_config.timer_top_cur += 1;
+                    }
+                }
+            }
         }
     }
 //
@@ -727,10 +727,10 @@ void AkaoMusicChannelsInit()
 //    g_channels_1_config.condition = 0;
 //    g_channels_1_config.reverb_depth_slide_steps = 0;
 //    g_channels_1_config.mute_music = 0;
-//    g_channels_1_config.timer_upper_cur = 0;
-//    g_channels_1_config.timer_lower = 0;
-//    g_channels_1_config.timer_lower_cur = 0;
-//    g_channels_1_config.timer_top_cur = 0;
+    g_channels_1_config.timer_upper_cur = 0;
+    g_channels_1_config.timer_lower = 0;
+    g_channels_1_config.timer_lower_cur = 0;
+    g_channels_1_config.timer_top_cur = 0;
 
     AkaoChannel* channel = g_channels_1;
     u32 channel_mask = 0x1;

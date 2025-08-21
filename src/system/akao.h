@@ -198,11 +198,11 @@ struct AkaoConfig
 //    u16 reverb_depth_slide_steps;   // 0x50
 //    u16 noise_clock;                // 0x52
 //    u15 mute_music;                 // 0x54
-//    u16 timer_upper;                // 0x56
-//    u16 timer_upper_cur;            // 0x58
-//    u16 timer_lower;                // 0x5a
-//    u16 timer_lower_cur;            // 0x5c
-//    u16 timer_top_cur;              // 0x5e
+    u16 timer_upper;
+    u16 timer_upper_cur;
+    u16 timer_lower;
+    u16 timer_lower_cur;
+    u16 timer_top_cur;
 };
 
 struct AkaoCommandData

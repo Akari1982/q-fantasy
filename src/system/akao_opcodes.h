@@ -136,8 +136,6 @@ void AkaoOpcode_a4_pitch_bend_slide( AkaoChannel* channel, AkaoConfig* config, u
     channel->pitch_slide_steps = steps;
 
     channel->key_add = READ_LE_S8( akao + 0x1 );
-
-    //ofLog( OF_LOG_NOTICE, "PITCH BEND 0xa4( steps: " + ofToString( channel->pitch_slide_steps ) + ", key_add: " + ofToString( channel->key_add ) );
 }
 
 
@@ -609,14 +607,10 @@ void AkaoOpcode_bf_release_mode( AkaoChannel* channel, AkaoConfig* config, u32 m
 // value >= 0x80 is for negative transposition starting from 0xFF to 0x80(reversed).
 void AkaoOpcode_c0_transpose_absolute( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xc0" );
-
     u8* akao = channel->seq;
     channel->seq = akao + 0x1;
 
-    /*
-    channel->transpose = b[akao];
-    */
+    channel->transpose = READ_LE_S8( akao );
 }
 
 
@@ -626,14 +620,10 @@ void AkaoOpcode_c0_transpose_absolute( AkaoChannel* channel, AkaoConfig* config,
 // while value >= 0x80 is for negative transposition starting from 0xFF to 0x80 (reversed).
 void AkaoOpcode_c1_transpose_relative( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xc1" );
-
     u8* akao = channel->seq;
     channel->seq = akao + 0x1;
 
-    /*
-    channel->transpose += b[akao];
-    */
+    channel->transpose += READ_LE_S8( akao );
 }
 
 
@@ -1450,31 +1440,23 @@ void AkaoOpcode_f9_alt_voice_off( AkaoChannel* channel, AkaoConfig* config, u32 
 
 void AkaoOpcode_fd_time_signature( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xfd" );
-
     u8* akao = channel->seq;
     channel->seq = akao + 0x2;
 
-    /*
-    config->timer_upper = bu[akao + 0x1];
+    config->timer_upper = READ_LE_U8( akao + 0x1 );
     config->timer_upper_cur = 0;
-    config->timer_lower = bu[akao + 0x0];
+    config->timer_lower = READ_LE_U8( akao + 0x0 );
     config->timer_lower_cur = 0;
-    */
 }
 
 
 
 void AkaoOpcode_fe_measure_number( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xfe" );
-
     u8* akao = channel->seq;
     channel->seq = akao + 0x2;
 
-    /*
-    config->timer_top_cur = hu[akao];
-    */
+    config->timer_top_cur = READ_LE_U16( akao );
 }
 
 
