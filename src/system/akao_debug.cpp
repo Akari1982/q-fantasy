@@ -19,12 +19,20 @@ void AkaoDebugSequence()
 
     u32 channels_mask = READ_LE_U32( g_akao_music );
 
+    ImGui::SetCursorPos( ImVec2( base_x, add_y ) );
+    ImGui::TextColored( ImVec4( 1.0f, 1.0f, 1.0f, 1.0f ), "PL:%02x ON:%02x OFF%02x", g_channels_1_config.keyed_mask, g_channels_1_config.on_mask, g_channels_1_config.off_mask );
+    add_y += line_height;
     if( g_channels_1_config.timer_lower != 0 )
     {
         ImGui::SetCursorPos( ImVec2( base_x, add_y ) );
         ImGui::TextColored( ImVec4( 1.0f, 1.0f, 1.0f, 1.0f ), "%02x:%02x:%02x", g_channels_1_config.timer_top_cur, g_channels_1_config.timer_upper_cur, g_channels_1_config.timer_lower_cur );
         add_y += line_height;
     }
+
+    add_y += line_height + 5;
+    ImGui::SetCursorPos( ImVec2( base_x, add_y ) );
+    add_y += 10;
+    ImGui::Separator();
 
     for( size_t i = 0; i < 0x18; ++i )
     {

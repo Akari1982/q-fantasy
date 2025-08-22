@@ -376,7 +376,7 @@ void AkaoInitData()
     g_channels_1_config.stereo_mono = AKAO_STEREO;
     g_channels_1_config.active_mask = 0;
     g_channels_1_config.on_mask = 0;
-//    [0x8009a104 + 0xc] = w(0);
+    g_channels_1_config.keyed_mask = 0;
     g_channels_1_config.off_mask = 0;
 //    g_channels_1_config.active_mask_stored = 0;
 //    g_channels_1_config.noise_mask = 0;
@@ -522,7 +522,7 @@ void AkaoMainUpdate()
                     else if( channel->length_2 == 0 )
                     {
                         channel->length_2 |= 0x1;
-//                        [0x8009a104 + 0xc] = w(w[0x8009a104 + 0xc] & ~channel_mask);
+                        g_channels_1_config.keyed_mask &= ~channel_mask;
                         g_channels_1_config.off_mask |= channel_mask;
                     }
 
@@ -608,7 +608,7 @@ void AkaoMainUpdate()
 //                        if( channel->length_2 == 0 )
 //                        {
 //                            channel->length_2 |= 0x1;
-//                            [0x8009a164 + 0xc] = w(w[0x8009a164 + 0xc] & ~channel_mask);
+//                            g_channels_2_config.keyed_mask &= ~channel_mask;
 //                            g_channels_2_config.off_mask |= channel_mask;
 //                        }
 //                    }
@@ -710,7 +710,7 @@ void AkaoMusicChannelsInit()
 
     g_channels_1_config.active_mask = channels_mask;
     g_channels_1_config.on_mask = 0;
-//    [0x8009a104 + 0xc] = w(0);
+    g_channels_1_config.keyed_mask = 0;
     g_channels_1_config.off_mask |= 0x00ffffff;
     g_channels_1_config.tempo = 0xffff0000;
     g_channels_1_config.tempo_update = 0x1;
@@ -822,6 +822,18 @@ void AkaoInstrInit( AkaoChannel* channel, u16 instr_id )
     channel->attr.sr = g_akao_instrument[instr_id].sr;
     channel->attr.rr = g_akao_instrument[instr_id].rr;
     channel->attr.mask |= AKAO_UPDATE_SPU_BASE;
+
+    ofLog(OF_LOG_NOTICE, "Init instr:0x" + ofToHex(instr_id));
+    ofLog( OF_LOG_NOTICE, "addr      :" + ofToHex( g_akao_instrument[instr_id].addr      ) + " " + ofToHex( channel->attr.addr      ) );
+    ofLog( OF_LOG_NOTICE, "loop_addr :" + ofToHex( g_akao_instrument[instr_id].loop_addr ) + " " + ofToHex( channel->attr.loop_addr ) );
+    ofLog( OF_LOG_NOTICE, "a_mode    :" + ofToHex( g_akao_instrument[instr_id].a_mode    ) + " " + ofToHex( channel->attr.a_mode    ) );
+    ofLog( OF_LOG_NOTICE, "s_mode    :" + ofToHex( g_akao_instrument[instr_id].s_mode    ) + " " + ofToHex( channel->attr.s_mode    ) );
+    ofLog( OF_LOG_NOTICE, "r_mode    :" + ofToHex( g_akao_instrument[instr_id].r_mode    ) + " " + ofToHex( channel->attr.r_mode    ) );
+    ofLog( OF_LOG_NOTICE, "ar        :" + ofToHex( g_akao_instrument[instr_id].ar        ) + " " + ofToHex( channel->attr.ar        ) );
+    ofLog( OF_LOG_NOTICE, "dr        :" + ofToHex( g_akao_instrument[instr_id].dr        ) + " " + ofToHex( channel->attr.dr        ) );
+    ofLog( OF_LOG_NOTICE, "sl        :" + ofToHex( g_akao_instrument[instr_id].sl        ) + " " + ofToHex( channel->attr.sl        ) );
+    ofLog( OF_LOG_NOTICE, "sr        :" + ofToHex( g_akao_instrument[instr_id].sr        ) + " " + ofToHex( channel->attr.sr        ) );
+    ofLog( OF_LOG_NOTICE, "rr        :" + ofToHex( g_akao_instrument[instr_id].rr        ) + " " + ofToHex( channel->attr.rr        ) );
 }
 
 
@@ -979,10 +991,10 @@ void AkaoExecuteSequence( AkaoChannel* channel, AkaoConfig* config, u32 mask )
                 }
             }
 
-//            if( channel->type == AKAO_MUSIC )
-//            {
-//                [config + 0xc] = w(w[config + 0xc] | mask);
-//            }
+            if( channel->type == AKAO_MUSIC )
+            {
+                config->keyed_mask |= mask;
+            }
 //            else
 //            {
 //                [0x80099fd4] = w(w[0x80099fd4] | mask);
@@ -1151,7 +1163,7 @@ void AkaoUpdateKeysOn()
 //        channel_id = 0;
 //
 //        S5 = ~(g_channels_3_active_mask | g_akao_stream_mask) & w[0x80062f68];
-//        channels_mask = g_channels_2_config.active_mask & S5 & w[0x8009a164 + 0xc];
+//        channels_mask = g_channels_2_config.active_mask & S5 & g_channels_2_config.keyed_mask;
 //        updated_mask = S5 & g_channels_2_config.on_mask;
 //
 //        while( channels_mask != 0 )
@@ -1218,7 +1230,7 @@ void AkaoUpdateKeysOn()
         u32 channel_id = 0;
 
         u32 channel_mask = 1;
-        u32 channels_mask = g_channels_1_config.active_mask & exclude_mask /*& w[0x8009a104 + 0xc]*/;
+        u32 channels_mask = g_channels_1_config.active_mask & exclude_mask & g_channels_1_config.keyed_mask;
         AkaoChannel* channel = g_channels_1;
         while( channels_mask != 0 )
         {
@@ -1776,7 +1788,6 @@ void AkaoUpdateChannelAndOverlayParamsToSpu( AkaoChannel* channel, u32 mask, u32
     channel->attr.vol_r = (channel->attr.vol_r * volume_mod) >> 0x8;
 
     channel_2->attr.pitch = channel->attr.pitch;
-
     channel_2->attr.mask |= channel->attr.mask;
 
     AkaoUpdateChannelParamsToSpu( channel->attr.voice_id, channel->attr );

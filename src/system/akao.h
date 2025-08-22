@@ -176,7 +176,7 @@ struct AkaoConfig
     u32 stereo_mono;
     u32 active_mask;
     u32 on_mask;
-//                                    // 0xc [][][][] some channels mask.
+    u32 keyed_mask;
     u32 off_mask;
 //    u32 active_mask_stored;         // 0x14
     u32 tempo;

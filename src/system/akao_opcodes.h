@@ -31,7 +31,7 @@ void AkaoOpcode_a0_finish_channel( AkaoChannel* channel, AkaoConfig* config, u32
 //        g_channels_3_reverb_mask &= mask ^ 0x00ff0000;
 //        g_channels_3_pitch_lfo_mask &= mask ^ 0x00ff0000;
 //        g_channels_1_config.on_mask &= ~mask;
-//        [0x8009a104 + 0xc] = w(w[0x8009a104 + 0xc] & (~mask));
+//        g_channels_1_config.keyed_mask &= ~mask;
 //        g_channels_1_config.off_mask &= ~mask;
 //        g_channels_1[channel->alt_voice_id].attr.mask |= AKAO_UPDATE_SPU_BASE;
 //    }
@@ -64,12 +64,12 @@ void AkaoOpcode_a1_load_instrument( AkaoChannel* channel, AkaoConfig* config, u3
         channel->update_flags &= ~AKAO_UPDATE_OVERLAY;
     }
 
-//    if( ( channel->type != AKAO_MUSIC ) || ( ( mask & w[config + 0xc] & g_channels_3_active_mask ) == 0 ) )
-//    {
-//        channel->attr.mask |= SPU_VOICE_PITCH;
-//        u16 prev = channel->instr_id;
-//        channel->pitch_base *= g_akao_instrument[instr_id].pitch[0] / g_akao_instrument[prev].pitch[0];
-//    }
+    //if( ( channel->type != AKAO_MUSIC ) || ( ( mask & config->keyed_mask & g_channels_3_active_mask ) == 0 ) )
+    {
+        channel->attr.mask |= SPU_VOICE_PITCH;
+        u16 prev = channel->instr_id;
+        channel->pitch_base *= g_akao_instrument[instr_id].pitch[0] / g_akao_instrument[prev].pitch[0];
+    }
 
     if( channel->update_flags & AKAO_UPDATE_ALTERNATIVE )
     {
@@ -1077,7 +1077,7 @@ void AkaoOpcode_e8_tempo( AkaoChannel* channel, AkaoConfig* config, u32 mask )
     u8* akao = channel->seq;
     channel->seq = akao + 0x2;
 
-    config->tempo = READ_LE_U16( akao ) << 0x10;
+    config->tempo = /*READ_LE_U16( akao ) << 0x10*/ 0x1000;
     //config->tempo_slide_steps = 0;
 }
 
@@ -1235,7 +1235,7 @@ void AkaoOpcode_f2_load_instrument( AkaoChannel* channel, AkaoConfig* config, u3
 
     u16 instr_id = READ_LE_U8( akao );
 
-    if( (channel->type != AKAO_MUSIC) /*|| ((mask & w[config + 0xc] & g_channels_3_active_mask) == 0)*/ )
+    //if( (channel->type != AKAO_MUSIC) || ((mask & config->keyed_mask & g_channels_3_active_mask) == 0) )
     {
         u16 prev = channel->instr_id;
         channel->pitch_base *= g_akao_instrument[instr_id].pitch[0] / g_akao_instrument[prev].pitch[0];
