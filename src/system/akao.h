@@ -97,6 +97,8 @@ struct AkaoChannel
     s16 vol_pan_slide_step;
     u16 vol_pan_slide_steps;
     s16 vol_balance;
+    s16 vol_balance_slide_step;
+    u16 vol_balance_slide_steps;
 
     u16 key;
     u16 key_stored;
@@ -126,7 +128,6 @@ struct AkaoChannel
     u16 instr_id;
 
 //    u16 pitch_mul_sound_slide_steps;    // 0x5a
-//    u16 vol_balance_slide_steps;        // 0x5e
 //    u16 portamento_steps;               // 0x6c
     u16 sfx_mask;
 //                                        // 0x70
@@ -164,7 +165,6 @@ struct AkaoChannel
 //    s16 pan_lfo_depth_slide_step;       // 0xa2
 //    u16 noise_switch_delay;             // 0xa4
 //    u16 pitch_lfo_switch_delay;         // 0xa6
-//    s16 vol_balance_slide_step;         // 0xc8
 //    s16 pan_lfo_vol                     // 0xda
 //    u32 pan_lfo_wave;                   // 0x20
 

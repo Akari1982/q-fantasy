@@ -1349,7 +1349,7 @@ void AkaoOpcode_f6_overlay_volume_balance( AkaoChannel* channel, AkaoConfig* con
     channel->seq = akao + 0x1;
 
     channel->vol_balance = READ_LE_U8( akao ) << 0x8;
-//    channel->vol_balance_slide_steps = 0;
+    channel->vol_balance_slide_steps = 0;
 
     if( channel->update_flags & AKAO_UPDATE_OVERLAY )
     {
@@ -1366,14 +1366,12 @@ void AkaoOpcode_f7_overlay_volume_balance_slide( AkaoChannel* channel, AkaoConfi
     u8* akao = channel->seq;
     channel->seq = akao + 0x2;
 
-    /*
-    u16 steps = bu[akao];
+    u16 steps = READ_LE_U8( akao );
     if( steps == 0 ) steps = 0x100;
     channel->vol_balance_slide_steps = steps;
 
     channel->vol_balance &= 0xff00;
-    channel->vol_balance_slide_step = ((bu[akao + 0x1] << 0x8) - channel->vol_balance) / steps;
-    */
+    channel->vol_balance_slide_step = ((READ_LE_U8( akao + 0x1 ) << 0x8) - channel->vol_balance) / steps;
 }
 
 

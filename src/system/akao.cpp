@@ -763,7 +763,7 @@ void AkaoMusicChannelsInit()
             channel->update_flags = 0;
             channel->volume = 0x3fff0000;
             channel->vol_slide_steps = 0;
-//            channel->vol_balance_slide_steps = 0;
+            channel->vol_balance_slide_steps = 0;
             channel->vol_pan = 0x4000;
             channel->vol_pan_slide_steps = 0;
             channel->pitch_slide_steps_cur = 0;
@@ -1444,20 +1444,20 @@ void AkaoMusicUpdateSlideAndDelay( AkaoChannel* channel, AkaoConfig* config, u32
         channel->volume = vol_new;
     }
 
-//    if( channel->vol_balance_slide_steps != 0 )
-//    {
-//        channel->vol_balance_slide_steps -= 1;
-//
-//        A1 = channel->vol_balance + channel->vol_balance_slide_step;
-//        if( channel->update_flags & AKAO_UPDATE_OVERLAY )
-//        {
-//            if( (A1 & 0xff00) != (channel->vol_balance & 0xff00) )
-//            {
-//                channel->attr.mask |= AKAO_UPDATE_SPU_VOICE;
-//            }
-//        }
-//        channel->vol_balance = A1;
-//    }
+    if( channel->vol_balance_slide_steps != 0 )
+    {
+        channel->vol_balance_slide_steps -= 1;
+
+        s16 vol_balance = channel->vol_balance + channel->vol_balance_slide_step;
+        if( channel->update_flags & AKAO_UPDATE_OVERLAY )
+        {
+            if( (vol_balance & 0xff00) != (channel->vol_balance & 0xff00) )
+            {
+                channel->attr.mask |= AKAO_UPDATE_SPU_VOICE;
+            }
+        }
+        channel->vol_balance = vol_balance;
+    }
 
     if( channel->vol_pan_slide_steps != 0 )
     {
