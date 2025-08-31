@@ -39,6 +39,7 @@ void Application::draw()
     g_GameVram.draw( 0, 0, 640, 480 );
 
     AkaoDebugSequence();
+    AkaoDebugInstr();
 
 /*
     std::string popup_to_open = "";

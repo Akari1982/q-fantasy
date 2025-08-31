@@ -3,4 +3,5 @@
 
 
 void AkaoDebugSequence();
+void AkaoDebugInstr();
 

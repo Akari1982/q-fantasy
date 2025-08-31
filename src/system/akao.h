@@ -245,3 +245,5 @@ extern AkaoChannel g_channels_1[0x18];
 extern AkaoConfig g_channels_1_config;
 
 extern u8* g_akao_music;
+
+extern AkaoInstrument g_akao_instrument[0x80];

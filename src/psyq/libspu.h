@@ -2,7 +2,8 @@
 
 #include "typedef.h"
 
-#include "ofMain.h"
+#include "ofBaseApp.h"
+#include "ofSoundStream.h"
 
 #define SPU_OFF 0x0
 #define SPU_ON  0x1
@@ -48,16 +49,19 @@ struct SpuReverbAttr
     s32 feedback;
 };
 
-
+class AudioStream;
 
 class SpuPlayer : public ofBaseApp
 {
 public:
+    SpuPlayer( AudioStream* stream );
     void setup();
     void quit();
     void audioOut( ofSoundBuffer& buffer );
 
     ofSoundStream soundStream;
+
+    AudioStream* dataStream;
 };
 
 
@@ -67,7 +71,6 @@ void PsyqSpuQuit();
 
 void PsyqSpuSetTransferStartAddr( u32 addr );
 void PsyqSpuWrite( u8* addr, u32 size );
-void PsyqSpuRead( u8* addr, u32 size );
 
 void PsyqSpuSetVoicePitch( s32 voiceNum, u16 pitch );
 void PsyqSpuSetVoiceVolume( s32 voiceNum, s16 volumeL, s16 volumeR );

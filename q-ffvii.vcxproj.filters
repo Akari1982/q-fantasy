@@ -88,12 +88,6 @@
     <ClCompile Include="src\psyq\psxspu\spu.cpp">
       <Filter>src\psyq\psxspu</Filter>
     </ClCompile>
-    <ClCompile Include="src\psyq\psxspu\spu_tables.cpp">
-      <Filter>src\psyq\psxspu</Filter>
-    </ClCompile>
-    <ClCompile Include="src\psyq\psxspu\spureverb.cpp">
-      <Filter>src\psyq\psxspu</Filter>
-    </ClCompile>
     <ClCompile Include="src\psyq\libspu.cpp">
       <Filter>src\psyq</Filter>
     </ClCompile>
@@ -105,6 +99,18 @@
     </ClCompile>
     <ClCompile Include="src\system\akao_debug.cpp">
       <Filter>src\system</Filter>
+    </ClCompile>
+    <ClCompile Include="src\psyq\psxspu\audio_stream.cpp">
+      <Filter>src\psyq\psxspu</Filter>
+    </ClCompile>
+    <ClCompile Include="src\psyq\psxspu\common\gsvector.cpp">
+      <Filter>src\psyq\psxspu\common</Filter>
+    </ClCompile>
+    <ClCompile Include="src\psyq\psxspu\common\timer.cpp">
+      <Filter>src\psyq\psxspu\common</Filter>
+    </ClCompile>
+    <ClCompile Include="src\psyq\psxspu\of_audio_stream.cpp">
+      <Filter>src\psyq\psxspu</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -219,9 +225,6 @@
     <ClInclude Include="src\psyq\psxspu\spu.h">
       <Filter>src\psyq\psxspu</Filter>
     </ClInclude>
-    <ClInclude Include="src\psyq\psxspu\spureverb.h">
-      <Filter>src\psyq\psxspu</Filter>
-    </ClInclude>
     <ClInclude Include="src\psyq\libspu.h">
       <Filter>src\psyq</Filter>
     </ClInclude>
@@ -239,6 +242,33 @@
     </ClInclude>
     <ClInclude Include="src\system\akao_debug.h">
       <Filter>src\system</Filter>
+    </ClInclude>
+    <ClInclude Include="src\psyq\psxspu\audio_stream.h">
+      <Filter>src\psyq\psxspu</Filter>
+    </ClInclude>
+    <ClInclude Include="src\psyq\psxspu\common\align.h">
+      <Filter>src\psyq\psxspu\common</Filter>
+    </ClInclude>
+    <ClInclude Include="src\psyq\psxspu\common\bitfield.h">
+      <Filter>src\psyq\psxspu\common</Filter>
+    </ClInclude>
+    <ClInclude Include="src\psyq\psxspu\common\bitutils.h">
+      <Filter>src\psyq\psxspu\common</Filter>
+    </ClInclude>
+    <ClInclude Include="src\psyq\psxspu\common\gsvector.h">
+      <Filter>src\psyq\psxspu\common</Filter>
+    </ClInclude>
+    <ClInclude Include="src\psyq\psxspu\common\gsvector_sse.h">
+      <Filter>src\psyq\psxspu\common</Filter>
+    </ClInclude>
+    <ClInclude Include="src\psyq\psxspu\common\intrin.h">
+      <Filter>src\psyq\psxspu\common</Filter>
+    </ClInclude>
+    <ClInclude Include="src\psyq\psxspu\common\timer.h">
+      <Filter>src\psyq\psxspu\common</Filter>
+    </ClInclude>
+    <ClInclude Include="src\psyq\psxspu\common\types.h">
+      <Filter>src\psyq\psxspu\common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -277,6 +307,9 @@
     </Filter>
     <Filter Include="src\psyq\psxspu">
       <UniqueIdentifier>{da9abd21-9998-420e-bd58-61e04903d973}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\psyq\psxspu\common">
+      <UniqueIdentifier>{ec6290ca-9c76-427e-b192-2153300e9dee}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

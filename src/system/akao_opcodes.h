@@ -1077,7 +1077,7 @@ void AkaoOpcode_e8_tempo( AkaoChannel* channel, AkaoConfig* config, u32 mask )
     u8* akao = channel->seq;
     channel->seq = akao + 0x2;
 
-    config->tempo = /*READ_LE_U16( akao ) << 0x10*/ 0x1000;
+    config->tempo = READ_LE_U16( akao ) << 0x10;// 0x1000;
     //config->tempo_slide_steps = 0;
 }
 

@@ -1,3087 +1,2887 @@
-// license:BSD-3-Clause
-// copyright-holders:pSXAuthor, R. Belmont
-/*
+// SPDX-FileCopyrightText: 2019-2025 Connor McLaughlin <stenzek@gmail.com>
+// SPDX-License-Identifier: CC-BY-NC-ND-4.0
 
-    Sony PlayStation SPU (CXD2922BQ/CXD2925Q) emulator
-    by pSXAuthor
-    MAME adaptation by R. Belmont
-
-*/
-
-//#include "emu.h"
 #include "spu.h"
-#include "spureverb.h"
-//#include "cpu/psx/psx.h"
-//#include "corestr.h"
+//#include "cdrom.h"
+//#include "dma.h"
+//#include "host.h"
+//#include "imgui_overlays.h"
+//#include "interrupt_controller.h"
+//#include "system.h"
+//#include "timing_event.h"
 
-#include <vector>
-#include <algorithm>
-#include "assert.h"
-//
-//
-//
+#include "audio_stream.h"
+//#include "util/imgui_manager.h"
+//#include "util/media_capture.h"
+//#include "util/state_wrapper.h"
+//#include "util/wav_reader_writer.h"
 
-//#define warn_if_sweep_used
-#define assert_if_sweep_used
-//#define debug_spu_registers
-//#define debug_spu
-//#define log_loop_cache
-//#define show_xa_debug
+#include "common/bitfield.h"
+#include "common/bitutils.h"
+#include "common/gsvector.h"
+//#include "common/error.h"
+//#include "common/fifo_queue.h"
+//#include "common/log.h"
+//#include "common/path.h"
 
-//#ifndef _FINAL
-//  #define show_cache_update
+//#include "IconsEmoji.h"
+//#include "fmt/format.h"
+//#include "imgui.h"
+
+#include <memory>
+
+//LOG_CHANNEL(SPU);
+
+// Enable to dump all voices of the SPU audio individually.
+// #define SPU_DUMP_ALL_VOICES 1
+
+// VU meter is only enabled in devel builds due to speed impact.
+#if defined(_DEBUG) || defined(_DEVEL)
+#define SPU_ENABLE_VU_METER 1
+#endif
+
+ALWAYS_INLINE static constexpr s32 Clamp16(s32 value)
+{
+  return (value < -0x8000) ? -0x8000 : (value > 0x7FFF) ? 0x7FFF : value;
+}
+
+ALWAYS_INLINE static constexpr s32 ApplyVolume(s32 sample, s16 volume)
+{
+  return (sample * s32(volume)) >> 15;
+}
+
+namespace SPU {
+namespace {
+
+enum : u32
+{
+  SPU_BASE = 0x1F801C00,
+  NUM_VOICES = 24,
+  NUM_VOICE_REGISTERS = 8,
+  VOICE_ADDRESS_SHIFT = 3,
+  NUM_SAMPLES_PER_ADPCM_BLOCK = 28,
+  NUM_SAMPLES_FROM_LAST_ADPCM_BLOCK = 3,
+  SYSCLK_TICKS_PER_SPU_TICK = 0x300,
+  CAPTURE_BUFFER_SIZE_PER_CHANNEL = 0x400,
+  MINIMUM_TICKS_BETWEEN_KEY_ON_OFF = 2,
+  NUM_REVERB_REGS = 32,
+  FIFO_SIZE_IN_HALFWORDS = 32
+};
+enum : TickCount
+{
+  TRANSFER_TICKS_PER_HALFWORD = 16
+};
+
+enum class RAMTransferMode : u8
+{
+  Stopped = 0,
+  ManualWrite = 1,
+  DMAWrite = 2,
+  DMARead = 3
+};
+
+union SPUCNTRegister
+{
+  u16 bits;
+
+  BitField<u16, bool, 15, 1> enable;
+  BitField<u16, bool, 14, 1> mute_n;
+  BitField<u16, u8, 8, 6> noise_clock;
+  BitField<u16, bool, 7, 1> reverb_master_enable;
+  BitField<u16, bool, 6, 1> irq9_enable;
+  BitField<u16, RAMTransferMode, 4, 2> ram_transfer_mode;
+  BitField<u16, bool, 3, 1> external_audio_reverb;
+  BitField<u16, bool, 2, 1> cd_audio_reverb;
+  BitField<u16, bool, 1, 1> external_audio_enable;
+  BitField<u16, bool, 0, 1> cd_audio_enable;
+
+  BitField<u16, u8, 0, 6> mode;
+};
+
+union SPUSTATRegister
+{
+  u16 bits;
+
+  BitField<u16, bool, 11, 1> second_half_capture_buffer;
+  BitField<u16, bool, 10, 1> transfer_busy;
+  BitField<u16, bool, 9, 1> dma_write_request;
+  BitField<u16, bool, 8, 1> dma_read_request;
+  BitField<u16, bool, 7, 1> dma_request;
+  BitField<u16, bool, 6, 1> irq9_flag;
+  BitField<u16, u8, 0, 6> mode;
+};
+
+union TransferControl
+{
+  u16 bits;
+
+  BitField<u8, u8, 1, 3> mode;
+};
+
+union ADSRRegister
+{
+  u32 bits;
+  struct
+  {
+    u16 bits_low;
+    u16 bits_high;
+  };
+
+  BitField<u32, u8, 0, 4> sustain_level;
+  BitField<u32, u8, 4, 4> decay_rate_shr2;
+  BitField<u32, u8, 8, 7> attack_rate;
+  BitField<u32, bool, 15, 1> attack_exponential;
+
+  BitField<u32, u8, 16, 5> release_rate_shr2;
+  BitField<u32, bool, 21, 1> release_exponential;
+  BitField<u32, u8, 22, 7> sustain_rate;
+  BitField<u32, bool, 30, 1> sustain_direction_decrease;
+  BitField<u32, bool, 31, 1> sustain_exponential;
+};
+
+union VolumeRegister
+{
+  u16 bits;
+
+  BitField<u16, bool, 15, 1> sweep_mode;
+  BitField<u16, s16, 0, 15> fixed_volume_shr1; // divided by 2
+
+  BitField<u16, bool, 14, 1> sweep_exponential;
+  BitField<u16, bool, 13, 1> sweep_direction_decrease;
+  BitField<u16, bool, 12, 1> sweep_phase_negative;
+  BitField<u16, u8, 0, 7> sweep_rate;
+};
+
+// organized so we can replace this with a u16 array in the future
+union VoiceRegisters
+{
+  u16 index[NUM_VOICE_REGISTERS];
+
+  struct
+  {
+    VolumeRegister volume_left;
+    VolumeRegister volume_right;
+
+    u16 adpcm_sample_rate;   // VxPitch
+    u16 adpcm_start_address; // multiply by 8
+
+    ADSRRegister adsr;
+    s16 adsr_volume;
+
+    u16 adpcm_repeat_address; // multiply by 8
+  };
+};
+
+union VoiceCounter
+{
+  // promoted to u32 because of overflow
+  u32 bits;
+
+  BitField<u32, u8, 4, 8> interpolation_index;
+  BitField<u32, u8, 12, 5> sample_index;
+};
+
+union ADPCMFlags
+{
+  u8 bits;
+
+  BitField<u8, bool, 0, 1> loop_end;
+  BitField<u8, bool, 1, 1> loop_repeat;
+  BitField<u8, bool, 2, 1> loop_start;
+};
+
+struct ADPCMBlock
+{
+  union
+  {
+    u8 bits;
+
+    BitField<u8, u8, 0, 4> shift;
+    BitField<u8, u8, 4, 4> filter;
+  } shift_filter;
+  ADPCMFlags flags;
+  u8 data[NUM_SAMPLES_PER_ADPCM_BLOCK / 2];
+
+  // For both 4bit and 8bit ADPCM, reserved shift values 13..15 will act same as shift=9).
+  u8 GetShift() const
+  {
+    const u8 shift = shift_filter.shift;
+    return (shift > 12) ? 9 : shift;
+  }
+
+  u8 GetFilter() const { return shift_filter.filter; }
+
+  u8 GetNibble(u32 index) const { return (data[index / 2] >> ((index % 2) * 4)) & 0x0F; }
+};
+
+struct VolumeEnvelope
+{
+  static constexpr s32 MIN_VOLUME = -32768;
+  static constexpr s32 MAX_VOLUME = 32767;
+
+  u32 counter;
+  u16 counter_increment;
+  s16 step;
+  u8 rate;
+  bool decreasing;
+  bool exponential;
+  bool phase_invert;
+
+  void Reset(u8 rate_, u8 rate_mask_, bool decreasing_, bool exponential_, bool phase_invert_);
+  bool Tick(s16& current_level);
+};
+
+struct VolumeSweep
+{
+  VolumeEnvelope envelope;
+  s16 current_level;
+  bool envelope_active;
+
+  void Reset(VolumeRegister reg);
+  void Tick();
+};
+
+enum class ADSRPhase : u8
+{
+  Off = 0,
+  Attack = 1,
+  Decay = 2,
+  Sustain = 3,
+  Release = 4
+};
+
+struct Voice
+{
+  u16 current_address;
+  VoiceRegisters regs;
+  VoiceCounter counter;
+  ADPCMFlags current_block_flags;
+  bool is_first_block;
+  std::array<s16, NUM_SAMPLES_FROM_LAST_ADPCM_BLOCK + NUM_SAMPLES_PER_ADPCM_BLOCK> current_block_samples;
+  std::array<s16, 2> adpcm_last_samples;
+  s32 last_volume;
+
+  VolumeSweep left_volume;
+  VolumeSweep right_volume;
+
+  VolumeEnvelope adsr_envelope;
+  ADSRPhase adsr_phase;
+  s16 adsr_target;
+  bool has_samples;
+  bool ignore_loop_address;
+
+  bool IsOn() const { return adsr_phase != ADSRPhase::Off; }
+
+  void KeyOn();
+  void KeyOff();
+  void ForceOff();
+
+  void DecodeBlock(const ADPCMBlock& block);
+  s32 Interpolate() const;
+
+  // Switches to the specified phase, filling in target.
+  void UpdateADSREnvelope();
+
+  // Updates the ADSR volume/phase.
+  void TickADSR();
+};
+
+struct ReverbRegisters
+{
+  s16 vLOUT;
+  s16 vROUT;
+  u16 mBASE;
+
+  union
+  {
+    struct
+    {
+      u16 FB_SRC_A;
+      u16 FB_SRC_B;
+      s16 IIR_ALPHA;
+      s16 ACC_COEF_A;
+      s16 ACC_COEF_B;
+      s16 ACC_COEF_C;
+      s16 ACC_COEF_D;
+      s16 IIR_COEF;
+      s16 FB_ALPHA;
+      s16 FB_X;
+      u16 IIR_DEST_A[2];
+      u16 ACC_SRC_A[2];
+      u16 ACC_SRC_B[2];
+      u16 IIR_SRC_A[2];
+      u16 IIR_DEST_B[2];
+      u16 ACC_SRC_C[2];
+      u16 ACC_SRC_D[2];
+      u16 IIR_SRC_B[2];
+      u16 MIX_DEST_A[2];
+      u16 MIX_DEST_B[2];
+      s16 IN_COEF[2];
+    };
+
+    u16 rev[NUM_REVERB_REGS];
+  };
+};
+} // namespace
+
+//template<bool COMPATIBILITY>
+//static bool DoCompatibleState(StateWrapper& sw);
+
+static ADSRPhase GetNextADSRPhase(ADSRPhase phase);
+
+static bool IsVoiceReverbEnabled(u32 i);
+static bool IsVoiceNoiseEnabled(u32 i);
+static bool IsPitchModulationEnabled(u32 i);
+static s16 GetVoiceNoiseLevel();
+
+static u16 ReadVoiceRegister(u32 offset);
+static void WriteVoiceRegister(u32 offset, u16 value);
+
+static bool IsRAMIRQTriggerable();
+static bool CheckRAMIRQ(u32 address);
+static void TriggerRAMIRQ();
+static void CheckForLateRAMIRQs();
+
+static void WriteToCaptureBuffer(u32 index, s16 value);
+static void IncrementCaptureBufferPosition();
+
+static void ReadADPCMBlock(u16 address, ADPCMBlock* block);
+static std::tuple<s32, s32> SampleVoice(u32 voice_index);
+
+static void UpdateNoise();
+
+static u32 ReverbMemoryAddress(u32 address);
+static s16 ReverbRead(u32 address, s32 offset = 0);
+static void ReverbWrite(u32 address, s16 data);
+static void ProcessReverb(s32 left_in, s32 right_in, s32* left_out, s32* right_out);
+
+static void InternalGeneratePendingSamples();
+static void UpdateEventInterval();
+
+static void ExecuteFIFOWriteToRAM(TickCount& ticks);
+static void ExecuteFIFOReadFromRAM(TickCount& ticks);
+static void ExecuteTransfer(void* param, TickCount ticks, TickCount ticks_late);
+static void ManualTransferWrite(u16 value);
+static void UpdateTransferEvent();
+static void UpdateDMARequest();
+
+static void CreateOutputStream();
+
+namespace {
+struct SPUState
+{
+//  TimingEvent transfer_event{"SPU Transfer", TRANSFER_TICKS_PER_HALFWORD, TRANSFER_TICKS_PER_HALFWORD,
+//                             &SPU::ExecuteTransfer, nullptr};
+//  TimingEvent tick_event{"SPU Sample", SYSCLK_TICKS_PER_SPU_TICK, SYSCLK_TICKS_PER_SPU_TICK, &SPU::Execute, nullptr};
+
+  TickCount ticks_carry = 0;
+  TickCount cpu_ticks_per_spu_tick = 0;
+  TickCount cpu_tick_divider = 0;
+
+  SPUCNTRegister SPUCNT = {};
+  SPUSTATRegister SPUSTAT = {};
+
+  TransferControl transfer_control = {};
+  u16 transfer_address_reg = 0;
+  u32 transfer_address = 0;
+
+  u16 irq_address = 0;
+  u16 capture_buffer_position = 0;
+
+  VolumeRegister main_volume_left_reg = {};
+  VolumeRegister main_volume_right_reg = {};
+  VolumeSweep main_volume_left = {};
+  VolumeSweep main_volume_right = {};
+
+  s16 cd_audio_volume_left = 0;
+  s16 cd_audio_volume_right = 0;
+
+  s16 external_volume_left = 0;
+  s16 external_volume_right = 0;
+
+  u32 key_on_register = 0;
+  u32 key_off_register = 0;
+  u32 endx_register = 0;
+  u32 pitch_modulation_enable_register = 0;
+
+  u32 noise_mode_register = 0;
+  u32 noise_count = 0;
+  u32 noise_level = 0;
+
+  u32 reverb_on_register = 0;
+  u32 reverb_base_address = 0;
+  u32 reverb_current_address = 0;
+  ReverbRegisters reverb_registers{};
+  std::array<std::array<s16, 128>, 2> reverb_downsample_buffer;
+  std::array<std::array<s16, 64>, 2> reverb_upsample_buffer;
+  s32 reverb_resample_buffer_position = 0;
+
+  ALIGN_TO_CACHE_LINE std::array<Voice, NUM_VOICES> voices{};
+
+//  InlineFIFOQueue<u16, FIFO_SIZE_IN_HALFWORDS> transfer_fifo;
+
+  std::unique_ptr<AudioStream> audio_stream;
+
+  s16 last_reverb_input[2];
+  s32 last_reverb_output[2];
+  bool audio_output_muted = false;
+
+#ifdef SPU_DUMP_ALL_VOICES
+  // +1 for reverb output
+  std::array<std::unique_ptr<WAVWriter>, NUM_VOICES + 1> s_voice_dump_writers;
+#endif
+
+//#ifdef SPU_ENABLE_VU_METER
+//  s16 output_peaks[2] = {};
+//  s16 cd_audio_peaks[2] = {};
+//  s16 reverb_peaks[2] = {};
+//  s16 voice_peaks[NUM_VOICES][2] = {};
+//#endif
+};
+} // namespace
+
+ALIGN_TO_CACHE_LINE static SPUState s_state;
+ALIGN_TO_CACHE_LINE static std::array<u8, RAM_SIZE> s_ram{};
+ALIGN_TO_CACHE_LINE static std::array<s16, (44100 / 60) * 2> s_muted_output_buffer{};
+
+} // namespace SPU
+
+//#ifdef SPU_ENABLE_VU_METER
+//
+//static bool IsVUMeterActive()
+//{
+//  return ImGuiManager::IsSPUDebugWindowEnabled();
+//}
+//
+//ALWAYS_INLINE_RELEASE static void UpdateDebugPeaks(s16 peaks[2], s32 left, s32 right)
+//{
+//  peaks[0] = std::max(static_cast<s16>(std::abs(Clamp16(left))), peaks[0]);
+//  peaks[1] = std::max(static_cast<s16>(std::abs(Clamp16(right))), peaks[1]);
+//}
+//
 //#endif
 
-#ifdef show_xa_debug
-	#define debug_xa printf
-#else
-	#define debug_xa if (0)
+void SPU::Initialize()
+{
+  // (X * D) / N / 768 -> (X * D) / (N * 768)
+//  s_state.cpu_ticks_per_spu_tick = System::ScaleTicksToOverclock(SYSCLK_TICKS_PER_SPU_TICK);
+//  s_state.cpu_tick_divider = static_cast<TickCount>(g_settings.cpu_overclock_numerator * SYSCLK_TICKS_PER_SPU_TICK);
+//  s_state.tick_event.SetInterval(s_state.cpu_ticks_per_spu_tick);
+//  s_state.tick_event.SetPeriod(s_state.cpu_ticks_per_spu_tick);
+
+  CreateOutputStream();
+  Reset();
+
+//#ifdef SPU_DUMP_ALL_VOICES
+//  {
+//    const std::string base_path = System::GetNewMediaCapturePath(System::GetGameTitle(), "wav");
+//    for (size_t i = 0; i < s_state.s_voice_dump_writers.size(); i++)
+//    {
+//      s_state.s_voice_dump_writers[i].reset();
+//      s_state.s_voice_dump_writers[i] = std::make_unique<WAVWriter>();
+//
+//      TinyString new_suffix;
+//      if (i == NUM_VOICES)
+//        new_suffix.assign("reverb.wav");
+//      else
+//        new_suffix.format("voice{}.wav", i);
+//
+//      const std::string voice_filename = Path::ReplaceExtension(base_path, new_suffix);
+//      if (!s_state.s_voice_dump_writers[i]->Open(voice_filename.c_str(), SAMPLE_RATE, 2))
+//      {
+//        ERROR_LOG("Failed to open voice dump filename '{}'", voice_filename.c_str());
+//        s_state.s_voice_dump_writers[i].reset();
+//      }
+//    }
+//  }
+//#endif
+}
+
+void SPU::CreateOutputStream()
+{
+//  INFO_LOG("Creating '{}' audio stream, sample rate = {}, buffer = {}, latency = {}{}, stretching = {}",
+//           AudioStream::GetBackendName(g_settings.audio_backend), static_cast<u32>(SAMPLE_RATE),
+//           g_settings.audio_stream_parameters.buffer_ms, g_settings.audio_stream_parameters.output_latency_ms,
+//           g_settings.audio_stream_parameters.output_latency_minimal ? " (or minimal)" : "",
+//           AudioStream::GetStretchModeName(g_settings.audio_stream_parameters.stretch_mode));
+
+//  Error error;
+  s_state.audio_stream = AudioStream::CreateStream( SAMPLE_RATE );
+//    AudioStream::CreateStream(g_settings.audio_backend, SAMPLE_RATE, g_settings.audio_stream_parameters,
+//                              g_settings.audio_driver.c_str(), g_settings.audio_output_device.c_str(), &error);
+//  if (!s_state.audio_stream)
+//  {
+//    Host::AddIconOSDWarning(
+//      "SPUAudioStream", ICON_EMOJI_WARNING,
+//      fmt::format(
+//        TRANSLATE_FS("SPU",
+//                     "Failed to create or configure audio stream, falling back to null output. The error was:\n{}"),
+//        error.GetDescription()),
+//      Host::OSD_ERROR_DURATION);
+//    s_state.audio_stream.reset();
+//    s_state.audio_stream = AudioStream::CreateNullStream(SAMPLE_RATE, g_settings.audio_stream_parameters.buffer_ms);
+//  }
+
+//  s_state.audio_stream->SetOutputVolume(System::GetAudioOutputVolume());
+//  s_state.audio_stream->SetNominalRate(System::GetAudioNominalRate());
+//  s_state.audio_stream->SetPaused(System::IsPaused());
+}
+
+void SPU::RecreateOutputStream()
+{
+  s_state.audio_stream.reset();
+  CreateOutputStream();
+}
+
+void SPU::CPUClockChanged()
+{
+//  // (X * D) / N / 768 -> (X * D) / (N * 768)
+//  s_state.cpu_ticks_per_spu_tick = System::ScaleTicksToOverclock(SYSCLK_TICKS_PER_SPU_TICK);
+//  s_state.cpu_tick_divider = static_cast<TickCount>(g_settings.cpu_overclock_numerator * SYSCLK_TICKS_PER_SPU_TICK);
+//  s_state.ticks_carry = 0;
+//  UpdateEventInterval();
+}
+
+void SPU::Shutdown()
+{
+#ifdef SPU_DUMP_ALL_VOICES
+  for (size_t i = 0; i < s_state.s_voice_dump_writers.size(); i++)
+    s_state.s_voice_dump_writers[i].reset();
 #endif
 
-// device type definition
-//DEFINE_DEVICE_TYPE(SPU, spu_device, "psxspu", "PlayStation SPU")
+//  s_state.tick_event.Deactivate();
+//  s_state.transfer_event.Deactivate();
+  s_state.audio_stream.reset();
+}
 
-//
-//
-//
-enum spu_registers
+void SPU::Reset()
 {
-	spureg_voice=0,
-	spureg_voice_last=0x17f,
-	spureg_mvol_l=0x180,
-	spureg_mvol_r=0x182,
-	spureg_rvol_l=0x184,
-	spureg_rvol_r=0x186,
-	spureg_keyon=0x188,
-	spureg_keyoff=0x18c,
-	spureg_fm=0x190,
-	spureg_noise=0x194,
-	spureg_reverb=0x198,
-	spureg_chon=0x19c,
-	spureg_reverb_addr=0x1a2,
-	spureg_irq_addr=0x1a4,
-	spureg_trans_addr=0x1a6,
-	spureg_data=0x1a8,
-	spureg_ctrl=0x1aa,
-	spureg_status=0x1ac,
-	spureg_cdvol_l=0x1b0,
-	spureg_cdvol_r=0x1b2,
-	spureg_exvol_l=0x1b4,
-	spureg_exvol_r=0x1b6,
-	spureg_reverb_config=0x1c0,
-	spureg_last=0x1ff
-};
+  s_state.ticks_carry = 0;
 
-enum spu_ctrl
-{
-	spuctrl_irq_enable=0x40,
-	spuctrl_noise_shift=8,
-	spuctrl_noise_mask=0x3f<<spuctrl_noise_shift
-};
+  s_state.SPUCNT.bits = 0;
+  s_state.SPUSTAT.bits = 0;
+  s_state.transfer_address = 0;
+  s_state.transfer_address_reg = 0;
+  s_state.irq_address = 0;
+  s_state.capture_buffer_position = 0;
 
-enum
-{
-	adpcmflag_end=1,
-	adpcmflag_loop=2,
-	adpcmflag_loop_start=4
-};
+  s_state.main_volume_left_reg.bits = 0;
+  s_state.main_volume_right_reg.bits = 0;
+  s_state.main_volume_left = {};
+  s_state.main_volume_right = {};
+  s_state.cd_audio_volume_left = 0;
+  s_state.cd_audio_volume_right = 0;
+  s_state.external_volume_left = 0;
+  s_state.external_volume_right = 0;
+  s_state.key_on_register = 0;
+  s_state.key_off_register = 0;
+  s_state.endx_register = 0;
+  s_state.pitch_modulation_enable_register = 0;
 
-struct adpcm_packet
-{
-	unsigned char info,
-								flags,
-								data[14];
-};
+  s_state.noise_mode_register = 0;
+  s_state.noise_count = 0;
+  s_state.noise_level = 1;
 
-enum adsl_flags
-{
-	adsl_am=0x8000,
-	adsl_ar_shift=8,
-	adsl_ar_mask=0x7f<<adsl_ar_shift,
-	adsl_dr_shift=4,
-	adsl_dr_mask=0xf<<adsl_dr_shift,
-	adsl_sl_mask=0xf
-};
+  s_state.reverb_on_register = 0;
+  s_state.reverb_registers = {};
+  s_state.reverb_registers.mBASE = 0;
+  s_state.reverb_base_address = s_state.reverb_current_address = ZeroExtend32(s_state.reverb_registers.mBASE) << 2;
+  s_state.reverb_downsample_buffer = {};
+  s_state.reverb_upsample_buffer = {};
+  s_state.reverb_resample_buffer_position = 0;
 
-enum srrr_flags
-{
-	srrr_sm=0x8000,
-	srrr_sd=0x4000,
-	srrr_sr_shift=6,
-	srrr_sr_mask=0x7f<<srrr_sr_shift,
-	srrr_rm=0x20,
-	srrr_rr_mask=0x1f
-};
+  //////////////////////////
+  // HACK
+  s_state.SPUCNT.mute_n = true;
+  s_state.SPUCNT.enable = true;
+  s_state.main_volume_left_reg.bits = 0x3FFF;
+  s_state.main_volume_left.Reset(s_state.main_volume_left_reg);
+  s_state.main_volume_right_reg.bits = 0x3FFF;
+  s_state.main_volume_right.Reset(s_state.main_volume_left_reg);
+  //////////////////////////
 
-static unsigned int const /*sound_buffer_size=65536*4,*/
-													xa_sector_size=(18*28*8)<<1,
-													xa_buffer_sectors=16,
-													cdda_sector_size=2352,
-													cdda_buffer_sectors=16,
-													num_loop_cache_packets=4,
-													num_loop_cache_samples=num_loop_cache_packets*28,
-													spu_ram_size=512*1024,
-													spu_infinity=0xffffffff,
+  for (u32 i = 0; i < NUM_VOICES; i++)
+  {
+    Voice& v = s_state.voices[i];
+    v.current_address = 0;
+    std::fill_n(v.regs.index, NUM_VOICE_REGISTERS, u16(0));
+    v.counter.bits = 0;
+    v.current_block_flags.bits = 0;
+    v.is_first_block = 0;
+    v.current_block_samples.fill(s16(0));
+    v.adpcm_last_samples.fill(s32(0));
+    v.adsr_envelope.Reset(0, 0, false, false, false);
+    v.adsr_phase = ADSRPhase::Off;
+    v.adsr_target = 0;
+    v.has_samples = false;
+    v.ignore_loop_address = false;
+  }
 
-													output_buffer_size=65536/8/*,
+//  s_state.tick_event.Deactivate();
+//  s_state.transfer_event.Deactivate();
+//  s_state.transfer_fifo.Clear();
+  s_ram.fill(0);
+  UpdateEventInterval();
+}
 
-													sample_loop_cache_pool_size=64,
-													sample_loop_cache_extend_size=64,
-													sample_cache_pool_size=64,
-													sample_cache_extend_size=64,
-
-													stream_marker_pool_size=64,
-													stream_marker_extend_size=64*/;
-
+//template<bool COMPATIBILITY>
+//bool SPU::DoCompatibleState(StateWrapper& sw)
+//{
+//  struct OldEnvelope
+//  {
+//    s32 counter;
+//    u8 rate;
+//    bool decreasing;
+//    bool exponential;
+//    bool phase_invert;
+//  };
+//  struct OldSweep
+//  {
+//    OldEnvelope env;
+//    bool envelope_active;
+//    s16 current_level;
+//  };
 //
+//  static constexpr const auto do_compatible_volume_envelope = [](StateWrapper& sw, VolumeEnvelope* env) {
+//    if constexpr (COMPATIBILITY)
+//    {
+//      if (sw.GetVersion() < 70) [[unlikely]]
+//      {
+//        OldEnvelope oenv;
+//        sw.DoPOD(&oenv);
+//        env->Reset(oenv.rate, 0x7f, oenv.decreasing, oenv.exponential, oenv.phase_invert);
+//        env->counter = oenv.counter; // wrong
+//        return;
+//      }
+//    }
 //
+//    sw.DoPOD(env);
+//  };
+//  static constexpr const auto do_compatible_volume_sweep = [](StateWrapper& sw, VolumeSweep* sweep) {
+//    if constexpr (COMPATIBILITY)
+//    {
+//      if (sw.GetVersion() < 70) [[unlikely]]
+//      {
+//        OldSweep osweep;
+//        sw.DoPOD(&osweep);
+//        sweep->envelope.Reset(osweep.env.rate, 0x7f, osweep.env.decreasing, osweep.env.exponential,
+//                              osweep.env.phase_invert);
+//        sweep->envelope.counter = osweep.env.counter; // wrong
+//        sweep->envelope_active = osweep.envelope_active;
+//        sweep->current_level = osweep.current_level;
+//        return;
+//      }
+//    }
 //
+//    sw.DoPOD(sweep);
+//  };
+//
+//  sw.Do(&s_state.ticks_carry);
+//  sw.Do(&s_state.SPUCNT.bits);
+//  sw.Do(&s_state.SPUSTAT.bits);
+//  sw.Do(&s_state.transfer_control.bits);
+//  sw.Do(&s_state.transfer_address);
+//  sw.Do(&s_state.transfer_address_reg);
+//  sw.Do(&s_state.irq_address);
+//  sw.Do(&s_state.capture_buffer_position);
+//  sw.Do(&s_state.main_volume_left_reg.bits);
+//  sw.Do(&s_state.main_volume_right_reg.bits);
+//  do_compatible_volume_sweep(sw, &s_state.main_volume_left);
+//  do_compatible_volume_sweep(sw, &s_state.main_volume_right);
+//  sw.Do(&s_state.cd_audio_volume_left);
+//  sw.Do(&s_state.cd_audio_volume_right);
+//  sw.Do(&s_state.external_volume_left);
+//  sw.Do(&s_state.external_volume_right);
+//  sw.Do(&s_state.key_on_register);
+//  sw.Do(&s_state.key_off_register);
+//  sw.Do(&s_state.endx_register);
+//  sw.Do(&s_state.pitch_modulation_enable_register);
+//  sw.Do(&s_state.noise_mode_register);
+//  sw.Do(&s_state.noise_count);
+//  sw.Do(&s_state.noise_level);
+//  sw.Do(&s_state.reverb_on_register);
+//  sw.Do(&s_state.reverb_base_address);
+//  sw.Do(&s_state.reverb_current_address);
+//  sw.Do(&s_state.reverb_registers.vLOUT);
+//  sw.Do(&s_state.reverb_registers.vROUT);
+//  sw.Do(&s_state.reverb_registers.mBASE);
+//  sw.DoArray(s_state.reverb_registers.rev, NUM_REVERB_REGS);
+//  for (u32 i = 0; i < 2; i++)
+//    sw.DoArray(s_state.reverb_downsample_buffer.data(), s_state.reverb_downsample_buffer.size());
+//  for (u32 i = 0; i < 2; i++)
+//    sw.DoArray(s_state.reverb_upsample_buffer.data(), s_state.reverb_upsample_buffer.size());
+//  sw.Do(&s_state.reverb_resample_buffer_position);
+//  for (u32 i = 0; i < NUM_VOICES; i++)
+//  {
+//    Voice& v = s_state.voices[i];
+//    sw.Do(&v.current_address);
+//    sw.DoArray(v.regs.index, NUM_VOICE_REGISTERS);
+//    sw.Do(&v.counter.bits);
+//    sw.Do(&v.current_block_flags.bits);
+//    if constexpr (COMPATIBILITY)
+//      sw.DoEx(&v.is_first_block, 47, false);
+//    else
+//      sw.Do(&v.is_first_block);
+//    sw.DoArray(&v.current_block_samples[NUM_SAMPLES_FROM_LAST_ADPCM_BLOCK], NUM_SAMPLES_PER_ADPCM_BLOCK);
+//    sw.DoArray(&v.current_block_samples[0], NUM_SAMPLES_FROM_LAST_ADPCM_BLOCK);
+//    sw.Do(&v.adpcm_last_samples);
+//    sw.Do(&v.last_volume);
+//    do_compatible_volume_sweep(sw, &v.left_volume);
+//    do_compatible_volume_sweep(sw, &v.right_volume);
+//    do_compatible_volume_envelope(sw, &v.adsr_envelope);
+//    sw.Do(&v.adsr_phase);
+//    sw.Do(&v.adsr_target);
+//    sw.Do(&v.has_samples);
+//    sw.Do(&v.ignore_loop_address);
+//  }
+//
+//  sw.Do(&s_state.transfer_fifo);
+//  sw.DoBytes(s_ram.data(), RAM_SIZE);
+//
+//  if (sw.IsReading())
+//  {
+//    UpdateEventInterval();
+//    UpdateTransferEvent();
+//  }
+//
+//  return !sw.HasError();
+//}
 
-static int const filter_coef[5][2]=
+//bool SPU::DoState(StateWrapper& sw)
+//{
+//  if (sw.GetVersion() < 70) [[unlikely]]
+//    return DoCompatibleState<true>(sw);
+//  else
+//    return DoCompatibleState<false>(sw);
+//}
+
+u16 SPU::ReadRegister(u32 offset)
 {
-	{ 0,0 },
-	{ 60,0 },
-	{ 115,-52 },
-	{ 98,-55 },
-	{ 122,-60 },
-};
+  switch (offset)
+  {
+    case 0x1F801D80 - SPU_BASE:
+      return s_state.main_volume_left_reg.bits;
 
+    case 0x1F801D82 - SPU_BASE:
+      return s_state.main_volume_right_reg.bits;
+
+    case 0x1F801D84 - SPU_BASE:
+      return s_state.reverb_registers.vLOUT;
+
+    case 0x1F801D86 - SPU_BASE:
+      return s_state.reverb_registers.vROUT;
+
+    case 0x1F801D88 - SPU_BASE:
+      return Truncate16(s_state.key_on_register);
+
+    case 0x1F801D8A - SPU_BASE:
+      return Truncate16(s_state.key_on_register >> 16);
+
+    case 0x1F801D8C - SPU_BASE:
+      return Truncate16(s_state.key_off_register);
+
+    case 0x1F801D8E - SPU_BASE:
+      return Truncate16(s_state.key_off_register >> 16);
+
+    case 0x1F801D90 - SPU_BASE:
+      return Truncate16(s_state.pitch_modulation_enable_register);
+
+    case 0x1F801D92 - SPU_BASE:
+      return Truncate16(s_state.pitch_modulation_enable_register >> 16);
+
+    case 0x1F801D94 - SPU_BASE:
+      return Truncate16(s_state.noise_mode_register);
+
+    case 0x1F801D96 - SPU_BASE:
+      return Truncate16(s_state.noise_mode_register >> 16);
+
+    case 0x1F801D98 - SPU_BASE:
+      return Truncate16(s_state.reverb_on_register);
+
+    case 0x1F801D9A - SPU_BASE:
+      return Truncate16(s_state.reverb_on_register >> 16);
+
+    case 0x1F801D9C - SPU_BASE:
+      return Truncate16(s_state.endx_register);
+
+    case 0x1F801D9E - SPU_BASE:
+      return Truncate16(s_state.endx_register >> 16);
+
+    case 0x1F801DA2 - SPU_BASE:
+      return s_state.reverb_registers.mBASE;
+
+    case 0x1F801DA4 - SPU_BASE:
+//      TRACE_LOG("SPU IRQ address -> 0x{:04X}", s_state.irq_address);
+      return s_state.irq_address;
+
+    case 0x1F801DA6 - SPU_BASE:
+//      TRACE_LOG("SPU transfer address register -> 0x{:04X}", s_state.transfer_address_reg);
+      return s_state.transfer_address_reg;
+
+    case 0x1F801DA8 - SPU_BASE:
+//      TRACE_LOG("SPU transfer data register read");
+      return UINT16_C(0xFFFF);
+
+    case 0x1F801DAA - SPU_BASE:
+//      TRACE_LOG("SPU control register -> 0x{:04X}", s_state.SPUCNT.bits);
+      return s_state.SPUCNT.bits;
+
+    case 0x1F801DAC - SPU_BASE:
+//      TRACE_LOG("SPU transfer control register -> 0x{:04X}", s_state.transfer_control.bits);
+      return s_state.transfer_control.bits;
+
+    case 0x1F801DAE - SPU_BASE:
+      GeneratePendingSamples();
+//      TRACE_LOG("SPU status register -> 0x{:04X}", s_state.SPUCNT.bits);
+      return s_state.SPUSTAT.bits;
+
+    case 0x1F801DB0 - SPU_BASE:
+      return s_state.cd_audio_volume_left;
+
+    case 0x1F801DB2 - SPU_BASE:
+      return s_state.cd_audio_volume_right;
+
+    case 0x1F801DB4 - SPU_BASE:
+      return s_state.external_volume_left;
+
+    case 0x1F801DB6 - SPU_BASE:
+      return s_state.external_volume_right;
+
+    case 0x1F801DB8 - SPU_BASE:
+      GeneratePendingSamples();
+      return s_state.main_volume_left.current_level;
+
+    case 0x1F801DBA - SPU_BASE:
+      GeneratePendingSamples();
+      return s_state.main_volume_right.current_level;
+
+    default:
+    {
+      if (offset < (0x1F801D80 - SPU_BASE))
+        return ReadVoiceRegister(offset);
+
+      if (offset >= (0x1F801DC0 - SPU_BASE) && offset < (0x1F801E00 - SPU_BASE))
+        return s_state.reverb_registers.rev[(offset - (0x1F801DC0 - SPU_BASE)) / 2];
+
+      if (offset >= (0x1F801E00 - SPU_BASE) && offset < (0x1F801E60 - SPU_BASE))
+      {
+        const u32 voice_index = (offset - (0x1F801E00 - SPU_BASE)) / 4;
+        GeneratePendingSamples();
+        if (offset & 0x02)
+          return s_state.voices[voice_index].left_volume.current_level;
+        else
+          return s_state.voices[voice_index].right_volume.current_level;
+      }
+
+//      DEV_LOG("Unknown SPU register read: offset 0x{:X} (address 0x{:08X})", offset, offset | SPU_BASE);
+      return UINT16_C(0xFFFF);
+    }
+  }
+}
+
+void SPU::WriteRegister(u32 offset, u16 value)
+{
+  switch (offset)
+  {
+    case 0x1F801D80 - SPU_BASE:
+    {
+//      DEBUG_LOG("SPU main volume left <- 0x{:04X}", value);
+      GeneratePendingSamples();
+      s_state.main_volume_left_reg.bits = value;
+      s_state.main_volume_left.Reset(s_state.main_volume_left_reg);
+      return;
+    }
+
+    case 0x1F801D82 - SPU_BASE:
+    {
+//      DEBUG_LOG("SPU main volume right <- 0x{:04X}", value);
+      GeneratePendingSamples();
+      s_state.main_volume_right_reg.bits = value;
+      s_state.main_volume_right.Reset(s_state.main_volume_right_reg);
+      return;
+    }
+
+    case 0x1F801D84 - SPU_BASE:
+    {
+//      DEBUG_LOG("SPU reverb output volume left <- 0x{:04X}", value);
+      GeneratePendingSamples();
+      s_state.reverb_registers.vLOUT = value;
+      return;
+    }
+
+    case 0x1F801D86 - SPU_BASE:
+    {
+//      DEBUG_LOG("SPU reverb output volume right <- 0x{:04X}", value);
+      GeneratePendingSamples();
+      s_state.reverb_registers.vROUT = value;
+      return;
+    }
+
+    case 0x1F801D88 - SPU_BASE:
+    {
+//      DEBUG_LOG("SPU key on low <- 0x{:04X}", value);
+      GeneratePendingSamples();
+      s_state.key_on_register = (s_state.key_on_register & 0xFFFF0000) | ZeroExtend32(value);
+    }
+    break;
+
+    case 0x1F801D8A - SPU_BASE:
+    {
+//      DEBUG_LOG("SPU key on high <- 0x{:04X}", value);
+      GeneratePendingSamples();
+      s_state.key_on_register = (s_state.key_on_register & 0x0000FFFF) | (ZeroExtend32(value) << 16);
+    }
+    break;
+
+    case 0x1F801D8C - SPU_BASE:
+    {
+//      DEBUG_LOG("SPU key off low <- 0x{:04X}", value);
+      GeneratePendingSamples();
+      s_state.key_off_register = (s_state.key_off_register & 0xFFFF0000) | ZeroExtend32(value);
+    }
+    break;
+
+    case 0x1F801D8E - SPU_BASE:
+    {
+//      DEBUG_LOG("SPU key off high <- 0x{:04X}", value);
+      GeneratePendingSamples();
+      s_state.key_off_register = (s_state.key_off_register & 0x0000FFFF) | (ZeroExtend32(value) << 16);
+    }
+    break;
+
+    case 0x1F801D90 - SPU_BASE:
+    {
+      GeneratePendingSamples();
+      s_state.pitch_modulation_enable_register =
+        (s_state.pitch_modulation_enable_register & 0xFFFF0000) | ZeroExtend32(value);
+//      DEBUG_LOG("SPU pitch modulation enable register <- 0x{:08X}", s_state.pitch_modulation_enable_register);
+    }
+    break;
+
+    case 0x1F801D92 - SPU_BASE:
+    {
+      GeneratePendingSamples();
+      s_state.pitch_modulation_enable_register =
+        (s_state.pitch_modulation_enable_register & 0x0000FFFF) | (ZeroExtend32(value) << 16);
+//      DEBUG_LOG("SPU pitch modulation enable register <- 0x{:08X}", s_state.pitch_modulation_enable_register);
+    }
+    break;
+
+    case 0x1F801D94 - SPU_BASE:
+    {
+//      DEBUG_LOG("SPU noise mode register <- 0x{:04X}", value);
+      GeneratePendingSamples();
+      s_state.noise_mode_register = (s_state.noise_mode_register & 0xFFFF0000) | ZeroExtend32(value);
+    }
+    break;
+
+    case 0x1F801D96 - SPU_BASE:
+    {
+//      DEBUG_LOG("SPU noise mode register <- 0x{:04X}", value);
+      GeneratePendingSamples();
+      s_state.noise_mode_register = (s_state.noise_mode_register & 0x0000FFFF) | (ZeroExtend32(value) << 16);
+    }
+    break;
+
+    case 0x1F801D98 - SPU_BASE:
+    {
+//      DEBUG_LOG("SPU reverb on register <- 0x{:04X}", value);
+      GeneratePendingSamples();
+      s_state.reverb_on_register = (s_state.reverb_on_register & 0xFFFF0000) | ZeroExtend32(value);
+    }
+    break;
+
+    case 0x1F801D9A - SPU_BASE:
+    {
+//      DEBUG_LOG("SPU reverb on register <- 0x{:04X}", value);
+      GeneratePendingSamples();
+      s_state.reverb_on_register = (s_state.reverb_on_register & 0x0000FFFF) | (ZeroExtend32(value) << 16);
+    }
+    break;
+
+    case 0x1F801DA2 - SPU_BASE:
+    {
+//      DEBUG_LOG("SPU reverb base address < 0x{:04X}", value);
+      GeneratePendingSamples();
+      s_state.reverb_registers.mBASE = value;
+      s_state.reverb_base_address = ZeroExtend32(value << 2) & 0x3FFFFu;
+      s_state.reverb_current_address = s_state.reverb_base_address;
+    }
+    break;
+
+    case 0x1F801DA4 - SPU_BASE:
+    {
+//      DEBUG_LOG("SPU IRQ address register <- 0x{:04X}", value);
+      GeneratePendingSamples();
+      s_state.irq_address = value;
+
+      if (IsRAMIRQTriggerable())
+        CheckForLateRAMIRQs();
+
+      return;
+    }
+
+    case 0x1F801DA6 - SPU_BASE:
+    {
+//      DEBUG_LOG("SPU transfer address register <- 0x{:04X}", value);
+//      s_state.transfer_event.InvokeEarly();
+      s_state.transfer_address_reg = value;
+      s_state.transfer_address = ZeroExtend32(value) * 8;
+      if (IsRAMIRQTriggerable() && CheckRAMIRQ(s_state.transfer_address))
+      {
+//        DEBUG_LOG("Trigger IRQ @ {:08X} {:04X} from transfer address reg set", s_state.transfer_address,
+//                  s_state.transfer_address / 8);
+        TriggerRAMIRQ();
+      }
+      return;
+    }
+
+    case 0x1F801DA8 - SPU_BASE:
+    {
+//      TRACE_LOG("SPU transfer data register <- 0x{:04X} (RAM offset 0x{:08X})", ZeroExtend32(value),
+//                s_state.transfer_address);
+
+      ManualTransferWrite(value);
+      return;
+    }
+
+    case 0x1F801DAA - SPU_BASE:
+    {
+//      DEBUG_LOG("SPU control register <- 0x{:04X}", value);
+//      GeneratePendingSamples();
+
+//      const SPUCNTRegister new_value{value};
+//      if (new_value.ram_transfer_mode != s_state.SPUCNT.ram_transfer_mode &&
+//          new_value.ram_transfer_mode == RAMTransferMode::Stopped)
+//      {
+//        // clear the fifo here?
+//        if (!s_state.transfer_fifo.IsEmpty())
+//        {
+//          if (s_state.SPUCNT.ram_transfer_mode == RAMTransferMode::DMAWrite)
+//          {
+//            // I would guess on the console it would gradually write the FIFO out. Hopefully nothing relies on this
+//            // level of timing granularity if we force it all out here.
+//            WARNING_LOG("Draining write SPU transfer FIFO with {} bytes left", s_state.transfer_fifo.GetSize());
+//            TickCount ticks = std::numeric_limits<TickCount>::max();
+//            ExecuteFIFOWriteToRAM(ticks);
+//            DebugAssert(s_state.transfer_fifo.IsEmpty());
+//          }
+//          else
+//          {
+//            DEBUG_LOG("Clearing read SPU transfer FIFO with {} bytes left", s_state.transfer_fifo.GetSize());
+//            s_state.transfer_fifo.Clear();
+//          }
+//        }
+//      }
 //
+//      if (!new_value.enable && s_state.SPUCNT.enable)
+//      {
+//        // Mute all voices.
+//        // Interestingly, hardware tests found this seems to happen immediately, not on the next 44100hz cycle.
+//        for (u32 i = 0; i < NUM_VOICES; i++)
+//          s_state.voices[i].ForceOff();
+//      }
 //
+//      s_state.SPUCNT.bits = new_value.bits;
+//      s_state.SPUSTAT.mode = s_state.SPUCNT.mode.GetValue();
 //
+//      if (!s_state.SPUCNT.irq9_enable)
+//      {
+//        s_state.SPUSTAT.irq9_flag = false;
+//        InterruptController::SetLineState(InterruptController::IRQ::SPU, false);
+//      }
+//      else if (IsRAMIRQTriggerable())
+//      {
+//        CheckForLateRAMIRQs();
+//      }
+//
+//      UpdateEventInterval();
+//      UpdateDMARequest();
+//      UpdateTransferEvent();
+//      return;
+    }
 
-#ifdef debug_spu_registers
-	#define _voice_registers(_voice)    \
-		"voice"#_voice".voll",      \
-		"voice"#_voice".volr",      \
-		"voice"#_voice".pitch",     \
-		"voice"#_voice".addr",      \
-		"voice"#_voice".adsl",      \
-		"voice"#_voice".srrr",      \
-		"voice"#_voice".curvol",    \
-		"voice"#_voice".repaddr"
+    case 0x1F801DAC - SPU_BASE:
+    {
+//      DEBUG_LOG("SPU transfer control register <- 0x{:04X}", value);
+      s_state.transfer_control.bits = value;
+      return;
+    }
 
-	#define _voice_mask_register(_name) \
-		_name##"0-15",                    \
-		_name##"16-23"
+    case 0x1F801DB0 - SPU_BASE:
+    {
+//      DEBUG_LOG("SPU left cd audio register <- 0x{:04X}", value);
+      GeneratePendingSamples();
+      s_state.cd_audio_volume_left = value;
+    }
+    break;
 
-	static char const *const spu_register_names[256]=
-	{
-		_voice_registers(0),
-		_voice_registers(1),
-		_voice_registers(2),
-		_voice_registers(3),
-		_voice_registers(4),
-		_voice_registers(5),
-		_voice_registers(6),
-		_voice_registers(7),
-		_voice_registers(8),
-		_voice_registers(9),
-		_voice_registers(10),
-		_voice_registers(11),
-		_voice_registers(12),
-		_voice_registers(13),
-		_voice_registers(14),
-		_voice_registers(15),
-		_voice_registers(16),
-		_voice_registers(17),
-		_voice_registers(18),
-		_voice_registers(19),
-		_voice_registers(20),
-		_voice_registers(21),
-		_voice_registers(22),
-		_voice_registers(23),
-		"mvoll",
-		"mvolr",
-		"rvoll",
-		"rvolr",
-		"keyon0-15", "keyon16-23",
-		"keyoff0-15", "keyoff16-23",
-		"fm0-15", "fm16-23",
-		"noise0-15", "noise16-23",
-		"reverb0-15", "reverb16-23",
-		"chon0-15", "chon16-23",
-		"unknown",
-		"reverbaddr",
-		"irqaddr",
-		"transaddr",
-		"data",
-		"ctrl",
-		"statusl",
-		"statush",
-		"cdvoll",
-		"cdvolr",
-		"exvoll",
-		"exvolr"
-	};
+    case 0x1F801DB2 - SPU_BASE:
+    {
+//      DEBUG_LOG("SPU right cd audio register <- 0x{:04X}", value);
+      GeneratePendingSamples();
+      s_state.cd_audio_volume_right = value;
+    }
+    break;
 
-	const char *get_register_name(const unsigned int addr)
-	{
-		return spu_register_names[(addr&0x1ff)>>1];
-	}
+    case 0x1F801DB4 - SPU_BASE:
+    {
+      // External volumes aren't used, so don't bother syncing.
+//      DEBUG_LOG("SPU left external volume register <- 0x{:04X}", value);
+      s_state.external_volume_left = value;
+    }
+    break;
+
+    case 0x1F801DB6 - SPU_BASE:
+    {
+      // External volumes aren't used, so don't bother syncing.
+//      DEBUG_LOG("SPU right external volume register <- 0x{:04X}", value);
+      s_state.external_volume_right = value;
+    }
+    break;
+
+    case 0x1F801DB8 - SPU_BASE:
+    {
+//      DEBUG_LOG("SPU main left volume register <- 0x{:04X}", value);
+      GeneratePendingSamples();
+      s_state.main_volume_left.current_level = value;
+    }
+    break;
+
+    case 0x1F801DBA - SPU_BASE:
+    {
+//      DEBUG_LOG("SPU main right volume register <- 0x{:04X}", value);
+      GeneratePendingSamples();
+      s_state.main_volume_right.current_level = value;
+    }
+    break;
+
+      // read-only registers
+    case 0x1F801DAE - SPU_BASE:
+    {
+      return;
+    }
+
+    default:
+    {
+      if (offset < (0x1F801D80 - SPU_BASE))
+      {
+        WriteVoiceRegister(offset, value);
+        return;
+      }
+
+      if (offset >= (0x1F801DC0 - SPU_BASE) && offset < (0x1F801E00 - SPU_BASE))
+      {
+        const u32 reg = (offset - (0x1F801DC0 - SPU_BASE)) / 2;
+//        DEBUG_LOG("SPU reverb register {} <- 0x{:04X}", reg, value);
+        GeneratePendingSamples();
+        s_state.reverb_registers.rev[reg] = value;
+        return;
+      }
+
+//      DEV_LOG("Unknown SPU register write: offset 0x{:X} (address 0x{:08X}) value 0x{:04X}", offset, offset | SPU_BASE,
+//              value);
+      return;
+    }
+  }
+}
+
+u16 SPU::ReadVoiceRegister(u32 offset)
+{
+  const u32 reg_index = (offset % 0x10) / 2; //(offset & 0x0F) / 2;
+  const u32 voice_index = (offset / 0x10);   //((offset >> 4) & 0x1F);
+//  Assert(voice_index < 24);
+
+  // ADSR volume needs to be updated when reading. A voice might be off as well, but key on is pending.
+  const Voice& voice = s_state.voices[voice_index];
+  if (reg_index >= 6 && (voice.IsOn() || s_state.key_on_register & (1u << voice_index)))
+    GeneratePendingSamples();
+
+//  TRACE_LOG("Read voice {} register {} -> 0x{:02X}", voice_index, reg_index, voice.regs.index[reg_index]);
+  return voice.regs.index[reg_index];
+}
+
+void SPU::WriteVoiceRegister(u32 offset, u16 value)
+{
+  // per-voice registers
+  const u32 reg_index = (offset % 0x10);
+  const u32 voice_index = (offset / 0x10);
+//  DebugAssert(voice_index < 24);
+
+  Voice& voice = s_state.voices[voice_index];
+  if (voice.IsOn() || s_state.key_on_register & (1u << voice_index))
+    GeneratePendingSamples();
+
+  switch (reg_index)
+  {
+    case 0x00: // volume left
+    {
+//      DEBUG_LOG("SPU voice {} volume left <- 0x{:04X}", voice_index, value);
+      voice.regs.volume_left.bits = value;
+      voice.left_volume.Reset(voice.regs.volume_left);
+    }
+    break;
+
+    case 0x02: // volume right
+    {
+//      DEBUG_LOG("SPU voice {} volume right <- 0x{:04X}", voice_index, value);
+      voice.regs.volume_right.bits = value;
+      voice.right_volume.Reset(voice.regs.volume_right);
+    }
+    break;
+
+    case 0x04: // sample rate
+    {
+//      DEBUG_LOG("SPU voice {} ADPCM sample rate <- 0x{:04X}", voice_index, value);
+      voice.regs.adpcm_sample_rate = value;
+    }
+    break;
+
+    case 0x06: // start address
+    {
+//      DEBUG_LOG("SPU voice {} ADPCM start address <- 0x{:04X}", voice_index, value);
+      voice.regs.adpcm_start_address = value;
+    }
+    break;
+
+    case 0x08: // adsr low
+    {
+//      DEBUG_LOG("SPU voice {} ADSR low <- 0x{:04X} (was 0x{:04X})", voice_index, value, voice.regs.adsr.bits_low);
+      voice.regs.adsr.bits_low = value;
+      if (voice.IsOn())
+        voice.UpdateADSREnvelope();
+    }
+    break;
+
+    case 0x0A: // adsr high
+    {
+//      DEBUG_LOG("SPU voice {} ADSR high <- 0x{:04X} (was 0x{:04X})", voice_index, value, voice.regs.adsr.bits_low);
+      voice.regs.adsr.bits_high = value;
+      if (voice.IsOn())
+        voice.UpdateADSREnvelope();
+    }
+    break;
+
+    case 0x0C: // adsr volume
+    {
+//      DEBUG_LOG("SPU voice {} ADSR volume <- 0x{:04X} (was 0x{:04X})", voice_index, value, voice.regs.adsr_volume);
+      voice.regs.adsr_volume = value;
+    }
+    break;
+
+    case 0x0E: // repeat address
+    {
+      // There is a short window of time here between the voice being keyed on and the first block finishing decoding
+      // where setting the repeat address will *NOT* ignore the block/loop start flag.
+      //
+      // We always set this flag if the voice is off, because IRQs will keep the voice reading regardless, and we don't
+      // want the address that we just set to get wiped out by the IRQ looping.
+      //
+      // Games sensitive to this are:
+      //  - The Misadventures of Tron Bonne
+      //  - Re-Loaded - The Hardcore Sequel (repeated sound effects)
+      //  - Valkyrie Profile
+
+      const bool ignore_loop_address = !voice.IsOn() || !voice.is_first_block;
+//      DEBUG_LOG("SPU voice {} ADPCM repeat address <- 0x{:04X}", voice_index, value);
+      voice.regs.adpcm_repeat_address = value;
+      voice.ignore_loop_address |= ignore_loop_address;
+
+      if (!ignore_loop_address)
+      {
+//        DEV_LOG("Not ignoring loop address, the ADPCM repeat address of 0x{:04X} for voice {} will be overwritten",
+//                value, voice_index);
+      }
+    }
+    break;
+
+    default:
+    {
+//      ERROR_LOG("Unknown SPU voice {} register write: offset 0x%X (address 0x{:08X}) value 0x{:04X}", offset,
+//                voice_index, offset | SPU_BASE, ZeroExtend32(value));
+    }
+    break;
+  }
+}
+
+bool SPU::IsVoiceReverbEnabled(u32 i)
+{
+  return ConvertToBoolUnchecked((s_state.reverb_on_register >> i) & u32(1));
+}
+
+bool SPU::IsVoiceNoiseEnabled(u32 i)
+{
+  return ConvertToBoolUnchecked((s_state.noise_mode_register >> i) & u32(1));
+}
+
+bool SPU::IsPitchModulationEnabled(u32 i)
+{
+  return ((i > 0) && ConvertToBoolUnchecked((s_state.pitch_modulation_enable_register >> i) & u32(1)));
+}
+
+s16 SPU::GetVoiceNoiseLevel()
+{
+  return static_cast<s16>(static_cast<u16>(s_state.noise_level));
+}
+
+bool SPU::IsRAMIRQTriggerable()
+{
+  return s_state.SPUCNT.irq9_enable && !s_state.SPUSTAT.irq9_flag;
+}
+
+bool SPU::CheckRAMIRQ(u32 address)
+{
+  return ((ZeroExtend32(s_state.irq_address) * 8) == address);
+}
+
+void SPU::TriggerRAMIRQ()
+{
+//  DebugAssert(IsRAMIRQTriggerable());
+//  s_state.SPUSTAT.irq9_flag = true;
+//  InterruptController::SetLineState(InterruptController::IRQ::SPU, true);
+}
+
+void SPU::CheckForLateRAMIRQs()
+{
+  if (CheckRAMIRQ(s_state.transfer_address))
+  {
+//    DEBUG_LOG("Trigger IRQ @ {:08X} {:04X} from late transfer", s_state.transfer_address, s_state.transfer_address / 8);
+    TriggerRAMIRQ();
+    return;
+  }
+
+  for (u32 i = 0; i < NUM_VOICES; i++)
+  {
+    // we skip voices which haven't started this block yet - because they'll check
+    // the next time they're sampled, and the delay might be important.
+    const Voice& v = s_state.voices[i];
+    if (!v.has_samples)
+      continue;
+
+    const u32 address = v.current_address * 8;
+    if (CheckRAMIRQ(address) || CheckRAMIRQ((address + 8) & RAM_MASK))
+    {
+//      DEBUG_LOG("Trigger IRQ @ {:08X} ({:04X}) from late", address, address / 8);
+      TriggerRAMIRQ();
+      return;
+    }
+  }
+}
+
+void SPU::WriteToCaptureBuffer(u32 index, s16 value)
+{
+  const u32 ram_address = (index * CAPTURE_BUFFER_SIZE_PER_CHANNEL) | ZeroExtend16(s_state.capture_buffer_position);
+  // Log_DebugFmt("write to capture buffer {} (0x{:08X}) <- 0x{:04X}", index, ram_address, u16(value));
+  std::memcpy(&s_ram[ram_address], &value, sizeof(value));
+  if (IsRAMIRQTriggerable() && CheckRAMIRQ(ram_address))
+  {
+//    DEBUG_LOG("Trigger IRQ @ {:08X} ({:04X}) from capture buffer", ram_address, ram_address / 8);
+    TriggerRAMIRQ();
+  }
+}
+
+void SPU::IncrementCaptureBufferPosition()
+{
+  s_state.capture_buffer_position += sizeof(s16);
+  s_state.capture_buffer_position %= CAPTURE_BUFFER_SIZE_PER_CHANNEL;
+  s_state.SPUSTAT.second_half_capture_buffer = s_state.capture_buffer_position >= (CAPTURE_BUFFER_SIZE_PER_CHANNEL / 2);
+}
+
+ALWAYS_INLINE_RELEASE void SPU::ExecuteFIFOReadFromRAM(TickCount& ticks)
+{
+//  while (ticks > 0 && !s_state.transfer_fifo.IsFull())
+//  {
+//    u16 value;
+//    std::memcpy(&value, &s_ram[s_state.transfer_address], sizeof(u16));
+//    s_state.transfer_address = (s_state.transfer_address + sizeof(u16)) & RAM_MASK;
+//    s_state.transfer_fifo.Push(value);
+//    ticks -= TRANSFER_TICKS_PER_HALFWORD;
+//
+//    if (IsRAMIRQTriggerable() && CheckRAMIRQ(s_state.transfer_address))
+//    {
+//      DEBUG_LOG("Trigger IRQ @ {:08X} ({:04X}) from transfer read", s_state.transfer_address,
+//                s_state.transfer_address / 8);
+//      TriggerRAMIRQ();
+//    }
+//  }
+}
+
+ALWAYS_INLINE_RELEASE void SPU::ExecuteFIFOWriteToRAM(TickCount& ticks)
+{
+//  while (ticks > 0 && !s_state.transfer_fifo.IsEmpty())
+//  {
+//    u16 value = s_state.transfer_fifo.Pop();
+//    std::memcpy(&s_ram[s_state.transfer_address], &value, sizeof(u16));
+//    s_state.transfer_address = (s_state.transfer_address + sizeof(u16)) & RAM_MASK;
+//    ticks -= TRANSFER_TICKS_PER_HALFWORD;
+//
+//    if (IsRAMIRQTriggerable() && CheckRAMIRQ(s_state.transfer_address))
+//    {
+//      DEBUG_LOG("Trigger IRQ @ {:08X} ({:04X}) from transfer write", s_state.transfer_address,
+//                s_state.transfer_address / 8);
+//      TriggerRAMIRQ();
+//    }
+//  }
+}
+
+void SPU::ExecuteTransfer(void* param, TickCount ticks, TickCount ticks_late)
+{
+//  const RAMTransferMode mode = s_state.SPUCNT.ram_transfer_mode;
+//  DebugAssert(mode != RAMTransferMode::Stopped);
+//  InternalGeneratePendingSamples();
+//
+//  if (mode == RAMTransferMode::DMARead)
+//  {
+//    while (ticks > 0 && !s_state.transfer_fifo.IsFull())
+//    {
+//      ExecuteFIFOReadFromRAM(ticks);
+//
+//      // this can result in the FIFO being emptied, hence double the while loop
+//      UpdateDMARequest();
+//    }
+
+    // we're done if we have no more data to read
+//    if (s_state.transfer_fifo.IsFull())
+//    {
+//      s_state.SPUSTAT.transfer_busy = false;
+//      s_state.transfer_event.Deactivate();
+//      return;
+//    }
+
+//    s_state.SPUSTAT.transfer_busy = true;
+//    const TickCount ticks_until_complete =
+//      TickCount(s_state.transfer_fifo.GetSpace() * u32(TRANSFER_TICKS_PER_HALFWORD)) + ((ticks < 0) ? -ticks : 0);
+//    s_state.transfer_event.Schedule(ticks_until_complete);
+//  }
+//  else
+//  {
+//    // write the fifo to ram, request dma again when empty
+//    while (ticks > 0 && !s_state.transfer_fifo.IsEmpty())
+//    {
+//      ExecuteFIFOWriteToRAM(ticks);
+//
+//      // similar deal here, the FIFO can be written out in a long slice
+//      UpdateDMARequest();
+//    }
+//
+//    // we're done if we have no more data to write
+//    if (s_state.transfer_fifo.IsEmpty())
+//    {
+//      s_state.SPUSTAT.transfer_busy = false;
+//      s_state.transfer_event.Deactivate();
+//      return;
+//    }
+//
+//    s_state.SPUSTAT.transfer_busy = true;
+//    const TickCount ticks_until_complete =
+//      TickCount(s_state.transfer_fifo.GetSize() * u32(TRANSFER_TICKS_PER_HALFWORD)) + ((ticks < 0) ? -ticks : 0);
+//    s_state.transfer_event.Schedule(ticks_until_complete);
+//  }
+}
+
+void SPU::ManualTransferWrite(u16 value)
+{
+//  if (!s_state.transfer_fifo.IsEmpty() && s_state.SPUCNT.ram_transfer_mode != RAMTransferMode::DMARead)
+//  {
+//    WARNING_LOG("FIFO not empty on manual SPU write, draining to hopefully avoid corruption. Game is silly.");
+//    if (s_state.SPUCNT.ram_transfer_mode != RAMTransferMode::Stopped)
+//      ExecuteTransfer(nullptr, std::numeric_limits<s32>::max(), 0);
+//  }
+//
+//  std::memcpy(&s_ram[s_state.transfer_address], &value, sizeof(u16));
+//  s_state.transfer_address = (s_state.transfer_address + sizeof(u16)) & RAM_MASK;
+//
+//  if (IsRAMIRQTriggerable() && CheckRAMIRQ(s_state.transfer_address))
+//  {
+//    DEBUG_LOG("Trigger IRQ @ {:08X} ({:04X}) from manual write", s_state.transfer_address,
+//              s_state.transfer_address / 8);
+//    TriggerRAMIRQ();
+//  }
+}
+
+void SPU::UpdateTransferEvent()
+{
+//  const RAMTransferMode mode = s_state.SPUCNT.ram_transfer_mode;
+//  if (mode == RAMTransferMode::Stopped)
+//  {
+//    s_state.transfer_event.Deactivate();
+//  }
+//  else if (mode == RAMTransferMode::DMARead)
+//  {
+//    // transfer event fills the fifo
+//    if (s_state.transfer_fifo.IsFull())
+//      s_state.transfer_event.Deactivate();
+//    else if (!s_state.transfer_event.IsActive())
+//      s_state.transfer_event.Schedule(TickCount(s_state.transfer_fifo.GetSpace() * u32(TRANSFER_TICKS_PER_HALFWORD)));
+//  }
+//  else
+//  {
+//    // transfer event copies from fifo to ram
+//    if (s_state.transfer_fifo.IsEmpty())
+//      s_state.transfer_event.Deactivate();
+//    else if (!s_state.transfer_event.IsActive())
+//      s_state.transfer_event.Schedule(TickCount(s_state.transfer_fifo.GetSize() * u32(TRANSFER_TICKS_PER_HALFWORD)));
+//  }
+//
+//  s_state.SPUSTAT.transfer_busy = s_state.transfer_event.IsActive();
+}
+
+void SPU::UpdateDMARequest()
+{
+//  switch (s_state.SPUCNT.ram_transfer_mode)
+//  {
+//    case RAMTransferMode::DMARead:
+//      s_state.SPUSTAT.dma_read_request = s_state.transfer_fifo.IsFull();
+//      s_state.SPUSTAT.dma_write_request = false;
+//      s_state.SPUSTAT.dma_request = s_state.SPUSTAT.dma_read_request;
+//      break;
+//
+//    case RAMTransferMode::DMAWrite:
+//      s_state.SPUSTAT.dma_read_request = false;
+//      s_state.SPUSTAT.dma_write_request = s_state.transfer_fifo.IsEmpty();
+//      s_state.SPUSTAT.dma_request = s_state.SPUSTAT.dma_write_request;
+//      break;
+//
+//    case RAMTransferMode::Stopped:
+//    case RAMTransferMode::ManualWrite:
+//    default:
+//      s_state.SPUSTAT.dma_read_request = false;
+//      s_state.SPUSTAT.dma_write_request = false;
+//      s_state.SPUSTAT.dma_request = false;
+//      break;
+//  }
+//
+//  // This might call us back directly.
+//  DMA::SetRequest(DMA::Channel::SPU, s_state.SPUSTAT.dma_request);
+}
+
+void SPU::DMARead(u32* words, u32 word_count)
+{
+  /*
+    From @JaCzekanski - behavior when block size is larger than the FIFO size
+    for blocks <= 0x16 - all data is transferred correctly
+    using block size 0x20 transfer behaves strange:
+    % Writing 524288 bytes to SPU RAM to 0x00000000 using DMA... ok
+    % Reading 256 bytes from SPU RAM from 0x00001000 using DMA... ok
+    % 0x00001000: 00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f ................
+    % 0x00001010: 10 11 12 13 14 15 16 17 18 19 1a 1b 1c 1d 1e 1f ................
+    % 0x00001020: 20 21 22 23 24 25 26 27 28 29 2a 2b 2c 2d 2e 2f  !"#$%&'()*+,-./
+    % 0x00001030: 30 31 32 33 34 35 36 37 38 39 3a 3b 3c 3d 3e 3f 0123456789:;<=>?
+    % 0x00001040: 3e 3f 3e 3f 3e 3f 3e 3f 3e 3f 3e 3f 3e 3f 3e 3f >?>?>?>?>?>?>?>?
+    % 0x00001050: 3e 3f 3e 3f 3e 3f 3e 3f 3e 3f 3e 3f 3e 3f 3e 3f >?>?>?>?>?>?>?>?
+    % 0x00001060: 3e 3f 3e 3f 3e 3f 3e 3f 3e 3f 3e 3f 3e 3f 3e 3f >?>?>?>?>?>?>?>?
+    % 0x00001070: 3e 3f 3e 3f 3e 3f 3e 3f 3e 3f 3e 3f 3e 3f 3e 3f >?>?>?>?>?>?>?>?
+    % 0x00001080: 40 41 42 43 44 45 46 47 48 49 4a 4b 4c 4d 4e 4f @ABCDEFGHIJKLMNO
+    % 0x00001090: 50 51 52 53 54 55 56 57 58 59 5a 5b 5c 5d 5e 5f PQRSTUVWXYZ[\]^_
+    % 0x000010a0: 60 61 62 63 64 65 66 67 68 69 6a 6b 6c 6d 6e 6f `abcdefghijklmno
+    % 0x000010b0: 70 71 72 73 74 75 76 77 78 79 7a 7b 7c 7d 7e 7f pqrstuvwxyz{|}~.
+    % 0x000010c0: 7e 7f 7e 7f 7e 7f 7e 7f 7e 7f 7e 7f 7e 7f 7e 7f ~.~.~.~.~.~.~.~.
+    % 0x000010d0: 7e 7f 7e 7f 7e 7f 7e 7f 7e 7f 7e 7f 7e 7f 7e 7f ~.~.~.~.~.~.~.~.
+    % 0x000010e0: 7e 7f 7e 7f 7e 7f 7e 7f 7e 7f 7e 7f 7e 7f 7e 7f ~.~.~.~.~.~.~.~.
+    % 0x000010f0: 7e 7f 7e 7f 7e 7f 7e 7f 7e 7f 7e 7f 7e 7f 7e 7f ~.~.~.~.~.~.~.~.
+    Using Block size = 0x10 (correct data)
+    % Reading 256 bytes from SPU RAM from 0x00001000 using DMA... ok
+    % 0x00001000: 00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f ................
+    % 0x00001010: 10 11 12 13 14 15 16 17 18 19 1a 1b 1c 1d 1e 1f ................
+    % 0x00001020: 20 21 22 23 24 25 26 27 28 29 2a 2b 2c 2d 2e 2f  !"#$%&'()*+,-./
+    % 0x00001030: 30 31 32 33 34 35 36 37 38 39 3a 3b 3c 3d 3e 3f 0123456789:;<=>?
+    % 0x00001040: 40 41 42 43 44 45 46 47 48 49 4a 4b 4c 4d 4e 4f @ABCDEFGHIJKLMNO
+    % 0x00001050: 50 51 52 53 54 55 56 57 58 59 5a 5b 5c 5d 5e 5f PQRSTUVWXYZ[\]^_
+    % 0x00001060: 60 61 62 63 64 65 66 67 68 69 6a 6b 6c 6d 6e 6f `abcdefghijklmno
+    % 0x00001070: 70 71 72 73 74 75 76 77 78 79 7a 7b 7c 7d 7e 7f pqrstuvwxyz{|}~.
+    % 0x00001080: 80 81 82 83 84 85 86 87 88 89 8a 8b 8c 8d 8e 8f ................
+    % 0x00001090: 90 91 92 93 94 95 96 97 98 99 9a 9b 9c 9d 9e 9f ................
+    % 0x000010a0: a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 aa ab ac ad ae af ................
+    % 0x000010b0: b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 ba bb bc bd be bf ................
+    % 0x000010c0: c0 c1 c2 c3 c4 c5 c6 c7 c8 c9 ca cb cc cd ce cf ................
+    % 0x000010d0: d0 d1 d2 d3 d4 d5 d6 d7 d8 d9 da db dc dd de df ................
+    % 0x000010e0: e0 e1 e2 e3 e4 e5 e6 e7 e8 e9 ea eb ec ed ee ef ................
+    % 0x000010f0: f0 f1 f2 f3 f4 f5 f6 f7 f8 f9 fa fb fc fd fe ff ................
+   */
+
+//  u16* halfwords = reinterpret_cast<u16*>(words);
+//  u32 halfword_count = word_count * 2;
+//
+//  const u32 size = s_state.transfer_fifo.GetSize();
+//  if (word_count > size)
+//  {
+//    u16 fill_value = 0;
+//    if (size > 0)
+//    {
+//      s_state.transfer_fifo.PopRange(halfwords, size);
+//      fill_value = halfwords[size - 1];
+//    }
+
+//    WARNING_LOG("Transfer FIFO underflow, filling with 0x{:04X}", fill_value);
+//    std::fill_n(&halfwords[size], halfword_count - size, fill_value);
+//  }
+//  else
+//  {
+//    s_state.transfer_fifo.PopRange(halfwords, halfword_count);
+//  }
+//
+//  UpdateDMARequest();
+//  UpdateTransferEvent();
+}
+
+void SPU::DMAWrite(const u32* words, u32 word_count)
+{
+//  const u16* halfwords = reinterpret_cast<const u16*>(words);
+//  u32 halfword_count = word_count * 2;
+//
+//  const u32 words_to_transfer = std::min(s_state.transfer_fifo.GetSpace(), halfword_count);
+//  s_state.transfer_fifo.PushRange(halfwords, words_to_transfer);
+//
+//  if (words_to_transfer != halfword_count) [[unlikely]]
+//    WARNING_LOG("Transfer FIFO overflow, dropping {} halfwords", halfword_count - words_to_transfer);
+//
+//  UpdateDMARequest();
+//  UpdateTransferEvent();
+}
+
+void SPU::GeneratePendingSamples()
+{
+//  if (s_state.transfer_event.IsActive())
+//    s_state.transfer_event.InvokeEarly();
+
+  InternalGeneratePendingSamples();
+}
+
+void SPU::InternalGeneratePendingSamples()
+{
+//  const TickCount ticks_pending = s_state.tick_event.GetTicksSinceLastExecution();
+//  TickCount frames_to_execute;
+//  if (g_settings.cpu_overclock_active)
+//  {
+//    frames_to_execute = static_cast<u32>((static_cast<u64>(ticks_pending) * g_settings.cpu_overclock_denominator) +
+//                                         static_cast<u32>(s_state.ticks_carry)) /
+//                        static_cast<u32>(s_state.cpu_tick_divider);
+//  }
+//  else
+//  {
+//    frames_to_execute = (ticks_pending + s_state.ticks_carry) / SYSCLK_TICKS_PER_SPU_TICK;
+//  }
+//
+//  const bool force_exec = (frames_to_execute > 0);
+//  s_state.tick_event.InvokeEarly(force_exec);
+}
+
+const std::array<u8, SPU::RAM_SIZE>& SPU::GetRAM()
+{
+  return s_ram;
+}
+
+std::array<u8, SPU::RAM_SIZE>& SPU::GetWritableRAM()
+{
+  return s_ram;
+}
+
+bool SPU::IsAudioOutputMuted()
+{
+  return s_state.audio_output_muted;
+}
+
+void SPU::SetAudioOutputMuted(bool muted)
+{
+  s_state.audio_output_muted = muted;
+}
+
+//AudioStream* SPU::GetOutputStream()
+//{
+//  return s_state.audio_stream.get();
+//}
+
+void SPU::Voice::KeyOn()
+{
+  current_address = regs.adpcm_start_address & ~u16(1);
+  counter.bits = 0;
+  regs.adsr_volume = 0;
+  adpcm_last_samples.fill(0);
+
+  // Samples from the previous block for interpolation should be zero. Fixes clicks in audio in Breath of Fire III.
+  std::fill_n(&current_block_samples[NUM_SAMPLES_PER_ADPCM_BLOCK], NUM_SAMPLES_FROM_LAST_ADPCM_BLOCK,
+              static_cast<s16>(0));
+
+  has_samples = false;
+  is_first_block = true;
+  ignore_loop_address = false;
+  adsr_phase = ADSRPhase::Attack;
+  UpdateADSREnvelope();
+}
+
+void SPU::Voice::KeyOff()
+{
+  if (adsr_phase == ADSRPhase::Off || adsr_phase == ADSRPhase::Release)
+    return;
+
+  adsr_phase = ADSRPhase::Release;
+  UpdateADSREnvelope();
+}
+
+void SPU::Voice::ForceOff()
+{
+  if (adsr_phase == ADSRPhase::Off)
+    return;
+
+  regs.adsr_volume = 0;
+  adsr_phase = ADSRPhase::Off;
+}
+
+SPU::ADSRPhase SPU::GetNextADSRPhase(ADSRPhase phase)
+{
+  switch (phase)
+  {
+    case ADSRPhase::Attack:
+      // attack -> decay
+      return ADSRPhase::Decay;
+
+    case ADSRPhase::Decay:
+      // decay -> sustain
+      return ADSRPhase::Sustain;
+
+    case ADSRPhase::Sustain:
+      // sustain stays in sustain until key off
+      return ADSRPhase::Sustain;
+
+    default:
+    case ADSRPhase::Release:
+      // end of release disables the voice
+      return ADSRPhase::Off;
+  }
+}
+
+void SPU::VolumeEnvelope::Reset(u8 rate_, u8 rate_mask_, bool decreasing_, bool exponential_, bool phase_invert_)
+{
+  rate = rate_;
+  decreasing = decreasing_;
+  exponential = exponential_;
+
+  // psx-spx says "The Phase bit seems to have no effect in Exponential Decrease mode."
+  // TODO: This needs to be tested on hardware.
+  phase_invert = phase_invert_ && !(decreasing_ && exponential_);
+
+  counter = 0;
+  counter_increment = 0x8000;
+
+  // negative level * negative step would give a positive number in decreasing+exponential mode, when we want it to be
+  // negative. Phase invert cause the step to be positive in decreasing mode, otherwise negative. Bitwise NOT, so that
+  // +7,+6,+5,+4 becomes -8,-7,-6,-5 as per psx-spx.
+  const s16 base_step = 7 - (rate & 3);
+  step = ((decreasing_ ^ phase_invert_) | (decreasing_ & exponential_)) ? ~base_step : base_step;
+  if (rate < 44)
+  {
+    // AdsrStep = StepValue SHL Max(0,11-ShiftValue)
+    step <<= (11 - (rate >> 2));
+  }
+  else if (rate >= 48)
+  {
+    // AdsrCycles = 1 SHL Max(0,ShiftValue-11)
+    counter_increment >>= ((rate >> 2) - 11);
+
+    // Rate of 0x7F (or more specifically all bits set, for decay/release) is a special case that never ticks.
+    if ((rate & rate_mask_) != rate_mask_)
+      counter_increment = std::max<u16>(counter_increment, 1u);
+  }
+}
+
+ALWAYS_INLINE_RELEASE bool SPU::VolumeEnvelope::Tick(s16& current_level)
+{
+  // Recompute step in exponential/decrement mode.
+  u32 this_increment = counter_increment;
+  s32 this_step = step;
+  if (exponential)
+  {
+    if (decreasing)
+    {
+      this_step = (this_step * current_level) >> 15;
+    }
+    else
+    {
+      if (current_level >= 0x6000)
+      {
+        if (rate < 40)
+        {
+          this_step >>= 2;
+        }
+        else if (rate >= 44)
+        {
+          this_increment >>= 2;
+        }
+        else
+        {
+          this_step >>= 1;
+          this_increment >>= 1;
+        }
+      }
+    }
+  }
+
+  counter += this_increment;
+
+  // Very strange behavior. Rate of 0x76 behaves like 0x6A, seems it's dependent on the MSB=1.
+  if (!(counter & 0x8000))
+    return true;
+  counter = 0;
+
+  // Phase invert acts very strange. If the volume is positive, it will decrease to zero, then increase back to maximum
+  // negative (inverted) volume. Except when decrementing, then it snaps straight to zero. Simply clamping to int16
+  // range will be fine for incrementing, because the volume never decreases past zero. If the volume _was_ negative,
+  // and is incrementing, hardware tests show that it only clamps to max, not 0.
+  s32 new_level = current_level + this_step;
+  if (!decreasing)
+  {
+    current_level = Truncate16(new_level = std::clamp(new_level, MIN_VOLUME, MAX_VOLUME));
+    return (new_level != ((this_step < 0) ? MIN_VOLUME : MAX_VOLUME));
+  }
+  else
+  {
+    if (phase_invert)
+      current_level = Truncate16(new_level = std::clamp(new_level, MIN_VOLUME, 0));
+    else
+      current_level = Truncate16(new_level = std::max(new_level, 0));
+    return (new_level == 0);
+  }
+}
+
+void SPU::VolumeSweep::Reset(VolumeRegister reg)
+{
+  if (!reg.sweep_mode)
+  {
+    current_level = reg.fixed_volume_shr1 * 2;
+    envelope_active = false;
+    return;
+  }
+
+  envelope.Reset(reg.sweep_rate, 0x7F, reg.sweep_direction_decrease, reg.sweep_exponential, reg.sweep_phase_negative);
+  envelope_active = (envelope.counter_increment > 0);
+}
+
+void SPU::VolumeSweep::Tick()
+{
+  if (!envelope_active)
+    return;
+
+  envelope_active = envelope.Tick(current_level);
+}
+
+void SPU::Voice::UpdateADSREnvelope()
+{
+  switch (adsr_phase)
+  {
+    case ADSRPhase::Off:
+      adsr_target = 0;
+      adsr_envelope.Reset(0, 0, false, false, false);
+      return;
+
+    case ADSRPhase::Attack:
+      adsr_target = 32767; // 0 -> max
+      adsr_envelope.Reset(regs.adsr.attack_rate, 0x7F, false, regs.adsr.attack_exponential, false);
+      break;
+
+    case ADSRPhase::Decay:
+      adsr_target = static_cast<s16>(std::min<s32>((u32(regs.adsr.sustain_level.GetValue()) + 1) * 0x800,
+                                                   VolumeEnvelope::MAX_VOLUME)); // max -> sustain level
+      adsr_envelope.Reset(regs.adsr.decay_rate_shr2 << 2, 0x1F << 2, true, true, false);
+      break;
+
+    case ADSRPhase::Sustain:
+      adsr_target = 0;
+      adsr_envelope.Reset(regs.adsr.sustain_rate, 0x7F, regs.adsr.sustain_direction_decrease,
+                          regs.adsr.sustain_exponential, false);
+      break;
+
+    case ADSRPhase::Release:
+      adsr_target = 0;
+      adsr_envelope.Reset(regs.adsr.release_rate_shr2 << 2, 0x1F << 2, true, regs.adsr.release_exponential, false);
+      break;
+
+    default:
+      break;
+  }
+}
+
+void SPU::Voice::TickADSR()
+{
+  if (adsr_envelope.counter_increment > 0)
+    adsr_envelope.Tick(regs.adsr_volume);
+
+  if (adsr_phase != ADSRPhase::Sustain)
+  {
+    const bool reached_target =
+      adsr_envelope.decreasing ? (regs.adsr_volume <= adsr_target) : (regs.adsr_volume >= adsr_target);
+    if (reached_target)
+    {
+      adsr_phase = GetNextADSRPhase(adsr_phase);
+      UpdateADSREnvelope();
+    }
+  }
+}
+
+void SPU::Voice::DecodeBlock(const ADPCMBlock& block)
+{
+  static constexpr std::array<s8, 16> filter_table_pos = {{0, 60, 115, 98, 122, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}};
+  static constexpr std::array<s8, 16> filter_table_neg = {{0, 0, -52, -55, -60, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}};
+
+  // store samples needed for interpolation
+  current_block_samples[2] = current_block_samples[NUM_SAMPLES_FROM_LAST_ADPCM_BLOCK + NUM_SAMPLES_PER_ADPCM_BLOCK - 1];
+  current_block_samples[1] = current_block_samples[NUM_SAMPLES_FROM_LAST_ADPCM_BLOCK + NUM_SAMPLES_PER_ADPCM_BLOCK - 2];
+  current_block_samples[0] = current_block_samples[NUM_SAMPLES_FROM_LAST_ADPCM_BLOCK + NUM_SAMPLES_PER_ADPCM_BLOCK - 3];
+
+  // pre-lookup
+  const u8 shift = block.GetShift();
+  const u8 filter_index = block.GetFilter();
+  const s32 filter_pos = filter_table_pos[filter_index];
+  const s32 filter_neg = filter_table_neg[filter_index];
+  s16 last_samples[2] = {adpcm_last_samples[0], adpcm_last_samples[1]};
+
+  // samples
+  for (u32 i = 0; i < NUM_SAMPLES_PER_ADPCM_BLOCK; i++)
+  {
+    // extend 4-bit to 16-bit, apply shift from header and mix in previous samples
+    s32 sample = s32(static_cast<s16>(ZeroExtend16(block.GetNibble(i)) << 12) >> shift);
+    sample += (last_samples[0] * filter_pos) >> 6;
+    sample += (last_samples[1] * filter_neg) >> 6;
+
+    last_samples[1] = last_samples[0];
+    current_block_samples[NUM_SAMPLES_FROM_LAST_ADPCM_BLOCK + i] = last_samples[0] = static_cast<s16>(Clamp16(sample));
+  }
+
+  std::copy(last_samples, last_samples + countof(last_samples), adpcm_last_samples.begin());
+  current_block_flags.bits = block.flags.bits;
+}
+
+s32 SPU::Voice::Interpolate() const
+{
+  static constexpr std::array<s16, 0x200> gauss = {{
+    -0x001, -0x001, -0x001, -0x001, -0x001, -0x001, -0x001, -0x001, //
+    -0x001, -0x001, -0x001, -0x001, -0x001, -0x001, -0x001, -0x001, //
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0001, //
+    0x0001, 0x0001, 0x0001, 0x0002, 0x0002, 0x0002, 0x0003, 0x0003, //
+    0x0003, 0x0004, 0x0004, 0x0005, 0x0005, 0x0006, 0x0007, 0x0007, //
+    0x0008, 0x0009, 0x0009, 0x000A, 0x000B, 0x000C, 0x000D, 0x000E, //
+    0x000F, 0x0010, 0x0011, 0x0012, 0x0013, 0x0015, 0x0016, 0x0018, // entry
+    0x0019, 0x001B, 0x001C, 0x001E, 0x0020, 0x0021, 0x0023, 0x0025, // 000..07F
+    0x0027, 0x0029, 0x002C, 0x002E, 0x0030, 0x0033, 0x0035, 0x0038, //
+    0x003A, 0x003D, 0x0040, 0x0043, 0x0046, 0x0049, 0x004D, 0x0050, //
+    0x0054, 0x0057, 0x005B, 0x005F, 0x0063, 0x0067, 0x006B, 0x006F, //
+    0x0074, 0x0078, 0x007D, 0x0082, 0x0087, 0x008C, 0x0091, 0x0096, //
+    0x009C, 0x00A1, 0x00A7, 0x00AD, 0x00B3, 0x00BA, 0x00C0, 0x00C7, //
+    0x00CD, 0x00D4, 0x00DB, 0x00E3, 0x00EA, 0x00F2, 0x00FA, 0x0101, //
+    0x010A, 0x0112, 0x011B, 0x0123, 0x012C, 0x0135, 0x013F, 0x0148, //
+    0x0152, 0x015C, 0x0166, 0x0171, 0x017B, 0x0186, 0x0191, 0x019C, //
+    0x01A8, 0x01B4, 0x01C0, 0x01CC, 0x01D9, 0x01E5, 0x01F2, 0x0200, //
+    0x020D, 0x021B, 0x0229, 0x0237, 0x0246, 0x0255, 0x0264, 0x0273, //
+    0x0283, 0x0293, 0x02A3, 0x02B4, 0x02C4, 0x02D6, 0x02E7, 0x02F9, //
+    0x030B, 0x031D, 0x0330, 0x0343, 0x0356, 0x036A, 0x037E, 0x0392, //
+    0x03A7, 0x03BC, 0x03D1, 0x03E7, 0x03FC, 0x0413, 0x042A, 0x0441, //
+    0x0458, 0x0470, 0x0488, 0x04A0, 0x04B9, 0x04D2, 0x04EC, 0x0506, //
+    0x0520, 0x053B, 0x0556, 0x0572, 0x058E, 0x05AA, 0x05C7, 0x05E4, // entry
+    0x0601, 0x061F, 0x063E, 0x065C, 0x067C, 0x069B, 0x06BB, 0x06DC, // 080..0FF
+    0x06FD, 0x071E, 0x0740, 0x0762, 0x0784, 0x07A7, 0x07CB, 0x07EF, //
+    0x0813, 0x0838, 0x085D, 0x0883, 0x08A9, 0x08D0, 0x08F7, 0x091E, //
+    0x0946, 0x096F, 0x0998, 0x09C1, 0x09EB, 0x0A16, 0x0A40, 0x0A6C, //
+    0x0A98, 0x0AC4, 0x0AF1, 0x0B1E, 0x0B4C, 0x0B7A, 0x0BA9, 0x0BD8, //
+    0x0C07, 0x0C38, 0x0C68, 0x0C99, 0x0CCB, 0x0CFD, 0x0D30, 0x0D63, //
+    0x0D97, 0x0DCB, 0x0E00, 0x0E35, 0x0E6B, 0x0EA1, 0x0ED7, 0x0F0F, //
+    0x0F46, 0x0F7F, 0x0FB7, 0x0FF1, 0x102A, 0x1065, 0x109F, 0x10DB, //
+    0x1116, 0x1153, 0x118F, 0x11CD, 0x120B, 0x1249, 0x1288, 0x12C7, //
+    0x1307, 0x1347, 0x1388, 0x13C9, 0x140B, 0x144D, 0x1490, 0x14D4, //
+    0x1517, 0x155C, 0x15A0, 0x15E6, 0x162C, 0x1672, 0x16B9, 0x1700, //
+    0x1747, 0x1790, 0x17D8, 0x1821, 0x186B, 0x18B5, 0x1900, 0x194B, //
+    0x1996, 0x19E2, 0x1A2E, 0x1A7B, 0x1AC8, 0x1B16, 0x1B64, 0x1BB3, //
+    0x1C02, 0x1C51, 0x1CA1, 0x1CF1, 0x1D42, 0x1D93, 0x1DE5, 0x1E37, //
+    0x1E89, 0x1EDC, 0x1F2F, 0x1F82, 0x1FD6, 0x202A, 0x207F, 0x20D4, //
+    0x2129, 0x217F, 0x21D5, 0x222C, 0x2282, 0x22DA, 0x2331, 0x2389, // entry
+    0x23E1, 0x2439, 0x2492, 0x24EB, 0x2545, 0x259E, 0x25F8, 0x2653, // 100..17F
+    0x26AD, 0x2708, 0x2763, 0x27BE, 0x281A, 0x2876, 0x28D2, 0x292E, //
+    0x298B, 0x29E7, 0x2A44, 0x2AA1, 0x2AFF, 0x2B5C, 0x2BBA, 0x2C18, //
+    0x2C76, 0x2CD4, 0x2D33, 0x2D91, 0x2DF0, 0x2E4F, 0x2EAE, 0x2F0D, //
+    0x2F6C, 0x2FCC, 0x302B, 0x308B, 0x30EA, 0x314A, 0x31AA, 0x3209, //
+    0x3269, 0x32C9, 0x3329, 0x3389, 0x33E9, 0x3449, 0x34A9, 0x3509, //
+    0x3569, 0x35C9, 0x3629, 0x3689, 0x36E8, 0x3748, 0x37A8, 0x3807, //
+    0x3867, 0x38C6, 0x3926, 0x3985, 0x39E4, 0x3A43, 0x3AA2, 0x3B00, //
+    0x3B5F, 0x3BBD, 0x3C1B, 0x3C79, 0x3CD7, 0x3D35, 0x3D92, 0x3DEF, //
+    0x3E4C, 0x3EA9, 0x3F05, 0x3F62, 0x3FBD, 0x4019, 0x4074, 0x40D0, //
+    0x412A, 0x4185, 0x41DF, 0x4239, 0x4292, 0x42EB, 0x4344, 0x439C, //
+    0x43F4, 0x444C, 0x44A3, 0x44FA, 0x4550, 0x45A6, 0x45FC, 0x4651, //
+    0x46A6, 0x46FA, 0x474E, 0x47A1, 0x47F4, 0x4846, 0x4898, 0x48E9, //
+    0x493A, 0x498A, 0x49D9, 0x4A29, 0x4A77, 0x4AC5, 0x4B13, 0x4B5F, //
+    0x4BAC, 0x4BF7, 0x4C42, 0x4C8D, 0x4CD7, 0x4D20, 0x4D68, 0x4DB0, //
+    0x4DF7, 0x4E3E, 0x4E84, 0x4EC9, 0x4F0E, 0x4F52, 0x4F95, 0x4FD7, // entry
+    0x5019, 0x505A, 0x509A, 0x50DA, 0x5118, 0x5156, 0x5194, 0x51D0, // 180..1FF
+    0x520C, 0x5247, 0x5281, 0x52BA, 0x52F3, 0x532A, 0x5361, 0x5397, //
+    0x53CC, 0x5401, 0x5434, 0x5467, 0x5499, 0x54CA, 0x54FA, 0x5529, //
+    0x5558, 0x5585, 0x55B2, 0x55DE, 0x5609, 0x5632, 0x565B, 0x5684, //
+    0x56AB, 0x56D1, 0x56F6, 0x571B, 0x573E, 0x5761, 0x5782, 0x57A3, //
+    0x57C3, 0x57E2, 0x57FF, 0x581C, 0x5838, 0x5853, 0x586D, 0x5886, //
+    0x589E, 0x58B5, 0x58CB, 0x58E0, 0x58F4, 0x5907, 0x5919, 0x592A, //
+    0x593A, 0x5949, 0x5958, 0x5965, 0x5971, 0x597C, 0x5986, 0x598F, //
+    0x5997, 0x599E, 0x59A4, 0x59A9, 0x59AD, 0x59B0, 0x59B2, 0x59B3  //
+  }};
+
+  const u8 i = counter.interpolation_index;
+  const u32 s = NUM_SAMPLES_FROM_LAST_ADPCM_BLOCK + ZeroExtend32(counter.sample_index.GetValue());
+
+  s32 out = s32(gauss[0x0FF - i]) * s32(current_block_samples[s - 3]);
+  out += s32(gauss[0x1FF - i]) * s32(current_block_samples[s - 2]);
+  out += s32(gauss[0x100 + i]) * s32(current_block_samples[s - 1]);
+  out += s32(gauss[0x000 + i]) * s32(current_block_samples[s - 0]);
+  return out >> 15;
+}
+
+void SPU::ReadADPCMBlock(u16 address, ADPCMBlock* block)
+{
+  u32 ram_address = (ZeroExtend32(address) * 8) & RAM_MASK;
+  if (IsRAMIRQTriggerable() && (CheckRAMIRQ(ram_address) || CheckRAMIRQ((ram_address + 8) & RAM_MASK)))
+  {
+//    DEBUG_LOG("Trigger IRQ @ {:08X} ({:04X}) from ADPCM reader", ram_address, ram_address / 8);
+    TriggerRAMIRQ();
+  }
+
+  // fast path - no wrap-around
+  if ((ram_address + sizeof(ADPCMBlock)) <= RAM_SIZE)
+  {
+    std::memcpy(block, &s_ram[ram_address], sizeof(ADPCMBlock));
+    return;
+  }
+
+  block->shift_filter.bits = s_ram[ram_address];
+  ram_address = (ram_address + 1) & RAM_MASK;
+  block->flags.bits = s_ram[ram_address];
+  ram_address = (ram_address + 1) & RAM_MASK;
+  for (u32 i = 0; i < 14; i++)
+  {
+    block->data[i] = s_ram[ram_address];
+    ram_address = (ram_address + 1) & RAM_MASK;
+  }
+}
+
+ALWAYS_INLINE_RELEASE std::tuple<s32, s32> SPU::SampleVoice(u32 voice_index)
+{
+  Voice& voice = s_state.voices[voice_index];
+  if (!voice.IsOn() && !s_state.SPUCNT.irq9_enable)
+  {
+    voice.last_volume = 0;
+
+//#ifdef SPU_DUMP_ALL_VOICES
+//    if (s_state.s_voice_dump_writers[voice_index])
+//    {
+//      const s16 dump_samples[2] = {0, 0};
+//      s_state.s_voice_dump_writers[voice_index]->WriteFrames(dump_samples, 1);
+//    }
+//#endif
+
+    return {};
+  }
+
+  if (!voice.has_samples)
+  {
+    ADPCMBlock block;
+    ReadADPCMBlock(voice.current_address, &block);
+    voice.DecodeBlock(block);
+    voice.has_samples = true;
+
+    if (voice.current_block_flags.loop_start && !voice.ignore_loop_address)
+    {
+//      TRACE_LOG("Voice {} loop start @ 0x{:08X}", voice_index, voice.current_address);
+      voice.regs.adpcm_repeat_address = voice.current_address;
+    }
+  }
+
+  // skip interpolation when the volume is muted anyway
+  s32 volume;
+  if (voice.regs.adsr_volume != 0)
+  {
+    // interpolate/sample and apply ADSR volume
+    s32 sample;
+    if (IsVoiceNoiseEnabled(voice_index))
+      sample = GetVoiceNoiseLevel();
+    else
+      sample = voice.Interpolate();
+
+    volume = ApplyVolume(sample, voice.regs.adsr_volume);
+  }
+  else
+  {
+    volume = 0;
+  }
+
+  voice.last_volume = volume;
+
+  if (voice.adsr_phase != ADSRPhase::Off)
+    voice.TickADSR();
+
+  // Pitch modulation
+  u16 step = voice.regs.adpcm_sample_rate;
+  if (IsPitchModulationEnabled(voice_index))
+  {
+    const s32 factor = std::clamp<s32>(s_state.voices[voice_index - 1].last_volume, -0x8000, 0x7FFF) + 0x8000;
+    step = Truncate16(static_cast<u32>((SignExtend32(step) * factor) >> 15));
+  }
+  step = std::min<u16>(step, 0x3FFF);
+
+  // Shouldn't ever overflow because if sample_index == 27, step == 0x4000 there won't be a carry out from the
+  // interpolation index. If there is a carry out, bit 12 will never be 1, so it'll never add more than 4 to
+  // sample_index, which should never be >27.
+//  DebugAssert(voice.counter.sample_index < NUM_SAMPLES_PER_ADPCM_BLOCK);
+  voice.counter.bits += step;
+
+  if (voice.counter.sample_index >= NUM_SAMPLES_PER_ADPCM_BLOCK)
+  {
+    // next block
+    voice.counter.sample_index -= NUM_SAMPLES_PER_ADPCM_BLOCK;
+    voice.has_samples = false;
+    voice.is_first_block = false;
+    voice.current_address += 2;
+
+    // handle flags
+    if (voice.current_block_flags.loop_end)
+    {
+      s_state.endx_register |= (u32(1) << voice_index);
+      voice.current_address = voice.regs.adpcm_repeat_address & ~u16(1);
+
+      if (!voice.current_block_flags.loop_repeat)
+      {
+        // End+Mute flags are ignored when noise is enabled. ADPCM data is still decoded.
+        if (!IsVoiceNoiseEnabled(voice_index))
+        {
+//          TRACE_LOG("Voice {} loop end+mute @ 0x{:04X}", voice_index, voice.current_address);
+          voice.ForceOff();
+        }
+        else
+        {
+//          TRACE_LOG("IGNORING voice {} loop end+mute @ 0x{:04X}", voice_index, voice.current_address);
+        }
+      }
+      else
+      {
+//        TRACE_LOG("Voice {} loop end+repeat @ 0x{:04X}", voice_index, voice.current_address);
+      }
+    }
+  }
+
+  // apply per-channel volume
+  const s32 left = ApplyVolume(volume, voice.left_volume.current_level);
+  const s32 right = ApplyVolume(volume, voice.right_volume.current_level);
+  voice.left_volume.Tick();
+  voice.right_volume.Tick();
+
+//#ifdef SPU_ENABLE_VU_METER
+//  if (IsVUMeterActive())
+//    UpdateDebugPeaks(s_state.voice_peaks[voice_index], left, right);
+//#endif
+
+#ifdef SPU_DUMP_ALL_VOICES
+  if (s_state.s_voice_dump_writers[voice_index])
+  {
+    const s16 dump_samples[2] = {static_cast<s16>(Clamp16(left)), static_cast<s16>(Clamp16(right))};
+    s_state.s_voice_dump_writers[voice_index]->WriteFrames(dump_samples, 1);
+  }
 #endif
 
-//**************************************************************************
-//  GLOBAL VARIABLES
-//**************************************************************************
-
-spu_device::reverb_params *spu_device::spu_reverb_cfg=nullptr;
-
-float spu_device::freq_multiplier=1.0f;
-
-//**************************************************************************
-//  DEVICE CONFIGURATION
-//**************************************************************************
-
-class adpcm_decoder
-{
-	int l0,l1;
-
-public:
-	adpcm_decoder()
-	{
-		reset();
-	}
-
-	adpcm_decoder(const adpcm_decoder &other)
-	{
-		operator =(other);
-	}
-
-	adpcm_decoder &operator =(const adpcm_decoder &other)
-	{
-		l0=other.l0;
-		l1=other.l1;
-		return *this;
-	}
-
-	void reset()
-	{
-		l0=l1=0;
-	}
-
-	signed short *decode_packet(adpcm_packet *ap, signed short *dp);
-};
-
-//
-//
-//
-
-struct spu_device::sample_cache
-{
-public:
-	unsigned int start,
-					end,
-					invalid_start,
-					invalid_end,
-					loopaddr,
-					last_update_end;
-	std::unique_ptr<signed short []> data;
-	signed short *loop,*dend;
-	adpcm_decoder decoder, update_decoder;
-	mutable int ref_count;
-	bool valid,
-				is_loop;
-	sample_loop_cache *loop_cache;
-
-	static unsigned int cache_size;
-
-	sample_cache()
-		:   invalid_start(0xffffffff),
-			invalid_end(0),
-			last_update_end(0xffffffff),
-			data(nullptr),
-			ref_count(0),
-			valid(false),
-			is_loop(false),
-			loop_cache(nullptr)
-	{
-	}
-
-	~sample_cache();
-
-	void add_ref() const { ref_count++; }
-	void remove_ref() const
-	{
-		ref_count--;
-		if (ref_count==0)
-		{
-			cache_size-=(dend-data.get())<<1;
-			delete this;
-		}
-	}
-
-	signed short *get_sample_pointer(const unsigned int addr);
-	bool get_sample_pointer(const unsigned int addr, cache_pointer *cp);
-	bool get_loop_pointer(cache_pointer *cp);
-	unsigned int get_sample_address(const signed short *ptr) const;
-	sample_loop_cache *find_loop_cache(const unsigned int lpend, const unsigned int lpstart);
-	void add_loop_cache(sample_loop_cache *lc);
-
-	bool is_valid_pointer(signed short *ptr) const;
-
-	bool try_update(spu_device *spu);
-};
-
-unsigned int spu_device::sample_cache::cache_size;
-
-//
-//
-//
-
-struct spu_device::sample_loop_cache
-{
-public:
-	unsigned int loopend,
-								loopstart,
-								len;
-	signed short data[num_loop_cache_samples];
-	sample_loop_cache *next;
-
-	sample_loop_cache()
-		:   next(nullptr)
-	{
-		sample_cache::cache_size+=num_loop_cache_samples<<1;
-	}
-
-	~sample_loop_cache()
-	{
-		sample_cache::cache_size-=num_loop_cache_samples<<1;
-
-		#ifdef log_loop_cache
-			log(log_spu,"spu: destroy loop cache %08x\n",this);
-		#endif
-	}
-};
-
-//
-//
-//
-
-struct spu_device::cache_pointer
-{
-	signed short *ptr;
-	sample_cache *cache;
-
-	cache_pointer()
-		: ptr(nullptr),
-			cache(nullptr)
-	{
-	}
-
-	cache_pointer(const cache_pointer &other)
-		: ptr(nullptr),
-			cache(nullptr)
-	{
-		operator =(other);
-	}
-
-	cache_pointer(signed short *_ptr, sample_cache *_cache)
-		: ptr(_ptr),
-			cache(_cache)
-	{
-		if (cache) cache->add_ref();
-	}
-
-	~cache_pointer()
-	{
-		reset();
-	}
-
-	void reset();
-	cache_pointer &operator =(const cache_pointer &other);
-	bool update(spu_device *spu);
-
-	unsigned int get_address() const
-	{
-		if (cache)
-		{
-			return cache->get_sample_address(ptr);
-		} else
-		{
-			return -1;
-		}
-	}
-
-	operator bool() const { return cache!=nullptr; }
-
-	bool is_valid() const { return ((cache) && (cache->is_valid_pointer(ptr))); }
-};
-
-//
-//
-//
-
-struct spu_device::voiceinfo
-{
-	cache_pointer play,loop;
-	sample_loop_cache *loop_cache;
-	unsigned int dptr,
-								lcptr;
-
-	int env_state;
-	float env_ar,
-				env_dr,
-				env_sr,
-				env_rr,
-				env_sl,
-				env_level,
-				env_delta,
-
-				//>>
-				sweep_vol[2],
-				sweep_rate[2];
-	int vol[2];
-				//<<
-
-	unsigned int pitch,
-								samplestoend,
-								samplestoirq,
-								envsamples;
-	bool hitirq,
-				inloopcache,
-				forceloop,
-				_pad;
-	int64_t keyontime;
-};
-
-//
-//
-//
-
-class spu_stream_buffer
-{
-public:
-	struct stream_marker
-	{
-	public:
-		unsigned int sector,
-									offset;
-		stream_marker *next,
-									*prev;
-	};
-
-	std::vector<uint8_t> buffer;
-	unsigned int head,
-								tail,
-								in,
-								sector_size,
-								num_sectors,
-								buffer_size;
-	stream_marker *marker_head,
-								*marker_tail;
-
-	spu_stream_buffer(const unsigned int _sector_size,
-								const unsigned int _num_sectors)
-		:   head(0),
-			tail(0),
-			in(0),
-			sector_size(_sector_size),
-			num_sectors(_num_sectors),
-			marker_head(nullptr),
-			marker_tail(nullptr)
-	{
-		buffer_size=sector_size*num_sectors;
-		buffer.resize(buffer_size);
-		memset(&buffer[0], 0, buffer_size);
-	}
-
-	~spu_stream_buffer()
-	{
-		flush_all();
-	}
-
-	unsigned char *add_sector(const unsigned int sector)
-	{
-		auto xam=new stream_marker;
-		xam->sector=sector;
-		xam->offset=head;
-		xam->next=nullptr;
-		xam->prev=marker_tail;
-		if (marker_tail)
-		{
-			marker_tail->next=xam;
-		} else
-		{
-			marker_head=xam;
-		}
-		marker_tail=xam;
-
-		unsigned char *ret=&buffer[head];
-		head=(head+sector_size)%buffer_size;
-		in+=sector_size;
-		return ret;
-	}
-
-	void flush(const unsigned int sector)
-	{
-		// Remove markers from the end of the buffer if they are after
-		// the specified sector
-
-		while ((marker_tail) && (marker_tail->sector>=sector))
-		{
-//          debug_xa("flushing: %d\n", marker_tail->sector);
-
-			stream_marker *xam=marker_tail;
-			head=xam->offset;
-			marker_tail=xam->prev;
-			if (marker_tail) marker_tail->next=nullptr;
-			delete xam;
-		}
-
-		// Set marker head to nullptr if the list is now empty
-
-		if (! marker_tail) marker_head=nullptr;
-
-		// Adjust buffer size counter
-
-		int sz=(head-tail);
-		if (sz<0) sz+=buffer_size;
-		assert(sz<=(int)in);
-		in=sz;
-	}
-
-	void flush_all()
-	{
-		// NOTE: ??what happens to the markers??
-
-		while (marker_head)
-		{
-			stream_marker *m=marker_head;
-			marker_head=marker_head->next;
-			delete m;
-		}
-
-		marker_head=marker_tail=nullptr;
-		head=tail=in=0;
-	}
-
-	void delete_markers(const unsigned int oldtail)
-	{
-		while (marker_head)
-		{
-			int olddist=marker_head->offset-oldtail,
-					dist=marker_head->offset-tail;
-			if (olddist<0) olddist+=buffer_size;
-			if (dist<0) dist+=buffer_size;
-			bool passed=(((olddist==0) && (dist!=0)) || (dist>olddist));
-			if (! passed) break;
-
-//          debug_xa("passed: %d\n",marker_head->sector);
-
-			stream_marker *xam=marker_head;
-			marker_head=xam->next;
-			delete xam;
-			if (marker_head) marker_head->prev=nullptr;
-		}
-
-		if (! marker_head) marker_head=marker_tail=nullptr;
-	}
-
-	unsigned int get_bytes_in() const { return in; }
-	unsigned int get_bytes_free() const { return buffer_size-in; }
-
-	unsigned char *get_tail_ptr() { return &buffer[tail]; }
-	unsigned char *get_tail_ptr(const unsigned int offset)
-	{
-		return &buffer[((tail+offset)%buffer_size)];
-	}
-	unsigned int get_tail_offset() const { return tail; }
-	void increment_tail(const unsigned int offset)
-	{
-		tail=(tail+offset)%buffer_size;
-		in-=offset;
-	}
-};
-
-//
-//
-//
-
-static inline int clamp(const int v)
-{
-	if (v<-32768) return -32768;
-	if (v>32767) return 32767;
-	return v;
-}
-
-//
-//
-//
-
-spu_device::sample_cache::~sample_cache()
-{
-	data.reset();
-	while (loop_cache)
-	{
-		sample_loop_cache *lc=loop_cache;
-		loop_cache=lc->next;
-		delete lc;
-	}
-}
-
-//
-//
-//
-
-signed short *spu_device::sample_cache::get_sample_pointer(const unsigned int addr)
-{
-	if ((addr>=start) && (addr<end))
-	{
-		return &data[((addr-start)>>4)*28];
-	} else
-	{
-		return nullptr;
-	}
-}
-
-//
-//
-//
-
-bool spu_device::sample_cache::get_sample_pointer(const unsigned int addr, cache_pointer *cp)
-{
-	cp->reset();
-	if ((cp->ptr=get_sample_pointer(addr)))
-	{
-		cp->cache=this;
-		add_ref();
-		return true;
-	}
-	return false;
-}
-
-//
-//
-//
-
-bool spu_device::sample_cache::get_loop_pointer(cache_pointer *cp)
-{
-	cp->reset();
-	if ((cp->ptr=loop))
-	{
-		cp->cache=this;
-		add_ref();
-		return true;
-	}
-	return false;
-}
-
-//
-//
-//
-
-unsigned int spu_device::sample_cache::get_sample_address(const signed short *ptr) const
-{
-	if ((ptr>=data.get()) && (ptr<=dend))
-	{
-		return start+(((ptr-data.get())/28)<<4);
-	} else
-	{
-		return -1;
-	}
-}
-
-//
-//
-//
-
-spu_device::sample_loop_cache *spu_device::sample_cache::find_loop_cache(const unsigned int lpend, const unsigned int lpstart)
-{
-	sample_loop_cache *lc;
-	for (lc=loop_cache; lc; lc=lc->next)
-		if ((lc->loopend==lpend) && (lc->loopstart==lpstart)) break;
-	return lc;
-}
-
-//
-//
-//
-
-void spu_device::sample_cache::add_loop_cache(sample_loop_cache *lc)
-{
-	lc->next=loop_cache;
-	loop_cache=lc;
-}
-
-//
-//
-//
-
-bool spu_device::sample_cache::is_valid_pointer(signed short *ptr) const
-{
-	if ((ptr>=data.get()) && (data.get()<=dend)) return true;
-	for (sample_loop_cache *slc=loop_cache; slc; slc=slc->next)
-		if ((ptr>=slc->data) && (ptr<(slc->data+num_loop_cache_samples)))
-			return true;
-	return false;
-}
-
-//
-//
-//
-
-bool spu_device::sample_cache::try_update(spu_device *spu)
-{
-	if ((invalid_start>=start) && (invalid_end<=end))
-	{
-		adpcm_packet *ap=(adpcm_packet *)&spu->spu_ram[start];
-		unsigned int a;
-		unsigned int loop=0;
-
-		for (a=start; a<=end; a+=16, ap++)
-		{
-			if ((ap->flags&adpcmflag_loop_start) && (ap->flags&adpcmflag_loop)) loop=a;
-			if (ap->flags&adpcmflag_end) break;
-		}
-
-		if ((a==(end-16)) && (loop==loopaddr))
-		{
-			#ifdef show_cache_update
-				printf("updating %p: ",this);
-			#endif
-
-			if (invalid_start==start)
-			{
-				#ifdef show_cache_update
-					printf("using end values");
-				#endif
-
-				update_decoder=decoder;
-			} else
-			if (invalid_start!=last_update_end)
-			{
-				#ifdef show_cache_update
-					printf("resetting decoder (istrt=%08x lupd=%08x)",invalid_start,last_update_end);
-				#endif
-
-				update_decoder.reset();
-			}
-			#ifdef show_cache_update
-				printf("\n");
-			#endif
-
-			signed short *dp=&data[((invalid_start-start)>>4)*28];
-			ap=(adpcm_packet *)&spu->spu_ram[invalid_start];
-			for (a=invalid_start; a<invalid_end; a+=16, ap++)
-				dp=update_decoder.decode_packet(ap,dp);
-
-			if (invalid_end==end)
-			{
-				#ifdef show_cache_update
-					printf("updating end values\n");
-				#endif
-				decoder=update_decoder;
-			}
-			last_update_end=invalid_end;
-
-			for (sample_loop_cache *lc=loop_cache; lc; lc=lc->next)
-			{
-				if (invalid_start==lc->loopstart)
-				{
-					adpcm_decoder tmp=decoder;
-					dp=lc->data;
-					signed short *dpend=dp+lc->len;
-					unsigned int adr=lc->loopstart;
-					for (unsigned int i=0; ((i<num_loop_cache_packets) && (dp<dpend)); i++, adr+=16)
-						dp=tmp.decode_packet((adpcm_packet *)&spu->spu_ram[adr],dp);
-				}
-			}
-
-			invalid_end=0;
-			invalid_start=0xffffffff;
-			valid=true;
-
-			for (a=start; a<end; a+=16, ap++)
-			{
-				spu->cache[a>>4]=this;
-			}
-
-			add_ref();
-
-			return true;
-		}
-	}
-
-	return false;
-}
-
-//
-//
-//
-
-void spu_device::cache_pointer::reset()
-{
-	if (cache)
-	{
-		ptr=nullptr;
-		cache->remove_ref();
-		cache=nullptr;
-	}
-}
-
-//
-//
-//
-
-spu_device::cache_pointer &spu_device::cache_pointer::operator =(const cache_pointer &other)
-{
-	if (cache) cache->remove_ref();
-	ptr=other.ptr;
-	cache=other.cache;
-	if (cache) cache->add_ref();
-	return *this;
-}
-
-//
-//
-//
-
-bool spu_device::cache_pointer::update(spu_device *spu)
-{
-	if ((cache) && (! cache->valid))
-	{
-/*      log(log_spu,"cache_pointer::update: block %08x-%08x invalidated %08x-%08x\n",
-                                cache->start,
-                                cache->end,
-                                cache->invalid_start,
-                                cache->invalid_end);*/
-
-		if (! cache->try_update(spu))
-		{
-			// Cache is invalid, calculate play address offset from start of
-			// old cache block
-
-			unsigned int off=ptr-cache->data.get(),
-										addr=cache->start;
-
-			// Release cache block and get updated one
-
-			spu->translate_sample_addr(addr,this);
-
-			// Calculate play address in new cache block
-
-			ptr=&cache->data[off];
-
-			if (ptr>=cache->dend)
-			{
-				// Play address is out of bounds in new cache block, release it and get a
-				// new one starting at the current play address
-
-				spu->translate_sample_addr(addr+((off/28)<<4),this);
-			}
-		}
-	}
-
-	// Return false if we do not have a cache block or the play address is invalid
-
-	if ((cache) && ((ptr>=cache->data.get()) && (ptr<cache->dend)))
-	{
-		return true;
-	} else
-	{
-		reset();
-		return false;
-	}
-}
-
-//
-//
-//
-
-signed short *adpcm_decoder::decode_packet(adpcm_packet *ap, signed short *dp)
-{
-	int shift=ap->info&0xf,
-			filter=ap->info>>4,
-			f0=filter_coef[filter][0],
-			f1=filter_coef[filter][1];
-
-	for (int i=0; i<14; i++)
-	{
-		unsigned char b=ap->data[i];
-		short bl=(b&0xf)<<12,
-					bh=(b>>4)<<12;
-
-		bl=(bl>>shift)+(((l0*f0)+(l1*f1)+32)>>6);
-		*dp++=bl;
-		l1=l0;
-		l0=bl;
-
-		bh=(bh>>shift)+(((l0*f0)+(l1*f1)+32)>>6);
-		*dp++=bh;
-		l1=l0;
-		l0=bh;
-	}
-
-	return dp;
-}
-
-//
-//
-//
-
-static int shift_register15(int &shift)
-{
-	int bit0, bit1, bit14;
-
-	bit0 = shift & 1;
-	bit1 = (shift & 2) >> 1;
-	bit14 = (bit0 ^ bit1) ^ 1;
-	shift >>= 1;
-	shift |= (bit14 << 14);
-	return bit0;
-}
-
-//
-//
-//
-
-//-------------------------------------------------
-//  spu_device - constructor
-//-------------------------------------------------
-
-spu_device::spu_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock, psxcpu_device *cpu)
-	: spu_device(mconfig, tag, owner, clock)
-{
-	/*cpu->spu_read().set(tag, FUNC(spu_device::read));
-	cpu->spu_write().set(tag, FUNC(spu_device::write));
-	cpu->subdevice<psxdma_device>("dma")->install_read_handler(4, psxdma_device::read_delegate(&spu_device::dma_read, this));
-	cpu->subdevice<psxdma_device>("dma")->install_write_handler(4, psxdma_device::write_delegate(&spu_device::dma_write, this));
-	irq_handler().set(*cpu->subdevice<psxirq_device>("irq"), FUNC(psxirq_device::intin9));*/
-}
-
-spu_device::spu_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock) :
-	//device_t(mconfig, SPU, tag, owner, clock),
-	//device_sound_interface(mconfig, *this),
-	//m_stream_flags(STREAM_DEFAULT_FLAGS),
-	//m_irq_handler(*this),
-    m_clock(clock),
-	dirty_flags(-1),
-	status_enabled(false),
-	xa_voll(0x8000),
-	xa_volr(0x8000),
-	changed_xa_vol(0)
-{
-}
-
-void spu_device::device_start()
-{
-	spu_base_frequency_hz = clock() / 768.0f;
-	generate_linear_rate_table();
-	generate_pos_exp_rate_table();
-	generate_neg_exp_rate_table();
-	generate_decay_rate_table();
-	generate_linear_release_rate_table();
-	generate_exp_release_rate_table();
-
-	voice=new voiceinfo [24];
-    spu_ram.resize(spu_ram_size);
-
-	xa_buffer=new spu_stream_buffer(xa_sector_size,xa_buffer_sectors);
-	cdda_buffer=new spu_stream_buffer(cdda_sector_size,cdda_buffer_sectors);
-
-	init_stream();
-
-	cache=std::make_unique<sample_cache * []>(spu_ram_size>>4);
-	std::fill_n(cache.get(), spu_ram_size>>4, nullptr);
-
-	// register save state stuff
-	/*save_item(NAME(reg));           // this covers all spureg.* plus the reverb parameter block
-	save_item(NAME(xa_cnt));
-	save_item(NAME(cdda_cnt));
-	save_item(NAME(xa_freq));
-	save_item(NAME(cdda_freq));
-	save_item(NAME(xa_channels));
-	save_item(NAME(xa_spf));
-	save_item(NAME(cur_frame_sample));
-	save_item(NAME(cur_generate_sample));
-	save_pointer(NAME(spu_ram), spu_ram_size);
-
-	save_item(NAME(xa_buffer->head));
-	save_item(NAME(xa_buffer->tail));
-	save_item(NAME(xa_buffer->in));
-	save_item(NAME(xa_buffer->sector_size));
-	save_item(NAME(xa_buffer->num_sectors));
-	save_item(NAME(xa_buffer->buffer_size));
-	save_item(NAME(xa_buffer->buffer));
-
-	save_item(NAME(cdda_buffer->head));
-	save_item(NAME(cdda_buffer->tail));
-	save_item(NAME(cdda_buffer->in));
-	save_item(NAME(cdda_buffer->sector_size));
-	save_item(NAME(cdda_buffer->num_sectors));
-	save_item(NAME(cdda_buffer->buffer_size));
-	save_item(NAME(cdda_buffer->buffer));*/
-}
-
-void spu_device::device_reset()
-{
-	cur_reverb_preset = nullptr;
-	cur_frame_sample = 0;
-	cur_generate_sample = 0;
-
-	sample_cache::cache_size = 0;
-
-	status_enabled = false;
-	xa_voll = xa_volr = 0x8000;
-	dirty_flags = -1;
-	changed_xa_vol = 0;
-
-	xa_cnt=0;
-	xa_freq=0;
-	xa_channels=2;
-	xa_spf=0;
-	xa_out_ptr=0;
-	xa_playing=false;
-	memset(xa_last,0,sizeof(xa_last));
-
-	cdda_cnt=0;
-	cdda_playing=false;
-	m_cd_out_ptr = 0;
-
-	memset(spu_ram.data(),0,spu_ram_size);
-	memset(reg,0,0x200);
-	memset(voice,0,sizeof(voiceinfo)*24);
-
-	spureg.status|=(1<<7)|(1<<10);
-
-	std::fill_n(cache.get(), spu_ram_size>>4, nullptr);
-
-	for (auto & elem : output_buf)
-		elem=std::make_unique<unsigned char []>(output_buffer_size);
-	output_head=output_tail=output_size=0;
-
-	noise_t=0;
-	noise_seed=12345;
-	noise_cur=shift_register15(noise_seed)?0x7fff:0x8000;
-}
-
-void spu_device::device_post_load()
-{
-	// invalidate the SPURAM cache
-	invalidate_cache(0, spu_ram_size);
-	flush_output_buffer();
-
-	// mark everything dirty
-	dirty_flags = -1;
-
-	// kill and reallocate reverb to avoid artifacts
-	delete rev;
-	rev = new reverb(44100);
-
-	// and do some update processing
-	update_reverb();
-	update_key();
-	update_voice_state();
-	update_irq_event();
-}
-
-//
-//
-//
-void spu_device::device_stop()
-{
-	for (auto & elem : output_buf)
-		elem.reset();
-
-	kill_stream();
-
-	spu_ram.clear();
-	invalidate_cache(0,spu_ram_size);
-	cache.reset();
-	delete xa_buffer;
-	delete cdda_buffer;
-	delete [] voice;
-}
-//
-//
-//
-
-void spu_device::init_stream()
-{
-	const unsigned int hz=44100;
-
-	// TODO: Rewrite SPU stream update code to work such that Taiko no Tatsujin no longer needs synchronous streams
-	//m_stream = stream_alloc(0, 2, hz, m_stream_flags);
-
-	rev=new reverb(hz);
-
-	cdda_freq=(unsigned int)((44100.0f/(float)hz)*4096.0f);
-	freq_multiplier=spu_base_frequency_hz/(float)hz;
-}
-
-//
-//
-//
-
-void spu_device::kill_stream()
-{
-	delete rev;
-	rev=nullptr;
-}
-
-//
-//
-//
-
-void spu_device::reinit_sound()
-{
-	kill_stream();
-	init_stream();
-	flush_output_buffer();
-	dirty_flags|=dirtyflag_voice_mask;
-}
-
-//
-//
-//
-
-void spu_device::kill_sound()
-{
-	kill_stream();
-}
-
-//
-//
-//
-
-uint16_t spu_device::read(unsigned long int offset)
-{
-	unsigned short ret, *rp=(unsigned short *)(reg+((offset*2)&0x1ff));
-
-	//m_stream->update();
-
-	ret=*rp;
-
-	#ifdef debug_spu_registers
-		printf("spu: read word %08x = %04x [%s]\n",
-													offset*2,
-													ret,
-													get_register_name(offset*2));
-	#endif
-
-	return ret;
-}
-
-//
-//
-//
-
-void spu_device::write(unsigned long int offset, uint16_t data)
-{
-	#ifdef debug_spu_registers
-		printf("spu: write %08x = %04x [%s]\n",
-													offset*2,
-													data,
-													get_register_name(offset*2));
-	#endif
-
-	//m_stream->update();
-
-	const unsigned int a=(offset*2)&0x1ff;
-	switch (a)
-	{
-		case spureg_trans_addr:
-			spureg.trans_addr=data;
-			taddr=data<<3;
-			break;
-
-		case spureg_data:
-			dirty_flags|=dirtyflag_ram;
-			write_data(data);
-			break;
-
-		default:
-		{
-			unsigned short *rp=(unsigned short *)(reg+a);
-
-			if ((a==spureg_irq_addr) ||
-					((a==spureg_ctrl) && ((rp[0]^data)&spuctrl_irq_enable)))
-				dirty_flags|=dirtyflag_irq;
-
-			*rp=data;
-			break;
-		}
-	}
-
-	if ((a>spureg_reverb_config) && (a<=spureg_last))
-		dirty_flags|=dirtyflag_reverb;
-
-	if (a<=spureg_voice_last)
-	{
-		unsigned int v=(a>>4),r=(a&0xf);
-		if (r==0xe)
-		{
-			voice[v].forceloop=true;
-		}
-
-		dirty_flags|=(1<<v);
-	}
-
-	update_key();
-	update_vol(a);
-	update_voice_state();
-	update_irq_event();
-}
-
-//
-//
-//
-
-void spu_device::update_vol(const unsigned int addr)
-{
-	if (addr<0x180)
-	{
-		unsigned int ch=(addr&0xf)>>1;
-		if (ch<2)
-		{
-			unsigned int v=addr>>4;
-			unsigned short newval=*(unsigned short *)(reg+addr);
-
-			if (newval&0x8000)
-			{
-				#if 0
-				printf("cur=%04x on=%d",voice[v].vol[ch],(spureg.chon>>ch)&1);
-				switch ((newval>>13)&3)
-				{
-					case 0: printf("linear inc: phase=%d val=%02x\n",(newval>>12)&1,newval&0x7f); break;
-					case 1: printf("linear dec: phase=%d val=%02x\n",(newval>>12)&1,newval&0x7f); break;
-					case 2: printf("exp inc: phase=%d val=%02x\n",(newval>>12)&1,newval&0x7f); break;
-					case 3: printf("exp dec: phase=%d val=%02x\n",(newval>>12)&1,newval&0x7f); break;
-				}
-				#endif
-			}
-			else
-			{
-				voice[v].vol[ch]=((int)newval<<17)>>17;
-			}
-		}
-	}
-}
-
-//
-//
-//
-
-void spu_device::write_data(const unsigned short data)
-{
-	#ifdef debug_spu_registers
-		printf("spu: write data %04x @ %04x\n",data,taddr);
-	#endif
-
-	assert(taddr<spu_ram_size);
-	if (cache[taddr>>4]) flush_cache(cache[taddr>>4],taddr,taddr+2);
-	*((unsigned short *)&spu_ram[taddr])=data;
-	taddr+=2;
-}
-
-//
-//
-//
-
-void spu_device::update_key()
-{
-	dirty_flags|=((spureg.keyon|spureg.keyoff)&dirtyflag_voice_mask);
-
-	if (spureg.keyoff)
-	{
-		unsigned int d=spureg.keyoff;
-		for (int i=0; i<24; i++, d>>=1)
-			if (d&1) key_off(i);
-	}
-
-	if (spureg.keyon)
-	{
-		unsigned int d=spureg.keyon;
-		for (int i=0; i<24; i++, d>>=1)
-			if (d&1) key_on(i);
-		spureg.chon|=spureg.keyon;
-	}
-
-	spureg.keyon=spureg.keyoff=0;
-}
-
-//
-//
-//
-
-void spu_device::flush_cache(sample_cache *sc,
-													const unsigned int istart,
-													const unsigned int iend)
-{
-	for (unsigned int a=sc->start; a<sc->end; a+=16)
-		cache[a>>4]=nullptr;
-
-/*  log_static(log_spu,"cache_invalidate: %08x->%08x\n",
-                                         sc->start,
-                                         sc->end);*/
-
-	sc->invalid_start=(std::min)(sc->invalid_start,istart);
-	sc->invalid_end=(std::max)(sc->invalid_end,iend);
-	sc->valid=false;
-	sc->remove_ref();
-}
-
-//
-//
-//
-
-void spu_device::invalidate_cache(const unsigned int st, const unsigned int en)
-{
-	for (unsigned int a=st; a<en; a+=16)
-		if (cache[a>>4]) flush_cache(cache[a>>4],st,en);
-}
-
-//
-//
-//
-
-spu_device::sample_cache *spu_device::get_sample_cache(const unsigned int addr)
-{
-//  log_static(log_spu,"get_sample_cache: %08x\n",addr);
-
-	assert(addr<spu_ram_size);
-	sample_cache *sc=cache[addr>>4];
-	if (sc) return sc;
-
-	unsigned int loop=0;
-
-	sc=new sample_cache;
-	sc->valid=true;
-	sc->start=addr;
-	sc->loop=nullptr;
-
-	adpcm_packet *ap=(adpcm_packet *)&spu_ram[sc->start];
-	unsigned int a;
-	for (a=addr; a<(512*1024); a+=16, ap++)
-	{
-		if (cache[a>>4]) flush_cache(cache[a>>4],a,a+16);
-		cache[a>>4]=sc;
-
-		if ((ap->flags&adpcmflag_loop_start) && (ap->flags&adpcmflag_loop)) loop=a;
-		if (ap->flags&adpcmflag_end) break;
-	}
-
-	if ((a < 0x80000) && (ap->flags&adpcmflag_loop)) sc->is_loop=true;
-
-	sc->end=(std::min)(spu_ram_size,a+16);
-
-	unsigned int sz=((sc->end-sc->start)>>4)*28;
-	sc->data=std::make_unique<signed short []>(sz);
-	sample_cache::cache_size+=sz<<1;
-	sc->loopaddr=loop;
-	if (loop) sc->loop=&sc->data[((loop-sc->start)>>4)*28];
-
-	signed short *dp=sc->data.get();
-	ap=(adpcm_packet *)&spu_ram[sc->start];
-
-	for (a=sc->start; a<sc->end; a+=16, ap++)
-		dp=sc->decoder.decode_packet(ap,dp);
-
-	sc->dend=dp;
-	sc->add_ref();
-
-/*  log_static(log_spu,"cache_add: %08x->%08x\n",
-                                         sc->start,
-                                         sc->end);*/
-
-	return sc;
-}
-
-//
-//
-//
-
-bool spu_device::translate_sample_addr(const unsigned int addr, cache_pointer *cp)
-{
-	assert((addr&0xf)==0);
-	cp->reset();
-	if ((cp->cache=get_sample_cache(addr)))
-	{
-		cp->ptr=&cp->cache->data[((addr-cp->cache->start)>>4)*28];
-		cp->cache->add_ref();
-		return true;
-	}
-	return false;
-}
-
-//
-// Get distance in input samples to next IRQ for voice
-//
-
-unsigned int spu_device::get_irq_distance(const voiceinfo *vi)
-{
-	if (spureg.ctrl&spuctrl_irq_enable)
-	{
-		unsigned int irq_addr=spureg.irq_addr<<3;
-		signed short *irq_ptr;
-
-		if ((irq_ptr=vi->play.cache->get_sample_pointer(irq_addr)))
-		{
-			// IRQ address is inside this voices current cache block.  Return distance
-			// if current play address is lower, or equal (and irq has not already
-			// triggered)
-
-			if ((vi->play.ptr<irq_ptr) ||
-					((! vi->hitirq) && (vi->play.ptr==irq_ptr)))
-			{
-				return irq_ptr-vi->play.ptr;
-			}
-		}
-
-		if ((vi->loop) &&
-				(irq_ptr=vi->loop.cache->get_sample_pointer(irq_addr)) &&
-				(irq_ptr>=vi->loop.ptr))
-		{
-			// IRQ address is inside this voices loop cache, return distance
-
-			return (vi->play.cache->dend-vi->play.ptr)+
-							(irq_ptr-vi->loop.ptr);
-		}
-	}
-
-	// IRQs not enabled, or IRQ address not reachable by voice, distance is spu_infinity
-
-	return spu_infinity;
-}
-
-//
-//
-//
-
-void spu_device::update_voice_events(voiceinfo *vi)
-{
-	if (vi->pitch)
-	{
-		// Calculate time until end of sample in output samples
-
-		vi->samplestoend=(unsigned int)((((int64_t)(vi->play.cache->dend-vi->play.ptr)<<12)-vi->dptr)+(vi->pitch-1))/vi->pitch;
-		if (vi->inloopcache)
-		{
-			// Voice is inside loop cache, return time until end of that if lower
-
-			assert(vi->lcptr<vi->loop_cache->len);
-			vi->samplestoend=(std::min)(vi->samplestoend,
-														(unsigned int)((((int64_t)(vi->loop_cache->len-vi->lcptr)<<12)-vi->dptr)+(vi->pitch-1))/vi->pitch);
-		}
-
-		// Calculate time until next IRQ in output samples
-
-		unsigned int irqdist=get_irq_distance(vi);
-		if (irqdist!=spu_infinity)
-		{
-			// Convert IRQ input sample distance to output samples
-
-			vi->samplestoirq=(unsigned int)(((((int64_t)irqdist)<<12)-vi->dptr)+(vi->pitch-1))/vi->pitch;
-		} else
-		{
-			vi->samplestoirq=spu_infinity;
-		}
-	} else
-	{
-		// Voice pitch is 0, distance to sample end and IRQ is spu_infinity
-
-		vi->samplestoend=vi->samplestoirq=spu_infinity;
-	}
-}
-
-//
-//
-//
-
-bool spu_device::update_voice_state(const unsigned int v)
-{
-	voicereg *vr=&spureg.voice[v];
-	voiceinfo *vi=&voice[v];
-
-	// Update sample cache if necessary
-
-	if (! vi->play.update(this))
-		return false;
-	assert(vi->play.ptr<vi->play.cache->dend);
-
-	// Get pitch from voice register and apply frequency multiplier if
-	// there is one in effect
-
-	vi->pitch=vr->pitch;
-	vi->pitch=(unsigned int)(vi->pitch*freq_multiplier);
-
-	// Update event times
-
-	update_voice_events(vi);
-
-	return true;
-}
-
-//
-//
-//
-
-spu_device::sample_loop_cache *spu_device::get_loop_cache(sample_cache *cache, const unsigned int lpen, sample_cache *lpcache, const unsigned int lpst)
-{
-	// Check for existing loop cache
-
-	sample_loop_cache *ret=lpcache->find_loop_cache(lpen,lpst);
-	if (! ret)
-	{
-		// No loop cache exists for this address pair, create a new one
-
-		auto lc=new sample_loop_cache;
-		lc->loopend=lpen;
-		lc->loopstart=lpst;
-		lpcache->add_loop_cache(lc);
-		ret=lc;
-
-		// Decode samples from start address using decoder state at end address
-
-		unsigned int adr=lpst;
-		adpcm_decoder tmp=cache->decoder;
-		signed short *dp=lc->data;
-		for (unsigned int i=0; ((i<num_loop_cache_packets) &&
-														(adr<lpcache->end)); i++, adr+=16)
-			dp=tmp.decode_packet((adpcm_packet *)&spu_ram[adr],dp);
-
-		#ifdef log_loop_cache
-			log(log_spu,"spu: add loop cache %08x %08x->%08x (end at %08x)\n",lc,lpen,lpst,adr);
-		#endif
-
-		lc->len=dp-lc->data;
-	}
-
-	return ret;
-}
-
-//
-//
-//
-
-void spu_device::update_voice_loop(const unsigned int v)
-{
-//  voicereg *vr=&spureg.voice[v];
-	voiceinfo *vi=&voice[v];
-	unsigned int ra = 0;
-
-	// Check for looping using the voices repeat address register and get
-	// a pointer to the loop position if enabled
-
-	vi->loop.reset();
-
-	// If loop address is not forced get the loop pointer from the cache
-	// block (if present)
-
-	if ((! voice[v].forceloop) &&
-			(vi->play.cache->get_loop_pointer(&vi->loop)))
-	{
-		ra=vi->play.cache->loopaddr;
-	}
-
-	// Otherwise use the address set in repaddr (if set)
-
-	if ((! vi->loop) && (vi->play.cache->is_loop))
-	{
-		ra=spureg.voice[v].repaddr<<3;
-		ra=(ra+0xf)&~0xf;
-		const adpcm_packet *ap=ra?(adpcm_packet *)&spu_ram[ra]:nullptr;
-
-		if (ap)
-		{
-			if (ap->flags&adpcmflag_loop)
-			{
-				// Repeat address points to a block with loop flag set
-
-				if (! vi->play.cache->get_sample_pointer(ra,&vi->loop))
-				{
-					// Repeat address is in a different block
-
-					translate_sample_addr(ra,&vi->loop);
-				}
-			}
-		}
-	}
-
-	// Update loop cache
-
-	if (vi->loop)
-	{
-		vi->loop_cache=get_loop_cache(vi->play.cache,vi->play.cache->end,vi->loop.cache,ra);
-	}
-}
-
-//
-//
-//
-
-void spu_device::update_voice_state()
-{
-	// If RAM or irq state is dirty make all voices dirty
-
-	if (dirty_flags&(dirtyflag_ram|dirtyflag_irq))
-	{
-		dirty_flags|=dirtyflag_voice_mask;
-		dirty_flags&=~(dirtyflag_ram|dirtyflag_irq);
-	}
-
-	// Update state for dirty voices
-
-	if (dirty_flags&dirtyflag_voice_mask)
-	{
-		unsigned int voicemask=1;
-		for (unsigned int i=0; i<24; i++, voicemask<<=1)
-			if (dirty_flags&voicemask)
-			{
-				update_voice_state(i);
-				dirty_flags&=~voicemask;
-			}
-	}
-}
-
-//
-// Process voice state and build output segments
-//
-//  Input:  const unsigned int v        Voice number
-//                  const unsigned int sz       Amount of time to process (in output samples)
-//          unsigned int *tleft         Returned number of output samples remaining
-//
-//  Output: bool                                        true if voice is still playing
-//
-
-bool spu_device::process_voice(const unsigned int v,
-														const unsigned int sz,
-														void *ptr,
-														void *fmnoise_ptr,
-														void *outxptr,
-														unsigned int *tleft)
-{
-	bool ret=true;
-	unsigned int voice_mask=1<<v,
-								num=sz,
-								off=0;
-	bool noise=((spureg.noise&voice_mask)!=0),
-				fm=((spureg.fm&voice_mask)!=0);
-	voiceinfo *vi=&voice[v];
-
-	// Early exit if we don't have a sample cache block
-
-	if (! vi->play)
-	{
-		*tleft=sz;
-		return false;
-	}
-
-	// Generate samples
-
-	while (num)
-	{
-		// Play up to end of sample, envelope event, or IRQ, whichever comes first
-
-		unsigned int ntoplay=fm?1:num,
-									nextevent=(std::min)(vi->samplestoend,
-																(std::min)(vi->samplestoirq,vi->envsamples));
-		ntoplay=(std::min)(ntoplay,nextevent);
-
-		if (ntoplay)
-		{
-			signed short *noisep=nullptr;
-
-			if (fm)
-			{
-				int fmv=((signed short *)fmnoise_ptr)[off<<1];
-				vi->pitch=spureg.voice[v].pitch;
-				vi->pitch=(unsigned int)(vi->pitch*freq_multiplier);
-				vi->pitch=(vi->pitch*(fmv+32768))>>15;
-			} else
-			if (noise)
-			{
-				noisep=(signed short *)fmnoise_ptr;
-				noisep+=(off<<1);
-			}
-
-			signed short *dp=(signed short *)ptr,
-										*outxp=(signed short *)outxptr;
-			dp+=off<<1;
-			if (outxp) outxp+=off<<1;
-
-			generate_voice(v, dp, noisep, outxp, ntoplay);
-
-			num-=ntoplay;
-			off+=ntoplay;
-
-			vi->samplestoend-=ntoplay;
-			if (vi->samplestoirq!=spu_infinity) vi->samplestoirq-=ntoplay;
-			if (vi->envsamples!=spu_infinity) vi->envsamples-=ntoplay;
-			vi->hitirq=false;
-		}
-
-		// Determine which event(s) we hit
-
-		bool hitend=fm?(vi->play.ptr>=vi->play.cache->dend)
-									:(vi->samplestoend==0),
-					hitirq=(vi->samplestoirq==0),
-					hitenv=(vi->envsamples==0);
-
-		// Update loop cache pointer if we are playing a loop cache
-
-		if ((vi->inloopcache) && (vi->lcptr>=vi->loop_cache->len))
-		{
-			vi->inloopcache=false;
-			hitend=(vi->play.ptr>=vi->play.cache->dend);
-
-			#ifdef log_loop_cache
-				log(log_spu,"spu: %d leave loop cache %08x, lcptr=%d, hitend=%d\n",
-										v,
-										vi->loop_cache,
-										vi->lcptr,
-										hitend);
-			#endif
-		}
-
-		bool stopped=false;
-
-		if (hitend)
-		{
-			// End of sample reached, calculate how far we overshot
-
-			unsigned int poff=vi->play.ptr-vi->play.cache->dend;
-
-			// Make sure loop info is up to date and end the current output segment
-
-			update_voice_loop(v);
-			if (vi->loop)
-			{
-				// We are looping, set play address to loop address and account for
-				// overshoot
-
-				vi->play=vi->loop;
-				vi->play.ptr+=poff;
-				vi->lcptr=poff;
-				vi->inloopcache=(poff<vi->loop_cache->len);
-
-				#ifdef log_loop_cache
-					if (vi->inloopcache)
-						log(log_spu,"spu: %d enter loop cache %08x, lcptr=%d\n",
-												v,
-												vi->loop_cache,
-												vi->lcptr);
-				#endif
-
-				// Check for IRQ at/just after repeat address
-
-				if (spureg.ctrl&spuctrl_irq_enable)
-				{
-					if (spureg.voice[v].repaddr==spureg.irq_addr)
-						hitirq=true;
-
-					signed short *irq_ptr;
-					unsigned int irq_addr=spureg.irq_addr<<3;
-
-					if ((irq_ptr=vi->loop.cache->get_sample_pointer(irq_addr)))
-					{
-						if ((irq_ptr>=vi->loop.ptr) &&
-								(vi->play.ptr>=irq_ptr))
-							hitirq=true;
-					}
-				}
-			} else
-			{
-				// Not looping, stop voice
-
-				spureg.reverb&=~(1<<v);
-				stopped=true;
-
-				// Check for IRQ at repeat address
-
-				if (spureg.ctrl&spuctrl_irq_enable)
-				{
-					if (spureg.voice[v].repaddr==spureg.irq_addr)
-						hitirq=true;
-				}
-			}
-
-			assert((stopped) || (vi->play.ptr<vi->play.cache->dend));
-		} else
-		{
-			assert(vi->play.ptr<vi->play.cache->dend);
-		}
-
-		if (hitirq)
-		{
-			// Went past IRQ address, trigger IRQ
-			//m_irq_handler(1);
-
-			vi->samplestoirq=spu_infinity;
-			vi->hitirq=true;
-		}
-
-		if (hitenv)
-		{
-			// Envelope event, update the envelope (stop if necessary), and start
-			// a new output segment
-
-			stopped=((stopped) || (! update_envelope(v)));
-		}
-
-		if (stopped)
-		{
-			// Voice is now stopped
-
-			ret=false;
-			break;
-		}
-
-		// Update voice event times
-
-		update_voice_events(vi);
-	}
-
-	// Set current volume register
-
-	spureg.voice[v].curvol=(unsigned short)(vi->env_level*32767.0f);
-
-	// Return how much time is left and whether or not the voice is still playing
-
-	*tleft=num;
-	return ret;
-}
-
-//
-// Generate voice output samples
-//
-//  Inputs: const unsigned int v        Voice number
-//            void *ptr                             Output buffer (if no reverb)
-//          const unsigned int sz       Number of samples to output
-//
-
-void spu_device::generate_voice(const unsigned int v,
-															void *ptr,
-															void *noiseptr,
-															void *outxptr,
-															const unsigned int sz)
-{
-	voiceinfo *vi=&voice[v];
-	signed short *fp,*sp;
-	unsigned int n=sz;
-
-	// Get input pointer
-
-	if (vi->inloopcache)
-	{
-		sp=vi->loop_cache->data+vi->lcptr;
-	} else
-	{
-		sp=vi->play.ptr;
-	}
-	fp=sp;
-
-	unsigned int dptr=vi->dptr;
-
-	// Get output pointer (and advance output offset)
-
-	signed short *dp=(signed short *)ptr;
-	signed short *outxp=(signed short *)outxptr;
-
-	// Calculate fixed point envelope levels/deltas premultiplied by channel volume
-
-	int vol_l=outxptr?0x3fff:vi->vol[0],
-			vol_r=outxptr?0x3fff:vi->vol[1],
-			env_l=(int)(vi->env_level*2.0f*vol_l),
-			env_r=(int)(vi->env_level*2.0f*vol_r),
-			envdelta_l=(int)(vi->env_delta*2.0f*vol_l),
-			envdelta_r=(int)(vi->env_delta*2.0f*vol_r);
-
-	// Update the segments envelope level
-
-	vi->env_level+=(n*vi->env_delta);
-
-	if (noiseptr)
-	{
-		int64_t dptr=((int64_t)n*vi->pitch)+vi->dptr;
-		unsigned int d=(unsigned int)(dptr>>12);
-		vi->dptr=(unsigned int)(dptr&0xfff);
-		vi->play.ptr+=d;
-		if (vi->inloopcache) vi->lcptr+=d;
-
-		sp=(signed short *)noiseptr;
-
-		if (outxp)
-		{
-			while (n--)
-			{
-				int vl=*sp++,
-						vr=*sp++,
-						l=(vl*env_l)>>15,
-						r=(vr*env_r)>>15;
-				env_l+=envdelta_l;
-				env_r+=envdelta_r;
-
-				outxp[0]=l;
-				outxp[1]=r;
-				outxp+=2;
-
-				l=(l*vi->vol[0])>>15;
-				r=(r*vi->vol[1])>>15;
-
-				dp[0]=clamp(l+dp[0]);
-				dp[1]=clamp(r+dp[1]);
-				dp+=2;
-			}
-		} else
-		{
-			while (n--)
-			{
-				int vl=*sp++,
-						vr=*sp++,
-						l=(vl*env_l)>>15,
-						r=(vr*env_r)>>15;
-				env_l+=envdelta_l;
-				env_r+=envdelta_r;
-
-				dp[0]=clamp(l+dp[0]);
-				dp[1]=clamp(r+dp[1]);
-				dp+=2;
-			}
-		}
-	} else
-	{
-		if (1) //settings.sound_interpolate)
-		{
-			unsigned int num_stitch=0;
-			signed short *ep;
-
-			// Linear interpolation enabled, calculate how many samples we will
-			// read from input data
-
-			int64_t fracend=(((int64_t)(n-1))*vi->pitch)+dptr;
-			unsigned int end=(unsigned int)(fracend>>12);
-
-			// Get pointer to last sample of input data
-
-			if (vi->inloopcache)
-			{
-				ep=vi->loop_cache->data+vi->loop_cache->len-1;
-			} else
-			{
-				ep=vi->play.cache->dend-1;
-			}
-
-			// If we read the last sample "stitching" will be necessary (inerpolation
-			// from last sample of segment to first sample of next segment)
-
-			if (((sp+end)>=ep) && (vi->pitch))
-			{
-				num_stitch=(std::min)(n,(std::max)(0x1fffU/vi->pitch,1U));
-				n-=num_stitch;
-			}
-
-			// Generate samples
-
-			if (outxp)
-			{
-				while (n--)
-				{
-					int v=sp[0];
-
-					v+=((sp[1]-v)*(int)dptr)>>12;
-
-					int l=(v*env_l)>>15,
-							r=(v*env_r)>>15;
-					env_l+=envdelta_l;
-					env_r+=envdelta_r;
-
-					outxp[0]=l;
-					outxp[1]=r;
-					outxp+=2;
-
-					l=(l*vi->vol[0])>>15;
-					r=(r*vi->vol[1])>>15;
-
-					dp[0]=clamp(l+dp[0]);
-					dp[1]=clamp(r+dp[1]);
-					dp+=2;
-
-					dptr+=vi->pitch;
-					sp+=(dptr>>12);
-					dptr&=0xfff;
-				}
-			}
-			else
-			{
-				while (n--)
-				{
-					int v=sp[0];
-
-					v+=((sp[1]-v)*(int)dptr)>>12;
-
-					int l=(v*env_l)>>15,
-							r=(v*env_r)>>15;
-					env_l+=envdelta_l;
-					env_r+=envdelta_r;
-
-					dp[0]=clamp(l+dp[0]);
-					dp[1]=clamp(r+dp[1]);
-					dp+=2;
-
-					dptr+=vi->pitch;
-					sp+=(dptr>>12);
-					dptr&=0xfff;
-				}
-			}
-
-			if (num_stitch)
-			{
-				// Stitch samples, get the first sample of the next segment
-
-				signed short *nsp=nullptr;
-
-				if (vi->inloopcache)
-				{
-					nsp=vi->play.ptr+(vi->loop_cache->len-vi->lcptr);
-					if (nsp>=vi->play.cache->dend)
-						nsp=nullptr;
-				}
-
-				if (! nsp)
-				{
-					update_voice_loop(v);
-					if (vi->loop) nsp=vi->loop_cache->data;
-				}
-
-				int ns=nsp?nsp[0]:0;
-
-				// Generate stitch samples
-
-				if (outxp)
-				{
-					while (num_stitch--)
-					{
-						int v=sp[0],
-								nv=(sp>=ep)?ns:sp[1];
-
-						v+=((nv-v)*(int)dptr)>>12;
-
-						int l=(v*env_l)>>15,
-								r=(v*env_r)>>15;
-						env_l+=envdelta_l;
-						env_r+=envdelta_r;
-
-						outxp[0]=l;
-						outxp[1]=r;
-						outxp+=2;
-
-						l=(l*vi->vol[0])>>15;
-						r=(r*vi->vol[1])>>15;
-
-						dp[0]=clamp(l+dp[0]);
-						dp[1]=clamp(r+dp[1]);
-						dp+=2;
-
-						dptr+=vi->pitch;
-						sp+=(dptr>>12);
-						dptr&=0xfff;
-					}
-				} else
-				{
-					while (num_stitch--)
-					{
-						int v=sp[0],
-								nv=(sp>=ep)?ns:sp[1];
-
-						v+=((nv-v)*(int)dptr)>>12;
-
-						int l=(v*env_l)>>15,
-								r=(v*env_r)>>15;
-						env_l+=envdelta_l;
-						env_r+=envdelta_r;
-
-						dp[0]=clamp(l+dp[0]);
-						dp[1]=clamp(r+dp[1]);
-						dp+=2;
-
-						dptr+=vi->pitch;
-						sp+=(dptr>>12);
-						dptr&=0xfff;
-					}
-				}
-			}
-		} else
-		{
-			// Generate samples with no interpolation
-
-			if (outxp)
-			{
-				while (n--)
-				{
-					int l=(sp[0]*env_l)>>15,
-							r=(sp[0]*env_r)>>15;
-					env_l+=envdelta_l;
-					env_r+=envdelta_r;
-
-					outxp[0]=l;
-					outxp[1]=r;
-					outxp+=2;
-
-					l=(l*vi->vol[0])>>15;
-					r=(r*vi->vol[1])>>15;
-
-					dp[0]=clamp(l+dp[0]);
-					dp[1]=clamp(r+dp[1]);
-					dp+=2;
-
-					dptr+=vi->pitch;
-					sp+=(dptr>>12);
-					dptr&=0xfff;
-				}
-			} else
-			{
-				while (n--)
-				{
-					int l=(sp[0]*env_l)>>15,
-							r=(sp[0]*env_r)>>15;
-					env_l+=envdelta_l;
-					env_r+=envdelta_r;
-
-					dp[0]=clamp(l+dp[0]);
-					dp[1]=clamp(r+dp[1]);
-					dp+=2;
-
-					dptr+=vi->pitch;
-					sp+=(dptr>>12);
-					dptr&=0xfff;
-				}
-			}
-		}
-
-		// Update segment pointer
-
-		vi->play.ptr+=sp-fp;
-		vi->dptr=dptr;
-		if (vi->inloopcache)
-			vi->lcptr=sp-vi->loop_cache->data;
-	}
-}
-
-//
-//
-//
-
-bool spu_device::update_envelope(const int v)
-{
-	while (voice[v].envsamples==0)
-	{
-		voice[v].env_state++;
-
-		switch (voice[v].env_state)
-		{
-			case 1: // decay
-				voice[v].env_level=1.0f;
-				voice[v].env_delta=voice[v].env_dr;
-				if (voice[v].env_dr!=0.0f)
-				{
-					voice[v].envsamples=(unsigned int)((voice[v].env_sl-1.0f)/voice[v].env_dr);
-				} else
-				{
-					voice[v].envsamples=spu_infinity;
-				}
-				break;
-
-			case 2: // sustain
-				voice[v].env_level=voice[v].env_sl;
-				voice[v].env_delta=voice[v].env_sr;
-
-				if (voice[v].env_sr>0.0f)
-				{
-					voice[v].envsamples=(unsigned int)((1.0f-voice[v].env_level)/voice[v].env_sr);
-				} else
-				if (voice[v].env_sr<0.0f)
-				{
-					voice[v].envsamples=(unsigned int)(voice[v].env_level/-voice[v].env_sr);
-				} else
-				{
-					voice[v].envsamples=spu_infinity;
-				}
-				break;
-
-			case 3: // sustain end
-				voice[v].envsamples=spu_infinity;
-				voice[v].env_delta=0.0f;
-				if (voice[v].env_sr<=0.0f)
-				{
-					voice[v].env_level=0.0f;
-					return false;
-				} else
-				{
-					voice[v].env_level=1.0f;
-				}
-				break;
-
-			case 4: // release
-				voice[v].env_level=std::clamp(voice[v].env_level,0.0f,1.0f);
-				voice[v].env_delta=voice[v].env_rr;
-				if (voice[v].env_rr == -0.0f)   // 0.0 release means infinite time
-				{
-					voice[v].envsamples=spu_infinity;
-				}
-				else
-				{
-					voice[v].envsamples=(unsigned int)(voice[v].env_level/-voice[v].env_rr);
-				}
-				break;
-
-			case 5: // release end
-				voice[v].env_level=0.0f;
-				voice[v].env_delta=0.0f;
-				voice[v].envsamples=spu_infinity;
-				return false;
-		}
-	}
-	return true;
-}
-
-//
-//
-//
-
-void spu_device::key_on(const int v)
-{
-	voice[v].loop.reset();
-
-//  printf("key_on: %d @ %x (pitch %x)\n", v, spureg.voice[v].addr<<3, spureg.voice[v].pitch);
-
-	translate_sample_addr(spureg.voice[v].addr<<3,&voice[v].play);
-	assert(voice[v].play.ptr<voice[v].play.cache->dend);
-
-	voice[v].keyontime=0; //get_system_time();
-
-	voice[v].dptr=0;
-	voice[v].inloopcache=false;
-	voice[v].lcptr=-1;
-	voice[v].env_level=0.0f;
-	voice[v].env_state=0;
-	voice[v].forceloop=false;
-
-	// Note: ChronoCross has note hang problems if this is 0 immediately
-	//           after key on
-	spureg.voice[v].curvol=1;
-
-	for (unsigned int ch=0; ch<2; ch++)
-	{
-		{
-			voice[v].sweep_vol[ch]=1.0f;
-		}
-	}
-
-	#ifdef warn_if_sweep_used
-		static bool sweepused;
-		if ((spureg.voice[v].vol_l|spureg.voice[v].vol_r)&0x8000)
-		{
-			if (! sweepused)
-			{
-				printf("sweep\n");
-				sweepused=true;
-			}
-		}
-	#endif
-
-	#ifdef assert_if_sweep_used
-		assert(((spureg.voice[v].vol_l|spureg.voice[v].vol_r)&0x8000)==0);
-	#endif
-
-	if (spureg.voice[v].adsl&adsl_am)
-	{
-		voice[v].env_ar=get_pos_exp_rate((spureg.voice[v].adsl&adsl_ar_mask)>>adsl_ar_shift);
-	} else
-	{
-		voice[v].env_ar=get_linear_rate((spureg.voice[v].adsl&adsl_ar_mask)>>adsl_ar_shift);
-	}
-
-	voice[v].env_dr=-get_decay_rate((spureg.voice[v].adsl&adsl_dr_mask)>>adsl_dr_shift);
-	voice[v].env_sl=get_sustain_level(spureg.voice[v].adsl&adsl_sl_mask);
-
-	if (spureg.voice[v].srrr&srrr_sm)
-	{
-		if (spureg.voice[v].srrr&srrr_sd)
-		{
-			voice[v].env_sr=get_neg_exp_rate((spureg.voice[v].srrr&srrr_sr_mask)>>srrr_sr_shift);
-		} else
-		{
-			voice[v].env_sr=get_pos_exp_rate((spureg.voice[v].srrr&srrr_sr_mask)>>srrr_sr_shift);
-		}
-	} else
-	{
-		voice[v].env_sr=get_linear_rate((spureg.voice[v].srrr&srrr_sr_mask)>>srrr_sr_shift);
-		if (spureg.voice[v].srrr&srrr_sd)
-			voice[v].env_sr=-voice[v].env_sr;
-	}
-
-	if (spureg.voice[v].srrr&srrr_rm)
-	{
-		voice[v].env_rr=-get_exp_release_rate(spureg.voice[v].srrr&srrr_rr_mask);
-	} else
-	{
-		voice[v].env_rr=-get_linear_release_rate(spureg.voice[v].srrr&srrr_rr_mask);
-	}
-
-	voice[v].envsamples=(unsigned int)(1.0f/voice[v].env_ar);
-	voice[v].env_delta=voice[v].env_ar;
-}
-
-//
-//
-//
-
-void spu_device::set_xa_format(const float _freq, const int channels)
-{
-	// Adjust frequency to compensate for slightly slower/faster frame rate
-//  float freq=44100.0; //(_freq*get_adjusted_frame_rate())/ps1hw.rcnt->get_vertical_refresh();
-
-	xa_freq=(unsigned int)((_freq/44100.0f)*4096.0f);
-	xa_channels=channels;
-	xa_spf=(unsigned int)(_freq/60.0f)*channels;
-}
-
-//
-//
-//
-
-void spu_device::generate_xa(void *ptr, const unsigned int sz)
-{
-	if (xa_buffer->get_bytes_in())
-	{
-		// Don't start playing until 8 frames worth of data are in
-
-	if ((! xa_playing) && (xa_buffer->get_bytes_in()<(xa_spf<<3)))
-		{
-//          debug_xa("waiting...\n");
-		return;
-		}
-
-		xa_playing=true;
-
-		// Init buffer pointers/counters
-
-		int n=sz>>2;
-		signed short *sp=(signed short *)xa_buffer->get_tail_ptr(),
-									*dp=(signed short *)ptr;
-		unsigned int noff=(1<<xa_channels),
-									oldtail=xa_buffer->get_tail_offset();
-
-		assert((xa_channels==1) || (xa_channels==2));
-
-		// Calculate volume
-
-		int voll=spureg.cdvol_l,
-				volr=spureg.cdvol_r;
-		voll=(voll*xa_voll)>>14;
-		volr=(volr*xa_volr)>>14;
-
-		// Generate requested number of XA samples
-
-		while ((xa_buffer->get_bytes_in()) && (n--))
-		{
-			// Get left/right input samples
-
-			int vl=sp[0],
-					vr=sp[xa_channels-1];
-
-			// Linear interpolation
-
-			if (1) //settings.sound_interpolate)
-			{
-				signed short *nsp=(signed short *)xa_buffer->get_tail_ptr(noff);
-				int vdl=nsp[0]-vl,
-						vdr=nsp[xa_channels-1]-vr;
-
-				vl+=(vdl*(int)xa_cnt)>>12;
-				vr+=(vdr*(int)xa_cnt)>>12;
-			}
-
-			// Multiply by
-
-			vl=(vl*voll)>>15;
-			vr=(vr*volr)>>15;
-
-			// Write to SPU XA buffer (for emulation purposes - some games read this
-			// back to do analysers, etc...)
-
-			*(signed short *)&spu_ram[xa_out_ptr]=vl;
-			*(signed short *)&spu_ram[xa_out_ptr+0x800]=vr;
-			xa_out_ptr=(xa_out_ptr+2)&0x7ff;
-
-			// Mix samples into output buffer
-
-			dp[0]=clamp(dp[0]+vl);
-			dp[1]=clamp(dp[1]+vr);
-			dp+=2;
-
-			// Advance input counter/pointer
-
-			xa_cnt+=xa_freq;
-			int ss=(xa_cnt>>12);
-			xa_cnt&=0xfff;
-
-			if (ss)
-			{
-				ss<<=xa_channels;
-				ss=(std::min)(ss,(int)xa_buffer->get_bytes_in());
-
-				xa_buffer->increment_tail(ss);
-				sp=(signed short *)xa_buffer->get_tail_ptr();
-			}
-		}
-
-		// Delete buffer markers we have passed
-
-		xa_buffer->delete_markers(oldtail);
-	}
-
-	// If we run out of input set status to stopped and clear the SPU XA buffer
-
-	if (! xa_buffer->get_bytes_in())
-	{
-		xa_playing=false;
-
-		memset(spu_ram.data(),0,0x1000);
-		xa_out_ptr=0;
-	}
-}
-
-//
-//
-//
-
-void spu_device::generate_cdda(void *ptr, const unsigned int sz)
-{
-	if (cdda_buffer->get_bytes_in())
-	{
-		unsigned int cdda_spf=(44100*4)/60.0,
-									freq=(unsigned int)((cdda_freq*60.0)/60.0);
-
-		if ((! cdda_playing) && (cdda_buffer->get_bytes_in()<(cdda_spf<<3)))
-			return;
-
-		cdda_playing=true;
-
-		int n=sz>>2;
-		signed short *sp=(signed short *)cdda_buffer->get_tail_ptr(),
-									*dp=(signed short *)ptr;
-		unsigned int oldtail=cdda_buffer->get_tail_offset();
-
-		int voll=spureg.cdvol_l,
-				volr=spureg.cdvol_r;
-
-		while ((cdda_buffer->get_bytes_in()) && (n--))
-		{
-			int16_t vl = ((sp[0]*voll)>>15);
-			int16_t vr = ((sp[1]*volr)>>15);
-
-			// if the volume adjusted samples are stored here, vibribbon does nothing
-			*(signed short *)&spu_ram[m_cd_out_ptr]=sp[0];
-			*(signed short *)&spu_ram[m_cd_out_ptr+0x400]=sp[1];
-			m_cd_out_ptr=(m_cd_out_ptr+2)&0x3ff;
-
-			//if((m_cd_out_ptr == ((spureg.irq_addr << 3) & ~0x400)) && (spureg.ctrl & spuctrl_irq_enable))
-			//  m_irq_handler(1);
-
-			dp[0]=clamp(dp[0]+vl);
-			dp[1]=clamp(dp[1]+vr);
-			dp+=2;
-
-			cdda_cnt+=freq;
-			int ss=(cdda_cnt>>12);
-			cdda_cnt&=0xfff;
-
-			if (ss)
-			{
-				ss<<=2;
-
-				cdda_buffer->increment_tail(ss);
-				sp=(signed short *)cdda_buffer->get_tail_ptr();
-			}
-		}
-
-		cdda_buffer->delete_markers(oldtail);
-
-		if (! cdda_buffer->get_bytes_in())
-			cdda_playing=false;
-
-//      if (n>0) printf("cdda buffer underflow (n=%d cdda_in=%d spf=%d)\n",n,cdda_buffer->get_bytes_in(),cdda_spf);
-	}
-	else if(((spureg.irq_addr << 3) < 0x800) && (spureg.ctrl & spuctrl_irq_enable))
-	{
-		uint16_t irq_addr = (spureg.irq_addr << 3) & ~0x400;
-		uint32_t end = m_cd_out_ptr + (sz >> 1);
-		//if(((m_cd_out_ptr < irq_addr) && (end > irq_addr)) || ((m_cd_out_ptr > (end & 0x3ff)) && ((end & 0x3ff) > irq_addr)))
-			//m_irq_handler(1);
-		m_cd_out_ptr =  end & 0x3fe;
-	}
-}
-
-//
-//
-//
-
-void spu_device::key_off(const int v)
-{
-//  printf("key_off: %d\n", v);
-
-	if (voice[v].env_state<=3)
-	{
-		voice[v].env_state=3;
-		voice[v].envsamples=0;
-	}
-}
-
-//
-//
-//
-
-void spu_device::update_reverb()
-{
-	if (dirty_flags&dirtyflag_reverb)
-	{
-		// TODO: Handle cases where reverb present can't be found better
-		// If a save state is loaded and has reverb values that don't match a preset
-		// then spu_reverb_cfg is never set so the reverb settings won't be the same as
-		// when the save state was created.
-		// This only becomes an issue when loading save states from the command line
-		// because if you load a save state from within MAME it will hold the last used
-		// spu_reverb_cfg and reuse that value.
-		cur_reverb_preset=find_reverb_preset((unsigned short *)&reg[0x1c0]);
-
-		if (cur_reverb_preset==nullptr)
-		{
-//          printf("spu: reverb=unknown (reg 1c0 = %x)\n", reg[0x1c0]);
-		} else
-		{
-//          printf("spu: reverb=%s\n",cur_reverb_preset->name);
-			spu_reverb_cfg=&cur_reverb_preset->cfg;
-
-			//if ((core_stricmp("reverb off",cur_reverb_preset->name)) && (spu_reverb_cfg->band_gain<=0.0f))
-			{
-//              printf("spu: no reverb config for %s\n",cur_reverb_preset->name);
-			}
-		}
-
-		dirty_flags&=~dirtyflag_reverb;
-	}
-}
-
-//
-//
-//
-
-void spu_device::flush_output_buffer()
-{
-	output_head=output_tail=output_size=0;
-}
-
-//
-//
-//
-
-void spu_device::generate(void *ptr, const unsigned int sz)
-{
-	cur_generate_sample+=sz>>2;
-	process_until(cur_generate_sample);
-
-	update_reverb();
-
-	unsigned int left=sz;
-	unsigned char *dp=(unsigned char *)ptr;
-
-	while ((left) && (output_size))
-	{
-		unsigned int n=(std::min)((std::min)(left,output_buffer_size-output_head),output_size);
-		memcpy(dp,&output_buf[0][output_head],n);
-
-		rev->process((signed short *)dp,
-									(signed short *)&output_buf[1][output_head],
-									spu_reverb_cfg,
-									(signed short)spureg.rvol_l,
-									(signed short)spureg.rvol_r,
-									n);
-
-		output_size-=n;
-		output_head+=n;
-		output_head&=(output_buffer_size-1);
-		dp+=n;
-		left-=n;
-	}
-
-	if (left)
-	{
-		memset(dp,0,left);
-	}
-
-	generate_xa(ptr,sz);
-	generate_cdda(ptr,sz);
-}
-
-//
-//
-//
-
-void spu_device::update_irq_event()
-{
-	if (spureg.ctrl&spuctrl_irq_enable)
-	{
-		unsigned int samplestoirq=spu_infinity;
-		for (int i=0; i<24; i++)
-			if (voice[i].samplestoirq!=spu_infinity)
-			{
-				if (voice[i].samplestoirq==0)
-				{
-					//m_irq_handler(1);
-
-					voice[i].samplestoirq=spu_infinity;
-					voice[i].hitirq=true;
-				} else
-				{
-					samplestoirq=(std::min)(samplestoirq,voice[i].samplestoirq);
-				}
-			}
-	}
-}
-
-
-//
-//
-//
-
-void spu_device::generate_noise(void *ptr, const unsigned int num)
-{
-	unsigned int np=(unsigned int)(65536.0f/(0x40-((spureg.ctrl&spuctrl_noise_mask)>>spuctrl_noise_shift)));
-	np=((np<<1)+np)>>1;
-
-	signed short *dp=(signed short *)ptr;
-
-	for (unsigned int i=0; i<num; i++)
-	{
-		signed short v=noise_cur;
-		*dp++=v;
-		*dp++=v;
-		noise_t+=np;
-
-		if (noise_t>0xffff)
-		{
-			noise_t-=0xffff;
-			shift_register15(noise_seed);
-			noise_cur=noise_seed<<1;
-		}
-	}
-}
-
-//
-//
-//
-
-void spu_device::process_until(const unsigned int tsample)
-{
-	while (tsample>cur_frame_sample)
-	{
-		unsigned int process_samples=(unsigned int)(tsample-cur_frame_sample);
-
-		// Drop samples from the head of the queue if its full
-
-		process_samples=(std::min)(process_samples,output_buffer_size>>2);
-		unsigned int nsz=output_size+(process_samples<<2);
-		if (nsz>output_buffer_size)
-		{
-			nsz-=output_buffer_size;
-
-			output_head+=nsz;
-			output_size-=nsz;
-			output_head&=(output_buffer_size-1);
-		}
-
-		// Decide how many samples to process taking into account buffer
-		// wrap in output queue.  Get pointers to the queues.
-
-		process_samples=(std::min)(process_samples,
-												(output_buffer_size-output_tail)>>2);
-
-		unsigned char *outptr=&output_buf[0][output_tail],
-									*reverbptr=&output_buf[1][output_tail],
-									*fmptr=&output_buf[2][output_tail],
-									*noiseptr=&output_buf[3][output_tail];
-
-		output_tail+=process_samples<<2;
-		output_tail&=(output_buffer_size-1);
-		output_size+=process_samples<<2;
-		assert(output_size<=output_buffer_size);
-
-		// Intialise the output samples to 0 (process_voice always adds samples)
-
-		memset(outptr,0,process_samples<<2);
-		memset(reverbptr,0,process_samples<<2);
-
-		// If noise is enabled for any channels generate noise samples
-
-		if (spureg.noise&0xffffff)
-			generate_noise(noiseptr,process_samples);
-
-		unsigned int mask=1;
-		for (int i=0; i<24; i++, mask<<=1)
-		{
-			unsigned int tleft=process_samples;
-			bool isfmin=((i<23) && (spureg.fm&(1<<(i+1)))),
-						isfm=(spureg.fm&(1<<i))!=0,
-						isnoise=(spureg.noise&(1<<i))!=0,
-						isreverb=(spureg.reverb&(1<<i))!=0;
-
-			// This channel is an FM input for the next channel - clear the
-			// FM input buffer
-
-			if (isfmin)
-				memset(fmptr,0,process_samples<<2);
-
-			if (spureg.chon&mask)
-			{
-				// Generate samples
-
-				if (! process_voice(i,
-														process_samples,
-														isreverb?reverbptr:outptr,
-														isnoise?noiseptr
-																:(isfm?fmptr:nullptr),
-														isfmin?fmptr:nullptr,
-														&tleft))
-				{
-					spureg.chon&=~mask;
-					//spureg.reverb&=~mask;
-
-					voice[i].play.reset();
-					voice[i].loop.reset();
-				}
-			} else
-			{
-				spureg.voice[i].curvol=0;
-			}
-		}
-
-		cur_frame_sample+=process_samples;
-	}
-}
-
-//
-//
-//
-
-void spu_device::update_timing()
-{
-	samples_per_frame=44100.0/60.0; //get_adjusted_frame_rate();
-	samples_per_cycle=samples_per_frame/60*(44100*768); //ps1hw.rcnt->get_vertical_cycles();
-
-}
-
-//
-//
-//
-/*
-void spu_device::sound_stream_update(sound_stream &stream, std::vector<read_stream_view> const &inputs, std::vector<write_stream_view> &outputs)
-{
-	int16_t temp[44100], *src;
-
-	auto &outL = outputs[0];
-	auto &outR = outputs[1];
-
-	generate(temp, outputs[0].samples()*4);  // second parameter is bytes, * 2 (size of int16_t) * 2 (stereo)
-
-	src = &temp[0];
-	for (int i = 0; i < outputs[0].samples(); i++)
-	{
-		outL.put_int(i, *src++, 32768);
-		outR.put_int(i, *src++, 32768);
-	}
-}
-*/
-//
-//
-//
-
-void spu_device::start_dma(uint8_t *mainram, bool to_spu, uint32_t size)
-{
-	uint32_t st=spureg.trans_addr<<3, en=st+size;
-
-	if (en>(512*1024))
-	{
-		en=512*1024;
-		size=en-st;
-	}
-
-	if (to_spu)
-	{
-		invalidate_cache(st,en);
-
-		memcpy(&spu_ram[spureg.trans_addr<<3], mainram, size);
-
-		dirty_flags|=dirtyflag_ram;
-	}
-	else
-	{
-		memcpy(mainram, &spu_ram[spureg.trans_addr<<3], size);
-	}
-}
-
-//
-//
-//
-
-void spu_device::decode_xa_mono(const unsigned char *xa,
-															unsigned char *ptr)
-{
-	signed short *dp=(signed short *)ptr;
-
-	int l0=xa_last[0],
-			l1=xa_last[1];
-
-	for (int b=0; b<18; b++)
-	{
-		for (int s=0; s<4; s++)
-		{
-			unsigned char flags=xa[4+(s<<1)],
-										shift=flags&0xf,
-										filter=flags>>4;
-			int f0=filter_coef[filter][0],
-					f1=filter_coef[filter][1];
-			int i;
-
-			for (i=0; i<28; i++)
-			{
-				short d=(xa[16+(i<<2)+s]&0xf)<<12;
-				d=clamp((d>>shift)+(((l0*f0)+(l1*f1)+32)>>6));
-				*dp++=d;
-				l1=l0;
-				l0=d;
-			}
-
-			flags=xa[5+(s<<1)];
-			shift=flags&0xf;
-			filter=flags>>4;
-			f0=filter_coef[filter][0];
-			f1=filter_coef[filter][1];
-
-			for (i=0; i<28; i++)
-			{
-				short d=(xa[16+(i<<2)+s]>>4)<<12;
-				d=clamp((d>>shift)+(((l0*f0)+(l1*f1)+32)>>6));
-				*dp++=d;
-				l1=l0;
-				l0=d;
-			}
-		}
-
-		xa+=128;
-	}
-
-	xa_last[0]=l0;
-	xa_last[1]=l1;
+  return std::make_tuple(left, right);
 }
 
-//
-//
-//
-
-void spu_device::decode_xa_stereo(const unsigned char *xa,
-																unsigned char *ptr)
-{
-	signed short *dp=(signed short *)ptr;
-
-	int l0=xa_last[0],
-			l1=xa_last[1],
-			l2=xa_last[2],
-			l3=xa_last[3];
-
-	for (int b=0; b<18; b++)
-	{
-		for (int s=0; s<4; s++)
-		{
-			unsigned char flags0=xa[4+(s<<1)],
-										shift0=flags0&0xf,
-										filter0=flags0>>4,
-										flags1=xa[5+(s<<1)],
-										shift1=flags1&0xf,
-										filter1=flags1>>4;
-
-			int f0=filter_coef[filter0][0],
-					f1=filter_coef[filter0][1],
-					f2=filter_coef[filter1][0],
-					f3=filter_coef[filter1][1];
-
-			for (int i=0; i<28; i++)
-			{
-				short d=xa[16+(i<<2)+s],
-							d0=(d&0xf)<<12,
-							d1=(d>>4)<<12;
-				d0=clamp((int)(d0>>shift0)+(((l0*f0)+(l1*f1)+32)>>6));
-				*dp++=d0;
-				l1=l0;
-				l0=d0;
-
-				d1=clamp((int)(d1>>shift1)+(((l2*f2)+(l3*f3)+32)>>6));
-				*dp++=d1;
-				l3=l2;
-				l2=d1;
-			}
-		}
-
-		xa+=128;
-	}
-
-	xa_last[0]=l0;
-	xa_last[1]=l1;
-	xa_last[2]=l2;
-	xa_last[3]=l3;
-}
-
-//
-//
-//
-
-/*
-enum
-{
-    xaencoding_stereo_mask=3,
-    xaencoding_freq_shift=2,
-    xaencoding_freq_mask=3<<xaencoding_freq_shift,
-    xaencoding_bps_shift=4,
-    xaencoding_bps_mask=3<<xaencoding_bps_shift,
-    xaencoding_emphasis=(1<<6)
-};
-*/
-
-bool spu_device::play_xa(const unsigned int sector, const unsigned char *xa)
-{
-	// Don't process the sector if the buffer is full
-
-	if (xa_buffer->get_bytes_free()<xa_sector_size) return false;
-
-//  debug_xa("play_xa: %d\n",sector);
-
-	// Get XA format from sector header
-
-	const unsigned char *hdr=xa+4;
-	float freq;
-	int channels;
-
-	switch (hdr[3]&0x3f)    // ignore emphasis and reserved bits
-	{
-		case 0:
-			channels=1;
-			freq=37800.0f;  //18900.0f;
-			break;
-
-		case 1:
-			channels=2;
-			freq=37800.0f;
-			break;
-
-		case 4:
-			channels=1;
-			freq=18900.0f;  ///2.0f;
-			break;
-
-		case 5:
-			channels=2;
-			freq=18900.0f;  //37800.0f/2.0f;
-			break;
-
-		default:
-			printf("play_xa: unhandled xa mode %08x\n",hdr[3]);
-			return true;
-	}
-
-	set_xa_format(freq,channels);
-
-	// Store XA marker
-
-	unsigned char *ptr=xa_buffer->add_sector(sector);
-
-	// Decode the sector
-
-	if (channels==2)
-	{
-		decode_xa_stereo(xa+8,ptr);
-	} else
-	{
-		decode_xa_mono(xa+8,ptr);
-	}
-
-	// Return that we processed the sector
-	return true;
-}
-
-//
-// Flush everything after a given sector in the XA buffer
-//
-
-void spu_device::flush_xa(const unsigned int sector)
-{
-//  debug_xa("flush_xa: %d\n",sector);
-
-	if (xa_playing)
-	{
-		xa_buffer->flush(sector);
-	} else
-	{
-		// Not playing, flush the entire buffer
-
-		xa_buffer->flush_all();
-		xa_cnt=0;
-	}
-}
-
-//
-//
-//
-
-bool spu_device::play_cdda(const unsigned int sector, const unsigned char *cdda)
-{
-	if (cdda_buffer->get_bytes_free()<cdda_sector_size) return false;
-
-	signed short *dp=(signed short *)cdda_buffer->add_sector(sector);
-	memcpy(dp,cdda,cdda_sector_size);
-
-	// data coming in in MAME is big endian as stored on the CD
-	unsigned char *flip = (unsigned char *)dp;
-	for (int i = 0; i < cdda_sector_size; i+= 2)
-	{
-		unsigned char temp = flip[i];
-		flip[i] = flip[i+1];
-		flip[i+1] = temp;
-	}
-	// this should be done in generate but sound_stream_update may not be called frequently enough
-	//if(((spureg.irq_addr << 3) < 0x800) && (spureg.ctrl & spuctrl_irq_enable))
-		//m_irq_handler(1);
-
-	return true;
-}
-
-void spu_device::flush_cdda(const unsigned int sector)
+void SPU::UpdateNoise()
 {
-//  debug_xa("flush_cdda: %d\n",sector);
-
-	if (cdda_playing)
-	{
-		cdda_buffer->flush(sector);
-	} else
-	{
-		cdda_buffer->flush_all();
-		cdda_cnt=0;
-	}
-}
-
-void spu_device::dma_read( uint32_t *p_n_ram, uint32_t n_address, int32_t n_size )
-{
-	uint8_t *psxram = (uint8_t *)p_n_ram;
-
-	start_dma(psxram + n_address, false, n_size*4);
-}
-
-void spu_device::dma_write( uint32_t *p_n_ram, uint32_t n_address, int32_t n_size )
-{
-	uint8_t *psxram = (uint8_t *)p_n_ram;
-
-//  printf("SPU DMA write from %x, size %x\n", n_address, n_size);
+  // Dr Hell's noise waveform, implementation borrowed from pcsx-r.
+  static constexpr std::array<u8, 64> noise_wave_add = {
+    {1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0,
+     0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1}};
+  static constexpr std::array<u8, 5> noise_freq_add = {{0, 84, 140, 180, 210}};
 
-	start_dma(psxram + n_address, true, n_size*4);
+  const u32 noise_clock = s_state.SPUCNT.noise_clock;
+  const u32 level = (0x8000u >> (noise_clock >> 2)) << 16;
+
+  s_state.noise_count += 0x10000u + noise_freq_add[noise_clock & 3u];
+  if ((s_state.noise_count & 0xFFFFu) >= noise_freq_add[4])
+  {
+    s_state.noise_count += 0x10000;
+    s_state.noise_count -= noise_freq_add[noise_clock & 3u];
+  }
+
+  if (s_state.noise_count < level)
+    return;
+
+  s_state.noise_count %= level;
+  s_state.noise_level = (s_state.noise_level << 1) | noise_wave_add[(s_state.noise_level >> 10) & 63u];
+}
+
+u32 SPU::ReverbMemoryAddress(u32 address)
+{
+  // Ensures address does not leave the reverb work area.
+  static constexpr u32 MASK = (RAM_SIZE - 1) / 2;
+  u32 offset = s_state.reverb_current_address + (address & MASK);
+  offset += s_state.reverb_base_address & ((s32)(offset << 13) >> 31);
+
+  // We address RAM in bytes. TODO: Change this to words.
+  return (offset & MASK) * 2u;
+}
+
+s16 SPU::ReverbRead(u32 address, s32 offset)
+{
+  // TODO: This should check interrupts.
+  const u32 real_address = ReverbMemoryAddress((address << 2) + offset);
+
+  s16 data;
+  std::memcpy(&data, &s_ram[real_address], sizeof(data));
+  return data;
+}
+
+void SPU::ReverbWrite(u32 address, s16 data)
+{
+  // TODO: This should check interrupts.
+  const u32 real_address = ReverbMemoryAddress(address << 2);
+  std::memcpy(&s_ram[real_address], &data, sizeof(data));
+}
+
+void SPU::ProcessReverb(s32 left_in, s32 right_in, s32* left_out, s32* right_out)
+{
+  // From PSX-SPX:
+  // Input and output to/from the reverb unit is resampled using a 39-tap FIR filter with the following coefficients.
+  //  -0001h,  0000h,  0002h,  0000h, -000Ah,  0000h,  0023h,  0000h,
+  //  -0067h,  0000h,  010Ah,  0000h, -0268h,  0000h,  0534h,  0000h,
+  //  -0B90h,  0000h,  2806h,  4000h,  2806h,  0000h, -0B90h,  0000h,
+  //   0534h,  0000h, -0268h,  0000h,  010Ah,  0000h, -0067h,  0000h,
+  //   0023h,  0000h, -000Ah,  0000h,  0002h,  0000h, -0001h
+  //
+  // Zeros have been removed since the result is always zero, therefore the multiply is redundant.
+
+  alignas(VECTOR_ALIGNMENT) static constexpr std::array<s32, 20> resample_coeff = {
+    -0x0001, 0x0002,  -0x000A, 0x0023,  -0x0067, 0x010A,  -0x0268, 0x0534,  -0x0B90, 0x2806,
+    0x2806,  -0x0B90, 0x0534,  -0x0268, 0x010A,  -0x0067, 0x0023,  -0x000A, 0x0002,  -0x0001};
+
+  static constexpr auto iiasm = [](const s16 insamp) {
+    if (s_state.reverb_registers.IIR_ALPHA == -32768) [[unlikely]]
+      return (insamp == -32768) ? 0 : (insamp * -65536);
+    else
+      return insamp * (32768 - s_state.reverb_registers.IIR_ALPHA);
+  };
+
+  static constexpr auto neg = [](s32 samp) { return (samp == -32768) ? 0x7FFF : -samp; };
+
+  s_state.last_reverb_input[0] = Truncate16(left_in);
+  s_state.last_reverb_input[1] = Truncate16(right_in);
+
+  // Resampling buffer is duplicated to avoid having to manually wrap the index.
+  s_state.reverb_downsample_buffer[0][s_state.reverb_resample_buffer_position | 0x00] =
+    s_state.reverb_downsample_buffer[0][s_state.reverb_resample_buffer_position | 0x40] = Truncate16(left_in);
+  s_state.reverb_downsample_buffer[1][s_state.reverb_resample_buffer_position | 0x00] =
+    s_state.reverb_downsample_buffer[1][s_state.reverb_resample_buffer_position | 0x40] = Truncate16(right_in);
+
+  // Reverb algorithm from Mednafen-PSX, rewritten/vectorized.
+  s32 out[2];
+  if (s_state.reverb_resample_buffer_position & 1u)
+  {
+    std::array<s32, 2> downsampled;
+    for (size_t channel = 0; channel < 2; channel++)
+    {
+      const s16* src =
+        &s_state.reverb_downsample_buffer[channel][(s_state.reverb_resample_buffer_position - 38) & 0x3F];
+      GSVector4i acc =
+        GSVector4i::load<true>(&resample_coeff[0]).mul32l(GSVector4i::load<false>(&src[0]).sll32(16).sra32(16));
+      acc = acc.add32(
+        GSVector4i::load<true>(&resample_coeff[4]).mul32l(GSVector4i::load<false>(&src[8]).sll32(16).sra32(16)));
+      acc = acc.add32(
+        GSVector4i::load<true>(&resample_coeff[8]).mul32l(GSVector4i::load<false>(&src[16]).sll32(16).sra32(16)));
+      acc = acc.add32(
+        GSVector4i::load<true>(&resample_coeff[12]).mul32l(GSVector4i::load<false>(&src[24]).sll32(16).sra32(16)));
+      acc = acc.add32(
+        GSVector4i::load<true>(&resample_coeff[16]).mul32l(GSVector4i::load<false>(&src[32]).sll32(16).sra32(16)));
+
+      // Horizontal reduction, middle 0x4000. Moved here so we don't need another 4 elements above.
+      downsampled[channel] = Clamp16((acc.addv_s32() + (0x4000 * src[19])) >> 15);
+    }
+
+    for (size_t channel = 0; channel < 2; channel++)
+    {
+      if (s_state.SPUCNT.reverb_master_enable)
+      {
+        // Input from Mixer (Input volume multiplied with incoming data).
+        const s32 IIR_INPUT_A = Clamp16(
+          (((ReverbRead(s_state.reverb_registers.IIR_SRC_A[channel ^ 0]) * s_state.reverb_registers.IIR_COEF) >> 14) +
+           ((downsampled[channel] * s_state.reverb_registers.IN_COEF[channel]) >> 14)) >>
+          1);
+        const s32 IIR_INPUT_B = Clamp16(
+          (((ReverbRead(s_state.reverb_registers.IIR_SRC_B[channel ^ 1]) * s_state.reverb_registers.IIR_COEF) >> 14) +
+           ((downsampled[channel] * s_state.reverb_registers.IN_COEF[channel]) >> 14)) >>
+          1);
+
+        // Same Side Reflection (left-to-left and right-to-right).
+        const s32 IIR_A = Clamp16((((IIR_INPUT_A * s_state.reverb_registers.IIR_ALPHA) >> 14) +
+                                   (iiasm(ReverbRead(s_state.reverb_registers.IIR_DEST_A[channel], -1)) >> 14)) >>
+                                  1);
+
+        // Different Side Reflection (left-to-right and right-to-left).
+        const s32 IIR_B = Clamp16((((IIR_INPUT_B * s_state.reverb_registers.IIR_ALPHA) >> 14) +
+                                   (iiasm(ReverbRead(s_state.reverb_registers.IIR_DEST_B[channel], -1)) >> 14)) >>
+                                  1);
+
+        ReverbWrite(s_state.reverb_registers.IIR_DEST_A[channel], Truncate16(IIR_A));
+        ReverbWrite(s_state.reverb_registers.IIR_DEST_B[channel], Truncate16(IIR_B));
+      }
+
+      // Early Echo (Comb Filter, with input from buffer).
+      const s32 ACC =
+        ((ReverbRead(s_state.reverb_registers.ACC_SRC_A[channel]) * s_state.reverb_registers.ACC_COEF_A) >> 14) +
+        ((ReverbRead(s_state.reverb_registers.ACC_SRC_B[channel]) * s_state.reverb_registers.ACC_COEF_B) >> 14) +
+        ((ReverbRead(s_state.reverb_registers.ACC_SRC_C[channel]) * s_state.reverb_registers.ACC_COEF_C) >> 14) +
+        ((ReverbRead(s_state.reverb_registers.ACC_SRC_D[channel]) * s_state.reverb_registers.ACC_COEF_D) >> 14);
+
+      // Late Reverb APF1 (All Pass Filter 1, with input from COMB).
+      const s32 FB_A = ReverbRead(s_state.reverb_registers.MIX_DEST_A[channel] - s_state.reverb_registers.FB_SRC_A);
+      const s32 FB_B = ReverbRead(s_state.reverb_registers.MIX_DEST_B[channel] - s_state.reverb_registers.FB_SRC_B);
+      const s32 MDA = Clamp16((ACC + ((FB_A * neg(s_state.reverb_registers.FB_ALPHA)) >> 14)) >> 1);
+
+      // Late Reverb APF2 (All Pass Filter 2, with input from APF1).
+      const s32 MDB = Clamp16(FB_A + ((((MDA * s_state.reverb_registers.FB_ALPHA) >> 14) +
+                                       ((FB_B * neg(s_state.reverb_registers.FB_X)) >> 14)) >>
+                                      1));
+
+      // 22050hz sample output.
+      s_state.reverb_upsample_buffer[channel][(s_state.reverb_resample_buffer_position >> 1) | 0x20] =
+        s_state.reverb_upsample_buffer[channel][s_state.reverb_resample_buffer_position >> 1] =
+          Truncate16(Clamp16(FB_B + ((MDB * s_state.reverb_registers.FB_X) >> 15)));
+
+      if (s_state.SPUCNT.reverb_master_enable)
+      {
+        ReverbWrite(s_state.reverb_registers.MIX_DEST_A[channel], Truncate16(MDA));
+        ReverbWrite(s_state.reverb_registers.MIX_DEST_B[channel], Truncate16(MDB));
+      }
+    }
+
+    s_state.reverb_current_address = (s_state.reverb_current_address + 1) & 0x3FFFFu;
+    s_state.reverb_current_address =
+      (s_state.reverb_current_address == 0) ? s_state.reverb_base_address : s_state.reverb_current_address;
+
+    for (size_t channel = 0; channel < 2; channel++)
+    {
+      const s16* src =
+        &s_state.reverb_upsample_buffer[channel][((s_state.reverb_resample_buffer_position >> 1) - 19) & 0x1F];
+
+      GSVector4i srcs = GSVector4i::load<false>(&src[0]);
+      GSVector4i acc = GSVector4i::load<true>(&resample_coeff[0]).mul32l(srcs.s16to32());
+      acc = acc.add32(GSVector4i::load<true>(&resample_coeff[4]).mul32l(srcs.uph64().s16to32()));
+      srcs = GSVector4i::load<false>(&src[8]);
+      acc = acc.add32(GSVector4i::load<true>(&resample_coeff[8]).mul32l(srcs.s16to32()));
+      acc = acc.add32(GSVector4i::load<true>(&resample_coeff[12]).mul32l(srcs.uph64().s16to32()));
+      srcs = GSVector4i::loadl<false>(&src[16]);
+      acc = acc.add32(GSVector4i::load<true>(&resample_coeff[16]).mul32l(srcs.s16to32()));
+
+      out[channel] = std::clamp<s32>(acc.addv_s32() >> 14, -32768, 32767);
+    }
+  }
+  else
+  {
+    const size_t idx = (((s_state.reverb_resample_buffer_position >> 1) - 19) & 0x1F) + 9;
+    for (unsigned lr = 0; lr < 2; lr++)
+      out[lr] = s_state.reverb_upsample_buffer[lr][idx];
+  }
+
+  s_state.reverb_resample_buffer_position = (s_state.reverb_resample_buffer_position + 1) & 0x3F;
+
+  s_state.last_reverb_output[0] = *left_out = ApplyVolume(out[0], s_state.reverb_registers.vLOUT);
+  s_state.last_reverb_output[1] = *right_out = ApplyVolume(out[1], s_state.reverb_registers.vROUT);
+
+//#ifdef SPU_ENABLE_VU_METER
+//  if (IsVUMeterActive())
+//    UpdateDebugPeaks(s_state.reverb_peaks, *left_out, *right_out);
+//#endif
+
+#ifdef SPU_DUMP_ALL_VOICES
+  if (s_state.s_voice_dump_writers[NUM_VOICES])
+  {
+    const s16 dump_samples[2] = {static_cast<s16>(Clamp16(s_state.last_reverb_output[0])),
+                                 static_cast<s16>(Clamp16(s_state.last_reverb_output[1]))};
+    s_state.s_voice_dump_writers[NUM_VOICES]->WriteFrames(dump_samples, 1);
+  }
+#endif
+}
+
+void SPU::Execute(void* param, TickCount ticks, TickCount ticks_late)
+{
+  u32 remaining_frames;
+//  if (g_settings.cpu_overclock_active)
+//  {
+//    // (X * D) / N / 768 -> (X * D) / (N * 768)
+//    const u64 num =
+//      (static_cast<u64>(ticks) * g_settings.cpu_overclock_denominator) + static_cast<u32>(s_state.ticks_carry);
+//    remaining_frames = static_cast<u32>(num / s_state.cpu_tick_divider);
+//    s_state.ticks_carry = static_cast<TickCount>(num % s_state.cpu_tick_divider);
+//  }
+//  else
+  {
+    remaining_frames = static_cast<u32>((ticks + s_state.ticks_carry) / SYSCLK_TICKS_PER_SPU_TICK);
+    s_state.ticks_carry = (ticks + s_state.ticks_carry) % SYSCLK_TICKS_PER_SPU_TICK;
+  }
+
+  while (remaining_frames > 0)
+  {
+    s16* output_frame_start;
+    u32 output_frame_space = remaining_frames;
+    if (!s_state.audio_output_muted) [[likely]]
+    {
+      output_frame_space = remaining_frames;
+      s_state.audio_stream->BeginWrite(&output_frame_start, &output_frame_space);
+    }
+    else
+    {
+      // dummy space for writing samples when using runahead
+      output_frame_start = s_muted_output_buffer.data();
+      output_frame_space = std::min(static_cast<u32>(s_muted_output_buffer.size() / 2), remaining_frames);
+    }
+
+    s16* output_frame = output_frame_start;
+    const u32 frames_in_this_batch = std::min(remaining_frames, output_frame_space);
+    for (u32 i = 0; i < frames_in_this_batch; i++)
+    {
+      s32 left_sum = 0;
+      s32 right_sum = 0;
+      s32 reverb_in_left = 0;
+      s32 reverb_in_right = 0;
+
+      u32 reverb_on_register = s_state.reverb_on_register;
+
+      for (u32 voice = 0; voice < NUM_VOICES; voice++)
+      {
+        const auto [left, right] = SampleVoice(voice);
+        left_sum += left;
+        right_sum += right;
+
+        if (reverb_on_register & 1u)
+        {
+          reverb_in_left += left;
+          reverb_in_right += right;
+        }
+        reverb_on_register >>= 1;
+      }
+
+      if (!s_state.SPUCNT.mute_n)
+      {
+        left_sum = 0;
+        right_sum = 0;
+        reverb_in_left = 0;
+        reverb_in_right = 0;
+      }
+
+      // Update noise once per frame.
+      UpdateNoise();
+
+      // Mix in CD audio.
+//      const auto [cd_audio_left, cd_audio_right] = CDROM::GetAudioFrame();
+//      if (s_state.SPUCNT.cd_audio_enable)
+//      {
+//        const s32 cd_audio_volume_left = ApplyVolume(s32(cd_audio_left), s_state.cd_audio_volume_left);
+//        const s32 cd_audio_volume_right = ApplyVolume(s32(cd_audio_right), s_state.cd_audio_volume_right);
+//
+//        left_sum += cd_audio_volume_left;
+//        right_sum += cd_audio_volume_right;
+//
+//        if (s_state.SPUCNT.cd_audio_reverb)
+//        {
+//          reverb_in_left += cd_audio_volume_left;
+//          reverb_in_right += cd_audio_volume_right;
+//        }
+//
+//#ifdef SPU_ENABLE_VU_METER
+//        if (IsVUMeterActive())
+//          UpdateDebugPeaks(s_state.cd_audio_peaks, cd_audio_volume_left, cd_audio_volume_right);
+//#endif
+//      }
+
+      // Compute reverb.
+      s32 reverb_out_left, reverb_out_right;
+      ProcessReverb(Clamp16(reverb_in_left), Clamp16(reverb_in_right), &reverb_out_left, &reverb_out_right);
+
+      // Mix in reverb.
+      left_sum += reverb_out_left;
+      right_sum += reverb_out_right;
+
+      // Apply main volume after clamping. A maximum volume should not overflow here because both are 16-bit values.
+//#ifdef SPU_ENABLE_VU_METER
+//      const s16 final_left = static_cast<s16>(ApplyVolume(Clamp16(left_sum), s_state.main_volume_left.current_level));
+//      const s16 final_right =
+//        static_cast<s16>(ApplyVolume(Clamp16(right_sum), s_state.main_volume_right.current_level));
+//      *(output_frame++) = final_left;
+//      *(output_frame++) = final_right;
+//
+////      if (IsVUMeterActive())
+////        UpdateDebugPeaks(s_state.output_peaks, final_left, final_right);
+//#else
+      *(output_frame++) = static_cast<s16>(ApplyVolume(Clamp16(left_sum), s_state.main_volume_left.current_level));
+      *(output_frame++) = static_cast<s16>(ApplyVolume(Clamp16(right_sum), s_state.main_volume_right.current_level));
+//#endif
+
+      s_state.main_volume_left.Tick();
+      s_state.main_volume_right.Tick();
+
+      // Write to capture buffers.
+      WriteToCaptureBuffer(0, 0/*cd_audio_left*/);
+      WriteToCaptureBuffer(1, 0/*cd_audio_right*/);
+      WriteToCaptureBuffer(2, static_cast<s16>(Clamp16(s_state.voices[1].last_volume)));
+      WriteToCaptureBuffer(3, static_cast<s16>(Clamp16(s_state.voices[3].last_volume)));
+      IncrementCaptureBufferPosition();
+
+      // Key off/on voices after the first frame.
+      if (i == 0 && (s_state.key_off_register != 0 || s_state.key_on_register != 0))
+      {
+        u32 key_off_register = s_state.key_off_register;
+        s_state.key_off_register = 0;
+
+        u32 key_on_register = s_state.key_on_register;
+        s_state.key_on_register = 0;
+
+        for (u32 voice = 0; voice < NUM_VOICES; voice++)
+        {
+          if (key_off_register & 1u)
+            s_state.voices[voice].KeyOff();
+          key_off_register >>= 1;
+
+          if (key_on_register & 1u)
+          {
+            s_state.endx_register &= ~(1u << voice);
+            s_state.voices[voice].KeyOn();
+          }
+          key_on_register >>= 1;
+        }
+      }
+    }
+
+#ifndef __ANDROID__
+//    if (MediaCapture* cap = System::GetMediaCapture(); cap && !s_state.audio_output_muted) [[unlikely]]
+//    {
+//      if (!cap->DeliverAudioFrames(output_frame_start, frames_in_this_batch))
+//        System::StopMediaCapture();
+//    }
+#endif
+
+    if (!s_state.audio_output_muted) [[likely]]
+      s_state.audio_stream->EndWrite(frames_in_this_batch);
+    remaining_frames -= frames_in_this_batch;
+  }
+}
+
+void SPU::UpdateEventInterval()
+{
+  // Don't generate more than the audio buffer since in a single slice, otherwise we'll both overflow the buffers when
+  // we do write it, and the audio thread will underflow since it won't have enough data it the game isn't messing with
+  // the SPU state.
+//  const u32 max_slice_frames = s_state.audio_stream->GetBufferSize();
+
+  // TODO: Make this predict how long until the interrupt will be hit instead...
+//  const u32 interval = (s_state.SPUCNT.enable && s_state.SPUCNT.irq9_enable) ? 1 : max_slice_frames;
+//  const TickCount interval_ticks = static_cast<TickCount>(interval) * s_state.cpu_ticks_per_spu_tick;
+//  if (s_state.tick_event.IsActive() && s_state.tick_event.GetInterval() == interval_ticks)
+//    return;
+
+  // Ticks remaining before execution should be retained, just adjust the interval/downcount.
+//  const TickCount new_downcount = interval_ticks - s_state.ticks_carry;
+//  s_state.tick_event.SetInterval(interval_ticks);
+//  s_state.tick_event.Schedule(new_downcount);
+}
+
+void SPU::DrawDebugStateWindow(float scale)
+{
+//  static const ImVec4 active_color{1.0f, 1.0f, 1.0f, 1.0f};
+//  static const ImVec4 inactive_color{0.4f, 0.4f, 0.4f, 1.0f};
+//
+//#ifdef SPU_ENABLE_VU_METER
+//  const auto draw_vu_meter = [&scale](s16* peaks) {
+//    constexpr s32 num_sections = 12;
+//    constexpr s32 amp_per_section = 32767 / num_sections;
+//    const s32 lidx = peaks[0] / amp_per_section;
+//    const s32 ridx = peaks[1] / amp_per_section;
+//
+//    const ImVec2 section_size = ImVec2(std::floor(scale * 8.0f), std::floor(scale * 4.0f));
+//    const float divider_size = std::floor(scale * 1.0f);
+//    ImVec2 left_start = ImGui::GetCursorScreenPos() + ImVec2(0.0f, std::floor(scale * 4.0f));
+//    ImVec2 right_start = left_start + ImVec2(0.0f, section_size.y + divider_size);
+//    for (s32 i = 0; i < num_sections; i++)
+//    {
+//      u32 left_color = IM_COL32(30, 30, 30, 255);
+//      if (peaks[0] > 0 && lidx >= i)
+//      {
+//        left_color = IM_COL32(255, 0, 0, 255);
+//        left_color = (i <= 8) ? IM_COL32(255, 255, 0, 255) : left_color;
+//        left_color = (i <= 6) ? IM_COL32(0, 255, 0, 255) : left_color;
+//      }
+//      u32 right_color = IM_COL32(30, 30, 30, 255);
+//      if (peaks[1] > 0 && ridx >= i)
+//      {
+//        right_color = IM_COL32(255, 0, 0, 255);
+//        right_color = (i <= 8) ? IM_COL32(255, 255, 0, 255) : right_color;
+//        right_color = (i <= 6) ? IM_COL32(0, 255, 0, 255) : right_color;
+//      }
+//
+//      ImGui::GetWindowDrawList()->AddRectFilled(left_start, left_start + section_size, left_color);
+//      ImGui::GetWindowDrawList()->AddRectFilled(right_start, right_start + section_size, right_color);
+//      left_start.x += section_size.x + divider_size;
+//      right_start.x += section_size.x + divider_size;
+//    }
+//
+//    peaks[0] = 0;
+//    peaks[1] = 0;
+//  };
+//#endif
+//
+//  // status
+//  if (ImGui::CollapsingHeader("Status", ImGuiTreeNodeFlags_DefaultOpen))
+//  {
+//    static constexpr std::array<const char*, 4> transfer_modes = {
+//      {"Transfer Stopped", "Manual Write", "DMA Write", "DMA Read"}};
+//    const std::array<float, 6> offsets = {
+//      {100.0f * scale, 200.0f * scale, 300.0f * scale, 420.0f * scale, 500.0f * scale, 600.0f * scale}};
+//
+//    ImGui::Text("Control: ");
+//    ImGui::SameLine(offsets[0]);
+//    ImGui::TextColored(s_state.SPUCNT.enable ? active_color : inactive_color, "SPU Enable");
+//    ImGui::SameLine(offsets[1]);
+//    ImGui::TextColored(s_state.SPUCNT.mute_n ? inactive_color : active_color, "Mute SPU");
+//    ImGui::SameLine(offsets[2]);
+//    ImGui::TextColored(s_state.SPUCNT.external_audio_enable ? active_color : inactive_color, "External Audio");
+//    ImGui::SameLine(offsets[3]);
+//    ImGui::TextColored(s_state.SPUCNT.ram_transfer_mode != RAMTransferMode::Stopped ? active_color : inactive_color,
+//                       "%s", transfer_modes[static_cast<u8>(s_state.SPUCNT.ram_transfer_mode.GetValue())]);
+//
+//    ImGui::Text("Status: ");
+//    ImGui::SameLine(offsets[0]);
+//    ImGui::TextColored(s_state.SPUSTAT.irq9_flag ? active_color : inactive_color, "IRQ9");
+//    ImGui::SameLine(offsets[1]);
+//    ImGui::TextColored(s_state.SPUSTAT.dma_request ? active_color : inactive_color, "DMA Request");
+//    ImGui::SameLine(offsets[2]);
+//    ImGui::TextColored(s_state.SPUSTAT.dma_read_request ? active_color : inactive_color, "DMA Read");
+//    ImGui::SameLine(offsets[3]);
+//    ImGui::TextColored(s_state.SPUSTAT.dma_write_request ? active_color : inactive_color, "DMA Write");
+//    ImGui::SameLine(offsets[4]);
+//    ImGui::TextColored(s_state.SPUSTAT.transfer_busy ? active_color : inactive_color, "Transfer Busy");
+//    ImGui::SameLine(offsets[5]);
+//    ImGui::TextColored(s_state.SPUSTAT.second_half_capture_buffer ? active_color : inactive_color,
+//                       "Second Capture Buffer");
+//
+//    ImGui::Text("Interrupt: ");
+//    ImGui::SameLine(offsets[0]);
+//    ImGui::TextColored(s_state.SPUCNT.irq9_enable ? active_color : inactive_color,
+//                       s_state.SPUCNT.irq9_enable ? "Enabled @ 0x%04X (actual 0x%08X)" :
+//                                                    "Disabled @ 0x%04X (actual 0x%08X)",
+//                       s_state.irq_address, (ZeroExtend32(s_state.irq_address) * 8) & RAM_MASK);
+//
+//    ImGui::Text("Volume: ");
+//    ImGui::SameLine(offsets[0]);
+//    ImGui::Text("Left: %d%%", ApplyVolume(100, s_state.main_volume_left.current_level));
+//    ImGui::SameLine(offsets[1]);
+//    ImGui::Text("Right: %d%%", ApplyVolume(100, s_state.main_volume_right.current_level));
+//#ifdef SPU_ENABLE_VU_METER
+//    ImGui::SameLine(offsets[2]);
+//    draw_vu_meter(s_state.output_peaks);
+//    ImGui::NewLine();
+//#endif
+//
+//    ImGui::Text("CD Audio: ");
+//    ImGui::SameLine(offsets[0]);
+//    ImGui::TextColored(s_state.SPUCNT.cd_audio_enable ? active_color : inactive_color,
+//                       s_state.SPUCNT.cd_audio_enable ? "Enabled" : "Disabled");
+//    ImGui::SameLine(offsets[1]);
+//    ImGui::TextColored(s_state.SPUCNT.cd_audio_enable ? active_color : inactive_color, "Left Volume: %d%%",
+//                       ApplyVolume(100, s_state.cd_audio_volume_left));
+//    ImGui::SameLine(offsets[3]);
+//    ImGui::TextColored(s_state.SPUCNT.cd_audio_enable ? active_color : inactive_color, "Right Volume: %d%%",
+//                       ApplyVolume(100, s_state.cd_audio_volume_left));
+//#ifdef SPU_ENABLE_VU_METER
+//    ImGui::SameLine(offsets[5]);
+//    draw_vu_meter(s_state.cd_audio_peaks);
+//    ImGui::NewLine();
+//#endif
+
+//    ImGui::Text("Transfer FIFO: ");
+//    ImGui::SameLine(offsets[0]);
+//    ImGui::TextColored(s_state.transfer_event.IsActive() ? active_color : inactive_color, "%u halfwords (%u bytes)",
+//                       s_state.transfer_fifo.GetSize(), s_state.transfer_fifo.GetSize() * 2);
+//  }
+
+//  // draw voice states
+//  if (ImGui::CollapsingHeader("Voice State", ImGuiTreeNodeFlags_DefaultOpen))
+//  {
+//    static constexpr std::array column_titles = {
+//      "#",       "StartAddr", "RepeatAddr", "CurAddr", "SampleIdx", "SampleRate",
+//      "VolLeft", "VolRight",  "ADSRPhase",  "ADSRVol", "ADSRTicks",
+//#ifdef SPU_ENABLE_VU_METER
+//      "VUMeter",
+//#endif
+//    };
+//    static constexpr std::array adsr_phases = {"Off", "Attack", "Decay", "Sustain", "Release"};
+//
+//    ImGui::Columns(static_cast<int>(column_titles.size()));
+//
+//    // headers
+//    for (const char* column_title : column_titles)
+//    {
+//      ImGui::TextUnformatted(column_title);
+//      ImGui::NextColumn();
+//    }
+//
+//    // states
+//    for (u32 voice_index = 0; voice_index < NUM_VOICES; voice_index++)
+//    {
+//      const Voice& v = s_state.voices[voice_index];
+//      ImVec4 color = v.IsOn() ? ImVec4(1.0f, 1.0f, 1.0f, 1.0f) : ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
+//      ImGui::TextColored(color, "%u", ZeroExtend32(voice_index));
+//      ImGui::NextColumn();
+//      ImGui::TextColored(color, "%04X", ZeroExtend32(v.regs.adpcm_start_address));
+//      ImGui::NextColumn();
+//      ImGui::TextColored(color, "%04X", ZeroExtend32(v.regs.adpcm_repeat_address));
+//      ImGui::NextColumn();
+//      ImGui::TextColored(color, "%04X", ZeroExtend32(v.current_address));
+//      ImGui::NextColumn();
+//      if (IsVoiceNoiseEnabled(voice_index))
+//        ImGui::TextColored(color, "NOISE");
+//      else
+//        ImGui::TextColored(color, "%u", ZeroExtend32(v.counter.sample_index.GetValue()));
+//      ImGui::NextColumn();
+//      ImGui::TextColored(color, "%.2f", (float(v.regs.adpcm_sample_rate) / 4096.0f) * 44100.0f);
+//      ImGui::NextColumn();
+//      ImGui::TextColored(color, "%d%%", ApplyVolume(100, v.left_volume.current_level));
+//      ImGui::NextColumn();
+//      ImGui::TextColored(color, "%d%%", ApplyVolume(100, v.right_volume.current_level));
+//      ImGui::NextColumn();
+//      ImGui::TextColored(color, "%s", adsr_phases[static_cast<u8>(v.adsr_phase)]);
+//      ImGui::NextColumn();
+//      ImGui::TextColored(color, "%d%%", ApplyVolume(100, v.regs.adsr_volume));
+//      ImGui::NextColumn();
+//      ImGui::TextColored(color, "%d", v.adsr_envelope.counter);
+//      ImGui::NextColumn();
+//#ifdef SPU_ENABLE_VU_METER
+//      draw_vu_meter(s_state.voice_peaks[voice_index]);
+//      ImGui::NextColumn();
+//#endif
+//    }
+//
+//    ImGui::Columns(1);
+//  }
+//
+//  if (ImGui::CollapsingHeader("Reverb", ImGuiTreeNodeFlags_DefaultOpen))
+//  {
+//    ImGui::TextColored(s_state.SPUCNT.reverb_master_enable ? active_color : inactive_color, "Master Enable: %s",
+//                       s_state.SPUCNT.reverb_master_enable ? "Yes" : "No");
+//    ImGui::Text("Voices Enabled: ");
+//
+//    for (u32 i = 0; i < NUM_VOICES; i++)
+//    {
+//      ImGui::SameLine(0.0f, 16.0f);
+//
+//      const bool active = IsVoiceReverbEnabled(i);
+//      ImGui::TextColored(active ? active_color : inactive_color, "%u", i);
+//    }
+//
+//    ImGui::TextColored(s_state.SPUCNT.cd_audio_reverb ? active_color : inactive_color, "CD Audio Enable: %s",
+//                       s_state.SPUCNT.cd_audio_reverb ? "Yes" : "No");
+//
+//    ImGui::TextColored(s_state.SPUCNT.external_audio_reverb ? active_color : inactive_color,
+//                       "External Audio Enable: %s", s_state.SPUCNT.external_audio_reverb ? "Yes" : "No");
+//
+//    ImGui::Text("Base Address: 0x%08X (%04X)", s_state.reverb_base_address, s_state.reverb_registers.mBASE);
+//    ImGui::Text("Current Address: 0x%08X", s_state.reverb_current_address);
+//    ImGui::Text("Current Amplitude: Input (%d, %d) Output (%d, %d)", s_state.last_reverb_input[0],
+//                s_state.last_reverb_input[1], s_state.last_reverb_output[0], s_state.last_reverb_output[1]);
+//    ImGui::Text("Output Volume: Left %d%% Right %d%%", ApplyVolume(100, s_state.reverb_registers.vLOUT),
+//                ApplyVolume(100, s_state.reverb_registers.vROUT));
+//#ifdef SPU_ENABLE_VU_METER
+//    ImGui::SameLine();
+//    draw_vu_meter(s_state.reverb_peaks);
+//    ImGui::NewLine();
+//#endif
+//
+//    ImGui::Text("Pitch Modulation: ");
+//    for (u32 i = 1; i < NUM_VOICES; i++)
+//    {
+//      ImGui::SameLine(0.0f, 16.0f);
+//
+//      const bool active = IsPitchModulationEnabled(i);
+//      ImGui::TextColored(active ? active_color : inactive_color, "%u", i);
+//    }
+//  }
+//
+//  if (ImGui::CollapsingHeader("Reverb Environment"))
+//  {
+//    ImGui::Columns(4);
+//
+//    ImGui::Text("[0] FB_SRC_A: 0x%04X", static_cast<u32>(s_state.reverb_registers.FB_SRC_A));
+//    ImGui::NextColumn();
+//    ImGui::Text("[1] FB_SRC_B: 0x%04X", static_cast<u32>(s_state.reverb_registers.FB_SRC_B));
+//    ImGui::NextColumn();
+//    ImGui::Text("[2] IIR_ALPHA: %d", static_cast<s32>(s_state.reverb_registers.IIR_ALPHA));
+//    ImGui::NextColumn();
+//    ImGui::Text("[3] ACC_COEF_A: %d", static_cast<s32>(s_state.reverb_registers.ACC_COEF_A));
+//    ImGui::NextColumn();
+//    ImGui::Text("[4] ACC_COEF_B: %d", static_cast<s32>(s_state.reverb_registers.ACC_COEF_B));
+//    ImGui::NextColumn();
+//    ImGui::Text("[5] ACC_COEF_C: %d", static_cast<s32>(s_state.reverb_registers.ACC_COEF_C));
+//    ImGui::NextColumn();
+//    ImGui::Text("[6] ACC_COEF_D: %d", static_cast<s32>(s_state.reverb_registers.ACC_COEF_D));
+//    ImGui::NextColumn();
+//    ImGui::Text("[7] IIR_COEF: %d", static_cast<s32>(s_state.reverb_registers.IIR_COEF));
+//    ImGui::NextColumn();
+//    ImGui::Text("[8] FB_ALPHA: %d", static_cast<s32>(s_state.reverb_registers.FB_ALPHA));
+//    ImGui::NextColumn();
+//    ImGui::Text("[9] FB_X: %d", static_cast<s32>(s_state.reverb_registers.FB_X));
+//    ImGui::NextColumn();
+//    ImGui::Text("[10] IIR_DEST_A[L]: 0x%04X", static_cast<u32>(s_state.reverb_registers.IIR_DEST_A[0]));
+//    ImGui::NextColumn();
+//    ImGui::Text("[11] IIR_DEST_A[R]: 0x%04X", static_cast<u32>(s_state.reverb_registers.IIR_DEST_A[1]));
+//    ImGui::NextColumn();
+//    ImGui::Text("[12] ACC_SRC_A[L]: 0x%04X", static_cast<u32>(s_state.reverb_registers.ACC_SRC_A[0]));
+//    ImGui::NextColumn();
+//    ImGui::Text("[13] ACC_SRC_A[R]: 0x%04X", static_cast<u32>(s_state.reverb_registers.ACC_SRC_A[1]));
+//    ImGui::NextColumn();
+//    ImGui::Text("[14] ACC_SRC_B[L]: 0x%04X", static_cast<u32>(s_state.reverb_registers.ACC_SRC_B[0]));
+//    ImGui::NextColumn();
+//    ImGui::Text("[15] ACC_SRC_B[R]: 0x%04X", static_cast<u32>(s_state.reverb_registers.ACC_SRC_B[1]));
+//    ImGui::NextColumn();
+//    ImGui::Text("[16] IIR_SRC_A[L]: 0x%04X", static_cast<u32>(s_state.reverb_registers.IIR_SRC_A[0]));
+//    ImGui::NextColumn();
+//    ImGui::Text("[17] IIR_SRC_A[L]: 0x%04X", static_cast<u32>(s_state.reverb_registers.IIR_SRC_A[1]));
+//    ImGui::NextColumn();
+//    ImGui::Text("[18] IIR_DEST_B[L]: 0x%04X", static_cast<u32>(s_state.reverb_registers.IIR_DEST_B[0]));
+//    ImGui::NextColumn();
+//    ImGui::Text("[19] IIR_DEST_B[R]: 0x%04X", static_cast<u32>(s_state.reverb_registers.IIR_DEST_B[1]));
+//    ImGui::NextColumn();
+//    ImGui::Text("[20] ACC_SRC_C[L]: 0x%04X", static_cast<u32>(s_state.reverb_registers.ACC_SRC_C[0]));
+//    ImGui::NextColumn();
+//    ImGui::Text("[21] ACC_SRC_C[R]: 0x%04X", static_cast<u32>(s_state.reverb_registers.ACC_SRC_C[1]));
+//    ImGui::NextColumn();
+//    ImGui::Text("[22] ACC_SRC_D[L]: 0x%04X", static_cast<u32>(s_state.reverb_registers.ACC_SRC_D[0]));
+//    ImGui::NextColumn();
+//    ImGui::Text("[23] ACC_SRC_D[R]: 0x%04X", static_cast<u32>(s_state.reverb_registers.ACC_SRC_D[1]));
+//    ImGui::NextColumn();
+//    ImGui::Text("[24] IIR_SRC_B[L]: 0x%04X", static_cast<u32>(s_state.reverb_registers.IIR_SRC_B[0]));
+//    ImGui::NextColumn();
+//    ImGui::Text("[25] IIR_SRC_B[R]: 0x%04X", static_cast<u32>(s_state.reverb_registers.IIR_SRC_B[1]));
+//    ImGui::NextColumn();
+//    ImGui::Text("[26] MIX_DEST_A[L]: 0x%04X", static_cast<u32>(s_state.reverb_registers.MIX_DEST_A[0]));
+//    ImGui::NextColumn();
+//    ImGui::Text("[27] MIX_DEST_A[R]: 0x%04X", static_cast<u32>(s_state.reverb_registers.MIX_DEST_A[1]));
+//    ImGui::NextColumn();
+//    ImGui::Text("[28] MIX_DEST_B[L]: 0x%04X", static_cast<u32>(s_state.reverb_registers.MIX_DEST_B[0]));
+//    ImGui::NextColumn();
+//    ImGui::Text("[29] MIX_DEST_B[R]: 0x%04X", static_cast<u32>(s_state.reverb_registers.MIX_DEST_B[1]));
+//    ImGui::NextColumn();
+//    ImGui::Text("[30] IIR_SRC_A[L]: %d", static_cast<u32>(s_state.reverb_registers.IN_COEF[0]));
+//    ImGui::NextColumn();
+//    ImGui::Text("[31] IIR_SRC_A[R]: %d", static_cast<u32>(s_state.reverb_registers.IN_COEF[1]));
+//    ImGui::NextColumn();
+//
+//    ImGui::Columns(1);
+//  }
+//
+//  if (ImGui::CollapsingHeader("Hacks", ImGuiTreeNodeFlags_DefaultOpen))
+//  {
+//    if (ImGui::Button("Key Off All Voices"))
+//    {
+//      for (u32 i = 0; i < NUM_VOICES; i++)
+//      {
+//        s_state.voices[i].KeyOff();
+//        s_state.voices[i].adsr_envelope.counter = 0;
+//        s_state.voices[i].regs.adsr_volume = 0;
+//      }
+//    }
+//  }
 }

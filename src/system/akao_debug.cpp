@@ -3,6 +3,8 @@
 
 #include "ofxImGui.h"
 
+#include <format>
+
 
 
 void AkaoDebugSequence()
@@ -205,6 +207,70 @@ void AkaoDebugSequence()
             add_y += line_height;
         }
     }
+
+    ImGui::End();
+}
+
+
+
+void AkaoDebugInstr()
+{
+    ImGui::SetNextWindowSize( ImVec2( 600, 500 ), ImGuiCond_Once );
+    ImGui::Begin( "AKAO Instruments" );
+
+    static int instr_id = 0;
+
+    ImGui::BeginChild( "LeftPane", ImVec2( 100, 0 ), true );
+    for( int i = 0; i < 0x80; ++i )
+    {
+        // Элемент списка (например, кнопка или selectable)
+        if( ImGui::Selectable( ("0x" + std::format( "{:0x}", i )).c_str(), (i == instr_id) ) )
+        {
+            instr_id = i;
+        }
+    }
+    ImGui::EndChild();
+
+    // Правая часть (занимает всё оставшееся место)
+    ImGui::SameLine();
+    ImGui::BeginChild( "RightPane", ImVec2( 0, 0 ), true ); // 0,0 = вся оставшаяся область
+
+    ImGui::Text( "Instrument:    0x%02x", instr_id );
+    ImGui::Text( "Start address: 0x%02x", g_akao_instrument[instr_id].addr );
+    ImGui::Text( "Loop address:  0x%02x", g_akao_instrument[instr_id].loop_addr );
+    ImGui::Text( "Attack mode:   0x%02x", g_akao_instrument[instr_id].a_mode );
+    ImGui::Text( "Sustain mode:  0x%02x", g_akao_instrument[instr_id].s_mode );
+    ImGui::Text( "Release mode:  0x%02x", g_akao_instrument[instr_id].r_mode );
+    ImGui::Text( "Attack rate:   0x%02x", g_akao_instrument[instr_id].ar );
+    ImGui::Text( "Decay rate:    0x%02x", g_akao_instrument[instr_id].dr );
+    ImGui::Text( "Sustain level: 0x%02x", g_akao_instrument[instr_id].sl );
+    ImGui::Text( "Sustain rate:  0x%02x", g_akao_instrument[instr_id].sr );
+    ImGui::Text( "Release rate:  0x%02x", g_akao_instrument[instr_id].rr );
+
+    float button_w = 100.0f;
+    float button_h = 50.0f;
+    float panel_w = ImGui::GetContentRegionAvail().x;
+    float panel_h = ImGui::GetContentRegionAvail().y;
+    ImGui::SetCursorPosX( ImGui::GetCursorPosX() + panel_w - button_w );
+    ImGui::SetCursorPosY( ImGui::GetCursorPosY() + panel_h - button_h );
+
+    if( ImGui::Button( "PLAY" ) )
+    {
+        s32 voice_id = 0;
+        PsyqSpuSetVoicePitch( voice_id, g_akao_instrument[instr_id].pitch[0] );
+        PsyqSpuSetVoiceVolume( voice_id, (s16)0x3f80, (s16)0x4080 );
+        PsyqSpuSetVoiceStartAddr( voice_id, g_akao_instrument[instr_id].addr );
+        PsyqSpuSetVoiceLoopStartAddr( voice_id, g_akao_instrument[instr_id].loop_addr );
+        PsyqSpuSetVoiceSRAttr( voice_id, g_akao_instrument[instr_id].sr, g_akao_instrument[instr_id].s_mode );
+        PsyqSpuSetVoiceARAttr( voice_id, g_akao_instrument[instr_id].ar, g_akao_instrument[instr_id].a_mode );
+        PsyqSpuSetVoiceRRAttr( voice_id, g_akao_instrument[instr_id].rr, g_akao_instrument[instr_id].r_mode );
+        PsyqSpuSetVoiceDR( voice_id, g_akao_instrument[instr_id].dr );
+        PsyqSpuSetVoiceSL( voice_id, g_akao_instrument[instr_id].sl );
+
+        PsyqSpuSetKey( SPU_ON, 0x1 << voice_id );
+    }
+
+    ImGui::EndChild();
 
     ImGui::End();
 }
