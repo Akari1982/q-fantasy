@@ -3,6 +3,7 @@
 #include "../psyq/libspu.h"
 
 #include "ofLog.h"
+#include "ofUtils.h"
 
 
 
@@ -44,7 +45,7 @@ AkaoConfig g_channels_1_config;
 // u32 g_channels_3_pitch_lfo_mask;        // 0x80099ff4
 // u16 g_channels_3_noise_clock;           // 0x80099ffa
 
-// SpuCommonAttr g_spu_common_attr;        // 0x8009c578
+SpuCommonAttr g_spu_common_attr;
 SpuReverbAttr g_spu_reverb_attr;
 // AkaoVoiceAttr g_akao_voice_attr;        // 0x8007ebe4
 
@@ -372,21 +373,21 @@ void AkaoInitData()
 //    g_channels_2_config.active_mask = 0;
 //    g_channels_2_config.music_id = 0;
 
-//    g_spu_common_attr.mask = 0x00003fcf;
-//    g_spu_common_attr.mvol.left = 0x3fff;
-//    g_spu_common_attr.mvol.right = 0x3fff;
-//    g_spu_common_attr.mvolmode.left = 0;
-//    g_spu_common_attr.mvolmode.right = 0;
-//    g_spu_common_attr.cd.volume.left = 0x7fff;
-//    g_spu_common_attr.cd.volume.right = 0x7fff;
-//    g_spu_common_attr.cd.reverb = 0;
-//    g_spu_common_attr.cd.mix = 1;
-//    g_spu_common_attr.ext.volume.left = 0;
-//    g_spu_common_attr.ext.volume.right = 0;
-//    g_spu_common_attr.ext.reverb = 0;
-//    g_spu_common_attr.ext.mix = 0;
+    g_spu_common_attr.mask = AKAO_COMMON_ATTR;
+    g_spu_common_attr.mvol.left = 0x3fff;
+    g_spu_common_attr.mvol.right = 0x3fff;
+    g_spu_common_attr.mvolmode.left = 0;
+    g_spu_common_attr.mvolmode.right = 0;
+    g_spu_common_attr.cd.volume.left = 0x7fff;
+    g_spu_common_attr.cd.volume.right = 0x7fff;
+    g_spu_common_attr.cd.reverb = 0;
+    g_spu_common_attr.cd.mix = 1;
+    g_spu_common_attr.ext.volume.left = 0;
+    g_spu_common_attr.ext.volume.right = 0;
+    g_spu_common_attr.ext.reverb = 0;
+    g_spu_common_attr.ext.mix = 0;
 
-//    system_psyq_spu_set_common_attr( g_spu_common_attr );
+    PsyqSpuSetCommonAttr( &g_spu_common_attr );
 
     for( int i = 0; i < 0x18; ++i )
     {
@@ -789,7 +790,6 @@ void AkaoMusicChannelsInit()
 
 void AkaoInstrInit( AkaoChannel* channel, u16 instr_id )
 {
-    //instr_id = 0x53;
     channel->instr_id = instr_id;
     channel->attr.addr = g_akao_instrument[instr_id].addr;
     channel->attr.loop_addr = g_akao_instrument[instr_id].loop_addr;
@@ -802,18 +802,6 @@ void AkaoInstrInit( AkaoChannel* channel, u16 instr_id )
     channel->attr.sr = g_akao_instrument[instr_id].sr;
     channel->attr.rr = g_akao_instrument[instr_id].rr;
     channel->attr.mask |= AKAO_UPDATE_SPU_BASE;
-
-    ofLog(OF_LOG_NOTICE, "Init instr:0x" + ofToHex(instr_id));
-    ofLog( OF_LOG_NOTICE, "addr      :" + ofToHex( g_akao_instrument[instr_id].addr      ) + " " + ofToHex( channel->attr.addr      ) );
-    ofLog( OF_LOG_NOTICE, "loop_addr :" + ofToHex( g_akao_instrument[instr_id].loop_addr ) + " " + ofToHex( channel->attr.loop_addr ) );
-    ofLog( OF_LOG_NOTICE, "a_mode    :" + ofToHex( g_akao_instrument[instr_id].a_mode    ) + " " + ofToHex( channel->attr.a_mode    ) );
-    ofLog( OF_LOG_NOTICE, "s_mode    :" + ofToHex( g_akao_instrument[instr_id].s_mode    ) + " " + ofToHex( channel->attr.s_mode    ) );
-    ofLog( OF_LOG_NOTICE, "r_mode    :" + ofToHex( g_akao_instrument[instr_id].r_mode    ) + " " + ofToHex( channel->attr.r_mode    ) );
-    ofLog( OF_LOG_NOTICE, "ar        :" + ofToHex( g_akao_instrument[instr_id].ar        ) + " " + ofToHex( channel->attr.ar        ) );
-    ofLog( OF_LOG_NOTICE, "dr        :" + ofToHex( g_akao_instrument[instr_id].dr        ) + " " + ofToHex( channel->attr.dr        ) );
-    ofLog( OF_LOG_NOTICE, "sl        :" + ofToHex( g_akao_instrument[instr_id].sl        ) + " " + ofToHex( channel->attr.sl        ) );
-    ofLog( OF_LOG_NOTICE, "sr        :" + ofToHex( g_akao_instrument[instr_id].sr        ) + " " + ofToHex( channel->attr.sr        ) );
-    ofLog( OF_LOG_NOTICE, "rr        :" + ofToHex( g_akao_instrument[instr_id].rr        ) + " " + ofToHex( channel->attr.rr        ) );
 }
 
 

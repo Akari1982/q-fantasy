@@ -287,3 +287,150 @@ void PsyqSpuSetReverbVoice( s32 on_off, u32 voice_bit )
         SPU::WriteRegister( 0xcd * 2, SPU::ReadRegister( 0xcd * 2 ) | ((voice_bit >> 0x10) & 0xff) );
     }
 }
+
+
+
+void PsyqSpuSetCommonAttr( SpuCommonAttr* attr )
+{
+    u32 mask = attr->mask;
+
+    if( (mask == 0) || (mask & SPU_COMMON_MVOLL) )
+    {
+        s16 mvol_left = 0;
+        u16 mvol_flag = 0;
+
+        if( (mask == 0) || ((mask & SPU_COMMON_MVOLL) && (mask & SPU_COMMON_MVOLMODEL)) )
+        {
+            switch( attr->mvolmode.left )
+            {
+                case 0x1: mvol_flag = 0x8000; break;
+                case 0x2: mvol_flag = 0x9000; break;
+                case 0x3: mvol_flag = 0xa000; break;
+                case 0x4: mvol_flag = 0xb000; break;
+                case 0x5: mvol_flag = 0xc000; break;
+                case 0x6: mvol_flag = 0xd000; break;
+                case 0x7: mvol_flag = 0xe000; break;
+                default:
+                {
+                    mvol_left = attr->mvol.left;
+                    mvol_flag = 0;
+                }
+            }
+        }
+        else if( (mask != 0) && (mask & SPU_COMMON_MVOLL) && ((mask & SPU_COMMON_MVOLMODEL) == 0) )
+        {
+            mvol_left = attr->mvol.left;
+            mvol_flag = 0;
+        }
+
+        if( mvol_flag != 0 )
+        {
+            if( attr->mvol.left >= 0x80 )
+            {
+                mvol_left = 0x7f;
+            }
+            else
+            {
+                mvol_left = ( attr->mvol.left < 0 ) ? 0 : attr->mvol.left;
+            }
+        }
+
+        SPU::WriteRegister( 0x180, mvol_flag | (mvol_left & 0x7fff) );
+    }
+
+    if( (mask == 0) || (mask & SPU_COMMON_MVOLR) )
+    {
+        s16 mvol_right = 0;
+        u16 mvol_flag = 0;
+
+        if( (mask == 0) || ((mask & SPU_COMMON_MVOLR) && (mask & SPU_COMMON_MVOLMODER)) )
+        {
+            switch( attr->mvolmode.right )
+            {
+                case 0x1: mvol_flag = 0x8000; break;
+                case 0x2: mvol_flag = 0x9000; break;
+                case 0x3: mvol_flag = 0xa000; break;
+                case 0x4: mvol_flag = 0xb000; break;
+                case 0x5: mvol_flag = 0xc000; break;
+                case 0x6: mvol_flag = 0xd000; break;
+                case 0x7: mvol_flag = 0xe000; break;
+                default:
+                {
+                    mvol_right = attr->mvol.right;
+                    mvol_flag = 0;
+                }
+            }
+        }
+        else if( (mask != 0) && (mask & SPU_COMMON_MVOLR) && ((mask & SPU_COMMON_MVOLMODER) == 0) )
+        {
+            mvol_right = attr->mvol.right;
+            mvol_flag = 0;
+        }
+
+        if( mvol_flag != 0 )
+        {
+            if( attr->mvol.right >= 0x80 )
+            {
+                mvol_right = 0x7f;
+            }
+            else
+            {
+                mvol_right = (attr->mvol.right < 0 ) ? 0 : attr->mvol.right;
+            }
+        }
+        SPU::WriteRegister( 0x182, mvol_flag | (mvol_right & 0x7fff) );
+    }
+
+    if( (mask == 0) || (mask & SPU_COMMON_CDVOLL) ) SPU::WriteRegister( 0x1b0, attr->cd.volume.left );
+    if( (mask == 0) || (mask & SPU_COMMON_CDVOLR) ) SPU::WriteRegister( 0x1b2, attr->cd.volume.right );
+    if( (mask == 0) || (mask & SPU_COMMON_EXTVOLL) ) SPU::WriteRegister( 0x1b4, attr->ext.volume.left );
+    if( (mask == 0) || (mask & SPU_COMMON_EXTVOLR) ) SPU::WriteRegister( 0x1b6, attr->ext.volume.right );
+
+    if( (mask == 0) || (mask & SPU_COMMON_CDREV) )
+    {
+        if( attr->cd.reverb == 0 )
+        {
+            SPU::WriteRegister( 0x1aa, SPU::ReadRegister( 0x1aa ) & 0xfffb );
+        }
+        else
+        {
+            SPU::WriteRegister( 0x1aa, SPU::ReadRegister( 0x1aa ) | 0x0004 );
+        }
+    }
+
+    if( (mask == 0) || (mask & SPU_COMMON_CDMIX) )
+    {
+        if( attr->cd.mix == 0 )
+        {
+            SPU::WriteRegister( 0x1aa, SPU::ReadRegister( 0x1aa ) & 0xfffe );
+        }
+        else
+        {
+            SPU::WriteRegister( 0x1aa, SPU::ReadRegister( 0x1aa ) | 0x0001 );
+        }
+    }
+
+    if( (mask == 0) || (mask & SPU_COMMON_EXTREV) )
+    {
+        if( attr->ext.reverb == 0 )
+        {
+            SPU::WriteRegister( 0x1aa, SPU::ReadRegister( 0x1aa ) & 0xfff7 );
+        }
+        else
+        {
+            SPU::WriteRegister( 0x1aa, SPU::ReadRegister( 0x1aa ) | 0x0008 );
+        }
+    }
+
+    if( (mask == 0) || (mask & SPU_COMMON_EXTMIX) )
+    {
+        if( attr->ext.mix == 0 )
+        {
+            SPU::WriteRegister( 0x1aa, SPU::ReadRegister( 0x1aa ) & 0xfffd );
+        }
+        else
+        {
+            SPU::WriteRegister( 0x1aa, SPU::ReadRegister( 0x1aa ) | 0x0002 );
+        }
+    }
+}

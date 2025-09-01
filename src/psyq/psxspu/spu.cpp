@@ -594,10 +594,6 @@ void SPU::Reset()
   // HACK
   s_state.SPUCNT.mute_n = true;
   s_state.SPUCNT.enable = true;
-  s_state.main_volume_left_reg.bits = 0x3FFF;
-  s_state.main_volume_left.Reset(s_state.main_volume_left_reg);
-  s_state.main_volume_right_reg.bits = 0x3FFF;
-  s_state.main_volume_right.Reset(s_state.main_volume_left_reg);
   //////////////////////////
 
   for (u32 i = 0; i < NUM_VOICES; i++)

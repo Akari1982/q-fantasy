@@ -1282,8 +1282,6 @@ void AkaoOpcode_f3( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 // Used in the song "Anxious Heart".
 void AkaoOpcode_f4_overlay_voice_on( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xf4" );
-
     u32 over_voice_id;
     u32 over_mask = 0x1;
 
@@ -1326,8 +1324,6 @@ void AkaoOpcode_f4_overlay_voice_on( AkaoChannel* channel, AkaoConfig* config, u
 
 void AkaoOpcode_f5_overlay_voice_off( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xf5" );
-
     u32 over_voice_id = channel->over_voice_id;
 //    if( w[0x80062f04] != 0 ) over_voice_id -= 0x18;
 
@@ -1343,8 +1339,6 @@ void AkaoOpcode_f5_overlay_voice_off( AkaoChannel* channel, AkaoConfig* config, 
 // When the balance is 0, the volume of the primary voice will be 100% (127/128) of original and that of the secondary voice will be 0%. 127 is the opposite. 
 void AkaoOpcode_f6_overlay_volume_balance( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xf6" );
-
     u8* akao = channel->seq;
     channel->seq = akao + 0x1;
 
@@ -1361,8 +1355,6 @@ void AkaoOpcode_f6_overlay_volume_balance( AkaoChannel* channel, AkaoConfig* con
 
 void AkaoOpcode_f7_overlay_volume_balance_slide( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xf7" );
-
     u8* akao = channel->seq;
     channel->seq = akao + 0x2;
 

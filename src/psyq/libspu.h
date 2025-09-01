@@ -28,6 +28,21 @@
 #define SPU_VOICE_ADSR_ADSR1    (0x01 << 17)
 #define SPU_VOICE_ADSR_ADSR2    (0x01 << 18)
 
+#define	SPU_COMMON_MVOLL        (0x01 <<  0)
+#define	SPU_COMMON_MVOLR        (0x01 <<  1)
+#define	SPU_COMMON_MVOLMODEL    (0x01 <<  2)
+#define	SPU_COMMON_MVOLMODER    (0x01 <<  3)
+#define	SPU_COMMON_RVOLL        (0x01 <<  4)
+#define	SPU_COMMON_RVOLR        (0x01 <<  5)
+#define	SPU_COMMON_CDVOLL       (0x01 <<  6)
+#define	SPU_COMMON_CDVOLR       (0x01 <<  7)
+#define	SPU_COMMON_CDREV        (0x01 <<  8)
+#define	SPU_COMMON_CDMIX        (0x01 <<  9)
+#define	SPU_COMMON_EXTVOLL      (0x01 << 10)
+#define	SPU_COMMON_EXTVOLR      (0x01 << 11)
+#define	SPU_COMMON_EXTREV       (0x01 << 12)
+#define	SPU_COMMON_EXTMIX       (0x01 << 13)
+
 #define SPU_REV_MODE            (0x01 <<  0)
 #define SPU_REV_DEPTHL          (0x01 <<  1)
 #define SPU_REV_DEPTHR          (0x01 <<  2)
@@ -48,6 +63,25 @@ struct SpuReverbAttr
     s32 delay;
     s32 feedback;
 };
+
+struct SpuExtAttr
+{
+    SpuVolume volume;
+    long reverb;
+    long mix;
+};
+
+struct SpuCommonAttr
+{
+    u32 mask;
+    SpuVolume mvol;
+    SpuVolume mvolmode;
+    SpuVolume mvolx;
+    SpuExtAttr cd;
+    SpuExtAttr ext;
+};
+
+
 
 class AudioStream;
 
@@ -86,3 +120,5 @@ void PsyqSpuSetVoiceVolumeAttr( s32 voiceNum, s16 volumeL, s16 volumeR, s16 volM
 void PsyqSpuSetKey( s32 on_off, u32 voice_bit );
 void PsyqSpuSetReverbDepth( SpuReverbAttr* attr );
 void PsyqSpuSetReverbVoice( s32 on_off, u32 voice_bit );
+
+void PsyqSpuSetCommonAttr( SpuCommonAttr* attr );
