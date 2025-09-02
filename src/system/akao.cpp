@@ -420,6 +420,27 @@ void AkaoInitData()
 
 
 
+void AkaoSetReverbMode( s32 mode )
+{
+    PsyqSpuGetReverbModeParam( g_spu_reverb_attr );
+
+    if( g_spu_reverb_attr.mode != mode )
+    {
+        g_channels_1_config.reverb_mode = mode;
+
+        PsyqSpuSetReverb( SPU_OFF );
+
+        g_spu_reverb_attr.mask = SPU_REV_MODE;
+        g_spu_reverb_attr.mode = mode | SPU_REV_MODE_CLEAR_WA;
+
+        PsyqSpuSetReverbModeParam( g_spu_reverb_attr );
+
+        PsyqSpuSetReverb( SPU_ON );
+    }
+}
+
+
+
 void AkaoMain()
 {
 //    r_cnt = system_psyq_get_r_cnt( RCntCNT2 );
@@ -1104,7 +1125,7 @@ void AkaoUpdateKeysOn()
             g_spu_reverb_attr.depth.right = reverb_depth;
         }
 
-        //PsyqSpuSetReverbDepth( &g_spu_reverb_attr );
+        PsyqSpuSetReverbDepth( &g_spu_reverb_attr );
 
         g_channels_1_config.update_flags ^= AKAO_UPDATE_REVERB;
     }

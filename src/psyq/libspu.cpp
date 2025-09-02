@@ -67,7 +67,52 @@ void SpuPlayer::audioOut( ofSoundBuffer & buffer )
 
 void PsyqSpuInit()
 {
+    // init SPU emulator
     SPU::Initialize();
+
+    // real func calls
+    SPU::WriteRegister( 0x180, 0 ); // Mainvolume left
+    SPU::WriteRegister( 0x182, 0 ); // Mainvolume right
+    SPU::WriteRegister( 0x1aa, 0 ); // SPU Control Register
+    SPU::Execute( nullptr, 0x1 * 0x300, 0 );
+    SPU::WriteRegister( 0x180, 0 ); // Mainvolume left
+    SPU::WriteRegister( 0x182, 0 ); // Mainvolume right
+
+    SPU::WriteRegister( 0x1ac, 0x0004 ); // Sound RAM Data Transfer Control (should be 0004h)
+    SPU::WriteRegister( 0x184, 0x0 ); // Reverb Output Volume Left
+    SPU::WriteRegister( 0x186, 0x0 ); // Reverb Output Volume Right
+    SPU::WriteRegister( 0x18c, 0xffff ); // Key OFF lower
+    SPU::WriteRegister( 0x18e, 0xffff ); // Key OFF upper
+    SPU::WriteRegister( 0x198, 0x0 ); // Reverb mode aka Echo On lower
+    SPU::WriteRegister( 0x19a, 0x0 ); // Reverb mode aka Echo On upper
+
+    SPU::WriteRegister( 0x190, 0 ); // Pitch Modulation Enable Flags lower
+    SPU::WriteRegister( 0x192, 0 ); // Pitch Modulation Enable Flags upper
+    SPU::WriteRegister( 0x194, 0 ); // Noise mode enable lower
+    SPU::WriteRegister( 0x196, 0 ); // Noise mode enable upper
+    SPU::WriteRegister( 0x1b0, 0 ); // CD Audio Input Volume Left
+    SPU::WriteRegister( 0x1b2, 0 ); // CD Audio Input Volume Right
+    SPU::WriteRegister( 0x1b4, 0 ); // External Audio Input Volume Left
+    SPU::WriteRegister( 0x1b6, 0 ); // External Audio Input Volume Right
+
+    for( int i = 0; i < 0x18; ++i )
+    {
+        SPU::WriteRegister( i * 0x10 + 0x0, 0 ); // Volume Left
+        SPU::WriteRegister( i * 0x10 + 0x2, 0 ); // Volume Right
+        SPU::WriteRegister( i * 0x10 + 0x4, 0x3fff ); // Reverb Output Volume Left
+        SPU::WriteRegister( i * 0x10 + 0x6, 0x0200 ); // Reverb Output Volume Right
+        SPU::WriteRegister( i * 0x10 + 0x8, 0 ); // Key ON lower
+        SPU::WriteRegister( i * 0x10 + 0xa, 0 ); // Key ON upper
+    }
+
+    SPU::WriteRegister( 0x188, 0xffff ); // Key ON lower
+    SPU::WriteRegister( 0x18a, 0x00ff ); // Key ON upper
+    SPU::Execute( nullptr, 0x4 * 0x300, 0 );
+    SPU::WriteRegister( 0x18c, 0xffff ); // Key OFF upper
+    SPU::WriteRegister( 0x18e, 0x00ff ); // Key OFF lower
+    SPU::Execute( nullptr, 0x4 * 0x300, 0 );
+
+    SPU::WriteRegister( 0x1aa, 0xc000 ); // enable and unmute SPU
 }
 
 
@@ -251,6 +296,22 @@ void PsyqSpuSetKey( s32 on_off, u32 voice_bit )
         SPU::WriteRegister( 0x188, voice_bit & 0xffff );
         SPU::WriteRegister( 0x18a, voice_bit >> 0x10 );
     }
+}
+
+
+
+s32 PsyqSpuSetReverb( s32 on_off )
+{
+    if( on_off == 0 )
+    {
+        SPU::WriteRegister( 0x1aa, SPU::ReadRegister( 0x1aa ) & 0xff7f ); // Reverb Master Disable
+    }
+    else if( on_off == 1 )
+    {
+        SPU::WriteRegister( 0x1aa, SPU::ReadRegister( 0x1aa ) | 0x0080 ); // Reverb Master Enable
+    }
+
+    return on_off;
 }
 
 

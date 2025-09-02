@@ -223,6 +223,7 @@ void AkaoQuit();
 void AkaoLoadEffect( u8* effect_all );
 void AkaoLoadInstr( u8* instr_all, u8* instr_dat );
 void AkaoInitData();
+void AkaoSetReverbMode( s32 mode );
 
 void AkaoMain();
 void AkaoMainUpdate();

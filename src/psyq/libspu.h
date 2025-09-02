@@ -81,6 +81,43 @@ struct SpuCommonAttr
     SpuExtAttr ext;
 };
 
+struct SpuReverbRegParam
+{
+    u32 mask;
+    u16 dAPF1;
+    u16 dAPF2;
+    u16 vIIR;
+    u16 vCOMB1;
+    u16 vCOMB2;
+    u16 vCOMB3;
+    u16 vCOMB4;
+    u16 vWALL;
+    u16 vAPF1;
+    u16 vAPF2;
+    u16 mLSAME;
+    u16 mRSAME;
+    u16 mLCOMB1;
+    u16 mRCOMB1;
+    u16 mLCOMB2;
+    u16 mRCOMB2;
+    u16 dLSAME;
+    u16 dRSAME;
+    u16 mLDIFF;
+    u16 mRDIFF;
+    u16 mLCOMB3;
+    u16 mRCOMB3;
+    u16 mLCOMB4;
+    u16 mRCOMB4;
+    u16 dLDIFF;
+    u16 dRDIFF;
+    u16 mLAPF1;
+    u16 mRAPF1;
+    u16 mLAPF2;
+    u16 mRAPF2;
+    u16 vLIN;
+    u16 vRIN;
+};
+
 
 
 class AudioStream;

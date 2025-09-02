@@ -107,6 +107,7 @@ field_main_loop()
 
         u16 music_size = READ_LE_U16( &music[0x6] );
 
+        AkaoSetReverbMode( READ_LE_S16( &music[0x8] );
         AkaoCopyMusic( &music[0x10], music_size );
         AkaoMusicChannelsInit();
     }

@@ -590,12 +590,6 @@ void SPU::Reset()
   s_state.reverb_upsample_buffer = {};
   s_state.reverb_resample_buffer_position = 0;
 
-  //////////////////////////
-  // HACK
-  s_state.SPUCNT.mute_n = true;
-  s_state.SPUCNT.enable = true;
-  //////////////////////////
-
   for (u32 i = 0; i < NUM_VOICES; i++)
   {
     Voice& v = s_state.voices[i];
@@ -1046,7 +1040,7 @@ void SPU::WriteRegister(u32 offset, u16 value)
 //      DEBUG_LOG("SPU control register <- 0x{:04X}", value);
 //      GeneratePendingSamples();
 
-//      const SPUCNTRegister new_value{value};
+      const SPUCNTRegister new_value{value};
 //      if (new_value.ram_transfer_mode != s_state.SPUCNT.ram_transfer_mode &&
 //          new_value.ram_transfer_mode == RAMTransferMode::Stopped)
 //      {
@@ -1069,18 +1063,18 @@ void SPU::WriteRegister(u32 offset, u16 value)
 //          }
 //        }
 //      }
-//
-//      if (!new_value.enable && s_state.SPUCNT.enable)
-//      {
-//        // Mute all voices.
-//        // Interestingly, hardware tests found this seems to happen immediately, not on the next 44100hz cycle.
-//        for (u32 i = 0; i < NUM_VOICES; i++)
-//          s_state.voices[i].ForceOff();
-//      }
-//
-//      s_state.SPUCNT.bits = new_value.bits;
-//      s_state.SPUSTAT.mode = s_state.SPUCNT.mode.GetValue();
-//
+
+      if (!new_value.enable && s_state.SPUCNT.enable)
+      {
+        // Mute all voices.
+        // Interestingly, hardware tests found this seems to happen immediately, not on the next 44100hz cycle.
+        for (u32 i = 0; i < NUM_VOICES; i++)
+          s_state.voices[i].ForceOff();
+      }
+
+      s_state.SPUCNT.bits = new_value.bits;
+      s_state.SPUSTAT.mode = s_state.SPUCNT.mode.GetValue();
+
 //      if (!s_state.SPUCNT.irq9_enable)
 //      {
 //        s_state.SPUSTAT.irq9_flag = false;
@@ -1094,7 +1088,7 @@ void SPU::WriteRegister(u32 offset, u16 value)
 //      UpdateEventInterval();
 //      UpdateDMARequest();
 //      UpdateTransferEvent();
-//      return;
+      return;
     }
 
     case 0x1F801DAC - SPU_BASE:
