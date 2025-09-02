@@ -8,6 +8,14 @@
 
 std::mutex spuMutex;
 
+u32 g_reverb_on;
+//u8* g_reverb_workarea;
+s32 g_reverb_mode;
+s16 g_reverb_depth_left;
+s16 g_reverb_depth_right;
+s32 g_reverb_delay;
+s32 g_reverb_feedback;
+
 u32 g_transfer_start_addr = 0; // in real SPU we set special register and after that DMA transfer occured
 
 
@@ -113,6 +121,14 @@ void PsyqSpuInit()
     SPU::Execute( nullptr, 0x4 * 0x300, 0 );
 
     SPU::WriteRegister( 0x1aa, 0xc000 ); // enable and unmute SPU
+
+    g_reverb_on = SPU_OFF;
+//    [0x8004a698] = w(0);
+    g_reverb_mode = 0;
+    g_reverb_depth_left = 0;
+    g_reverb_depth_right = 0;
+    g_reverb_delay = 0;
+    g_reverb_feedback = 0;
 }
 
 
@@ -304,14 +320,285 @@ s32 PsyqSpuSetReverb( s32 on_off )
 {
     if( on_off == 0 )
     {
+        g_reverb_on = 0;
         SPU::WriteRegister( 0x1aa, SPU::ReadRegister( 0x1aa ) & 0xff7f ); // Reverb Master Disable
     }
     else if( on_off == 1 )
     {
+//        if( w[0x8004a698] != on_off )
+//        {
+//            if( func37d90( g_reverb_workarea ) != 0 ) // reverb work area already reserved
+//            {
+//                g_reverb_on = 0;
+//                [spu + 0x1aa] = h(hu[spu + 0x1aa] & 0xff7f); // Reverb Master Disable
+//
+//                return g_reverb_on;
+//            }
+//        }
+
+        g_reverb_on = on_off;
         SPU::WriteRegister( 0x1aa, SPU::ReadRegister( 0x1aa ) | 0x0080 ); // Reverb Master Enable
     }
 
-    return on_off;
+    return g_reverb_on;
+}
+
+
+
+s32 PsyqSpuSetReverbModeParam( SpuReverbAttr* attr )
+{
+    u32 mask = attr->mask;
+
+    bool rev_enabled = false;
+    bool loaded_mode = false;
+    bool loaded_delay = false;
+    bool loaded_feedback = false;
+    bool clear_wa = false;
+//    [SP + 0x10] = w(0);
+
+    if( (mask == 0) || (mask & SPU_REV_MODE) )
+    {
+        s32 mode = attr->mode;
+
+        if( mode & SPU_REV_MODE_CLEAR_WA )
+        {
+            mode &= ~SPU_REV_MODE_CLEAR_WA;
+            clear_wa = true;
+        }
+
+        if( mode >= SPU_REV_MODE_MAX ) return -1;
+
+        loaded_mode = true;
+
+//        if( func37d90( w[0x8004ab5c + mode * 4] ) != 0 ) return -1; // reverb work area already reserved
+
+        g_reverb_mode = mode;
+
+//        g_reverb_workarea = w[0x8004ab5c + mode * 4];
+//
+//        u32 src = 0x8004abac + mode * 0x44;
+//        dst = SP + 0x10;
+//        for( int i = 0x43; i != -1; --i )
+//        {
+//            [dst] = b(bu[src]);
+//            src += 0x1;
+//            dst += 0x1;
+//        }
+
+        if( mode == SPU_REV_MODE_ECHO )
+        {
+            g_reverb_feedback = 0x7f;
+            g_reverb_delay = 0x7f;
+        }
+        else if( mode == SPU_REV_MODE_DELAY )
+        {
+            g_reverb_feedback = 0;
+            g_reverb_delay = 0x7f;
+        }
+        else
+        {
+            g_reverb_feedback = 0;
+            g_reverb_delay = 0;
+        }
+    }
+
+//    if( (mask == 0) || (mask & SPU_REV_DELAYTIME) )
+//    {
+//        if( (g_reverb_mode == SPU_REV_MODE_ECHO) || (g_reverb_mode == SPU_REV_MODE_DELAY) )
+//        {
+//            loaded_delay = true;
+//
+//            if( loaded_mode == false )
+//            {
+//                src = 0x8004abac + g_reverb_mode * 0x44;
+//                dst = SP + 0x10;
+//                for( int i = 0x43; i != -1; --i )
+//                {
+//                    [dst] = b(bu[src]);
+//                    src += 0x1;
+//                    dst += 0x1;
+//                }
+//                [SP + 0x10] = w(0x0c011c00);
+//            }
+//
+//            g_reverb_delay = attr->delay;
+//
+//            A2 = 0x81020409;
+//            V1 = g_reverb_delay << 0xd;
+//            80038034	mult   v1, a2
+//            80038038	mfhi   v0
+//            A1 = g_reverb_delay << 0xc;
+//            80038044	mult   a1, a2
+//            V0 = V0 + V1;
+//            V0 = V0 >> 0x6;
+//            V1 = V1 >> 0x1f;
+//            V0 = V0 - V1;
+//            [SP + 0x28] = h(V0 - hu[SP + 0x14]);
+//            80038074	mfhi   v1
+//            V1 = V1 + A1;
+//            V1 = V1 >> 06;
+//            A1 = A1 >> 1f;
+//            V1 = V1 - A1;
+//            [SP + 0x2a] = h(V1 - hu[SP + 0x16]);
+//            [SP + 0x34] = h(V1 + hu[SP + 0x36]);
+//            [SP + 0x2c] = h(V1 + hu[SP + 0x2e]);
+//            [SP + 0x48] = h(V1 + hu[SP + 0x4c]);
+//            [SP + 0x4a] = h(V1 + hu[SP + 0x4e]);
+//        }
+//        else
+//        {
+//            g_reverb_delay = 0;
+//        }
+//    }
+//
+//    if( (mask == 0) || (mask & SPU_REV_FEEDBACK) )
+//    {
+//        if( (g_reverb_mode == SPU_REV_MODE_ECHO) || (g_reverb_mode == SPU_REV_MODE_DELAY) )
+//        {
+//            loaded_feedback = true;
+//
+//            if( loaded_mode == false )
+//            {
+//                if( loaded_delay == false )
+//                {
+//                    src = 0x8004abac + g_reverb_mode * 0x44;
+//                    dst = SP + 0x10;
+//                    for( int i = 0x43; i != -1; --i )
+//                    {
+//                        [dst] = b(bu[src]);
+//                        src += 0x1;
+//                        dst += 0x1;
+//                    }
+//                    [SP + 0x10] = w(0x80);
+//                }
+//                else
+//                {
+//                    [SP + 0x10] = w(w[SP + 0x10] | 0x80);
+//                }
+//            }
+//
+//            g_reverb_feedback = attr->feedback;
+//
+//            // division by by 1.985
+//            const int64_t A0 = 0x81020409LL;
+//            int64_t V1 = (int64_t)g_reverb_feedback * 0x8100;
+//            int64_t mul = V1 * A0;
+//            int64_t V0 = mul >> 32;
+//            V0 += V1;
+//            V0 >>= 0x6;
+//            int64_t signCorr = V1 >> 31;
+//            V0 -= signCorr;
+//            [SP + 0x22] = h(V0);
+//        }
+//        else
+//        {
+//            g_reverb_feedback = 0;
+//        }
+//    }
+
+    if( loaded_mode )
+    {
+        rev_enabled = (SPU::ReadRegister( 0x1aa ) >> 0x7) & 0x1;
+
+        if( rev_enabled != 0 )
+        {
+            SPU::WriteRegister( 0x1aa, SPU::ReadRegister( 0x1aa ) & 0xff7f ); // Reverb Master Disable
+        }
+
+        SPU::WriteRegister( 0x184, 0 );
+        SPU::WriteRegister( 0x186, 0 );
+        g_reverb_depth_left = 0;
+        g_reverb_depth_right = 0;
+    }
+    else
+    {
+        if( (mask == 0) || (mask & SPU_REV_DEPTHL) )
+        {
+            SPU::WriteRegister( 0x184, attr->depth.left );
+            g_reverb_depth_left = attr->depth.left;
+        }
+
+        if( (mask == 0) || (mask & SPU_REV_DEPTHR) )
+        {
+            SPU::WriteRegister( 0x186, attr->depth.right );
+            g_reverb_depth_right = attr->depth.right;
+        }
+    }
+
+    if( loaded_mode || loaded_delay || loaded_feedback )
+    {
+//        func3832c( SP + 0x10 ); // set spu reg
+    }
+
+    if( clear_wa == true )
+    {
+//        func388e8( g_reverb_mode ); // transfer reverb data to spu ram
+    }
+
+    if( loaded_mode )
+    {
+//        func36d98( 0xd1, g_reverb_workarea, 0 ); // 1a2 Sound RAM Reverb Work Area Start Address
+
+        if( rev_enabled != 0 )
+        {
+            SPU::WriteRegister( 0x1aa, SPU::ReadRegister( 0x1aa ) | 0x0080 ); // Reverb Master Enable
+        }
+    }
+
+    return 0;
+}
+
+
+
+//void func3832c( A0 )
+//{
+//    spu = w[0x8004aaf4]; // 0x1f801c00
+//
+//    u32 mask = w[A0 + 0x0];
+//
+//    if( (mask == 0) || (mask & 0x00000001) ) [spu + 0x1c0] = h(hu[A0 + 0x04]);
+//    if( (mask == 0) || (mask & 0x00000002) ) [spu + 0x1c2] = h(hu[A0 + 0x06]);
+//    if( (mask == 0) || (mask & 0x00000004) ) [spu + 0x1c4] = h(hu[A0 + 0x08]);
+//    if( (mask == 0) || (mask & 0x00000008) ) [spu + 0x1c6] = h(hu[A0 + 0x0a]);
+//    if( (mask == 0) || (mask & 0x00000010) ) [spu + 0x1c8] = h(hu[A0 + 0x0c]);
+//    if( (mask == 0) || (mask & 0x00000020) ) [spu + 0x1ca] = h(hu[A0 + 0x0e]);
+//    if( (mask == 0) || (mask & 0x00000040) ) [spu + 0x1cc] = h(hu[A0 + 0x10]);
+//    if( (mask == 0) || (mask & 0x00000080) ) [spu + 0x1ce] = h(hu[A0 + 0x12]);
+//    if( (mask == 0) || (mask & 0x00000100) ) [spu + 0x1d0] = h(hu[A0 + 0x14]);
+//    if( (mask == 0) || (mask & 0x00000200) ) [spu + 0x1d2] = h(hu[A0 + 0x16]);
+//    if( (mask == 0) || (mask & 0x00000400) ) [spu + 0x1d4] = h(hu[A0 + 0x18]);
+//    if( (mask == 0) || (mask & 0x00000800) ) [spu + 0x1d6] = h(hu[A0 + 0x1a]);
+//    if( (mask == 0) || (mask & 0x00001000) ) [spu + 0x1d8] = h(hu[A0 + 0x1c]);
+//    if( (mask == 0) || (mask & 0x00002000) ) [spu + 0x1da] = h(hu[A0 + 0x1e]);
+//    if( (mask == 0) || (mask & 0x00004000) ) [spu + 0x1dc] = h(hu[A0 + 0x20]);
+//    if( (mask == 0) || (mask & 0x00008000) ) [spu + 0x1de] = h(hu[A0 + 0x22]);
+//    if( (mask == 0) || (mask & 0x00010000) ) [spu + 0x1e0] = h(hu[A0 + 0x24]);
+//    if( (mask == 0) || (mask & 0x00020000) ) [spu + 0x1e2] = h(hu[A0 + 0x26]);
+//    if( (mask == 0) || (mask & 0x00040000) ) [spu + 0x1e4] = h(hu[A0 + 0x28]);
+//    if( (mask == 0) || (mask & 0x00080000) ) [spu + 0x1e6] = h(hu[A0 + 0x2a]);
+//    if( (mask == 0) || (mask & 0x00100000) ) [spu + 0x1e8] = h(hu[A0 + 0x2c]);
+//    if( (mask == 0) || (mask & 0x00200000) ) [spu + 0x1ea] = h(hu[A0 + 0x2e]);
+//    if( (mask == 0) || (mask & 0x00400000) ) [spu + 0x1ec] = h(hu[A0 + 0x30]);
+//    if( (mask == 0) || (mask & 0x00800000) ) [spu + 0x1ee] = h(hu[A0 + 0x32]);
+//    if( (mask == 0) || (mask & 0x01000000) ) [spu + 0x1f0] = h(hu[A0 + 0x34]);
+//    if( (mask == 0) || (mask & 0x02000000) ) [spu + 0x1f2] = h(hu[A0 + 0x36]);
+//    if( (mask == 0) || (mask & 0x04000000) ) [spu + 0x1f4] = h(hu[A0 + 0x38]);
+//    if( (mask == 0) || (mask & 0x08000000) ) [spu + 0x1f6] = h(hu[A0 + 0x3a]);
+//    if( (mask == 0) || (mask & 0x10000000) ) [spu + 0x1f8] = h(hu[A0 + 0x3c]);
+//    if( (mask == 0) || (mask & 0x20000000) ) [spu + 0x1fa] = h(hu[A0 + 0x3e]);
+//    if( (mask == 0) || (mask & 0x40000000) ) [spu + 0x1fc] = h(hu[A0 + 0x40]);
+//    if( (mask == 0) || (mask & 0x80000000) ) [spu + 0x1fe] = h(hu[A0 + 0x42]);
+//}
+
+
+
+void PsyqSpuGetReverbModeParam( SpuReverbAttr* attr )
+{
+    attr->mode = g_reverb_mode;
+    attr->depth.left = g_reverb_depth_left;
+    attr->depth.right = g_reverb_depth_right;
+    attr->delay = g_reverb_delay;
+    attr->feedback = g_reverb_feedback;
 }
 
 
@@ -323,11 +610,13 @@ void PsyqSpuSetReverbDepth( SpuReverbAttr* attr )
     if( (attr->mask < 1) || (attr->mask & SPU_REV_DEPTHL) )
     {
         SPU::WriteRegister( 0x184, attr->depth.left );
+        g_reverb_depth_left = attr->depth.left;
     }
 
     if( (attr->mask < 1) || (attr->mask & SPU_REV_DEPTHR) )
     {
         SPU::WriteRegister( 0x186, attr->depth.right );
+        g_reverb_depth_right = attr->depth.right;
     }
 }
 

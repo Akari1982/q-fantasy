@@ -113,6 +113,8 @@ void AkaoDebugSequence()
                         case 0xd0:
                         case 0xd1:
                         case 0xed:
+                        case 0xf4:
+                        case 0xf5:
                         case 0xf9:
                         {
                             ImGui::SetCursorPos( ImVec2( x, add_y ) );
@@ -142,6 +144,7 @@ void AkaoDebugSequence()
                         case 0xd8:
                         case 0xd9:
                         case 0xf2:
+                        case 0xf6:
                         case 0xf8:
                         {
                             ImGui::SetCursorPos( ImVec2( x, add_y ) );
@@ -159,6 +162,7 @@ void AkaoDebugSequence()
                         case 0xec:
                         case 0xee:
                         case 0xfd:
+                        case 0xf7:
                         case 0xfe:
                         {
                             ImGui::SetCursorPos( ImVec2( x, add_y ) );

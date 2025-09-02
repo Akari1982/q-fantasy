@@ -194,7 +194,7 @@ struct AkaoConfig
     u32 reverb_mask;
 //    u32 pitch_lfo_mask;             // 0x34
     u32 update_flags;
-//    s32 reverb_mode;                // 0x3c
+    s32 reverb_mode;
     s32 reverb_depth;
 //    s32 reverb_depth_slide_step;    // 0x44
 //    u16 tempo_slide_steps;          // 0x48

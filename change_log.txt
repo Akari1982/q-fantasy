@@ -11,7 +11,11 @@ To Do
 - Add line transparency (for rain).
 - Finalize screen rendering borders.
 - Add akao support.
-- Add imgui akao viewer.
+
+2025-09-01
+----------
+- Switched from Mame SPU engine to DuckStation. Mame version badly plays
+  some instruments. New one is better.
 
 2025-08-15
 ----------

@@ -361,7 +361,7 @@ void AkaoInitData()
 //    g_channels_1_config.noise_mask = 0;
     g_channels_1_config.reverb_mask = 0;
 //    g_channels_1_config.pitch_lfo_mask = 0;
-//    g_channels_1_config.reverb_mode = 0;
+    g_channels_1_config.reverb_mode = 0;
     g_channels_1_config.reverb_depth = 0;
 //    g_channels_1_config.music_id = 0;
 //    g_channels_1_config.reverb_depth_slide_steps = 0;
@@ -422,7 +422,7 @@ void AkaoInitData()
 
 void AkaoSetReverbMode( s32 mode )
 {
-    PsyqSpuGetReverbModeParam( g_spu_reverb_attr );
+    PsyqSpuGetReverbModeParam( &g_spu_reverb_attr );
 
     if( g_spu_reverb_attr.mode != mode )
     {
@@ -433,7 +433,7 @@ void AkaoSetReverbMode( s32 mode )
         g_spu_reverb_attr.mask = SPU_REV_MODE;
         g_spu_reverb_attr.mode = mode | SPU_REV_MODE_CLEAR_WA;
 
-        PsyqSpuSetReverbModeParam( g_spu_reverb_attr );
+        PsyqSpuSetReverbModeParam( &g_spu_reverb_attr );
 
         PsyqSpuSetReverb( SPU_ON );
     }
@@ -1387,10 +1387,10 @@ void AkaoUpdateReverbVoices()
 
 //    updated_mask |= g_channels_3_reverb_mask;
 
-    //PsyqSpuSetReverbVoice( SPU_ON, updated_mask );
+    PsyqSpuSetReverbVoice( SPU_ON, updated_mask );
 
     updated_mask ^= 0x00ffffff;
-    //PsyqSpuSetReverbVoice( SPU_OFF, updated_mask );
+    PsyqSpuSetReverbVoice( SPU_OFF, updated_mask );
 }
 
 

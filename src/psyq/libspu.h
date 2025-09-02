@@ -43,11 +43,25 @@
 #define	SPU_COMMON_EXTREV       (0x01 << 12)
 #define	SPU_COMMON_EXTMIX       (0x01 << 13)
 
+#define SPU_REV_MODE_CHECK      (-1)
+#define SPU_REV_MODE_OFF        0
+#define SPU_REV_MODE_ROOM       1
+#define SPU_REV_MODE_STUDIO_A   2
+#define SPU_REV_MODE_STUDIO_B   3
+#define SPU_REV_MODE_STUDIO_C   4
+#define SPU_REV_MODE_HALL       5
+#define SPU_REV_MODE_SPACE      6
+#define SPU_REV_MODE_ECHO       7
+#define SPU_REV_MODE_DELAY      8
+#define SPU_REV_MODE_PIPE       9
+#define SPU_REV_MODE_MAX        10
+
 #define SPU_REV_MODE            (0x01 <<  0)
 #define SPU_REV_DEPTHL          (0x01 <<  1)
 #define SPU_REV_DEPTHR          (0x01 <<  2)
 #define SPU_REV_DELAYTIME       (0x01 <<  3)
 #define SPU_REV_FEEDBACK        (0x01 <<  4)
+#define SPU_REV_MODE_CLEAR_WA   0x100
 
 struct SpuVolume
 {
@@ -155,6 +169,9 @@ void PsyqSpuSetVoiceSL( s32 voiceNum, u16 SL );
 void PsyqSpuSetVoiceVolumeAttr( s32 voiceNum, s16 volumeL, s16 volumeR, s16 volModeL, s16 volModeR );
 
 void PsyqSpuSetKey( s32 on_off, u32 voice_bit );
+s32 PsyqSpuSetReverb( s32 on_off );
+s32 PsyqSpuSetReverbModeParam( SpuReverbAttr* attr );
+void PsyqSpuGetReverbModeParam( SpuReverbAttr* attr );
 void PsyqSpuSetReverbDepth( SpuReverbAttr* attr );
 void PsyqSpuSetReverbVoice( s32 on_off, u32 voice_bit );
 
