@@ -16,6 +16,8 @@ s16 g_reverb_depth_right;
 s32 g_reverb_delay;
 s32 g_reverb_feedback;
 
+u32 g_spu_shift;
+
 u32 g_transfer_start_addr = 0; // in real SPU we set special register and after that DMA transfer occured
 
 u32 g_reverb_workarea[0xa] =
@@ -25,26 +27,15 @@ u32 g_reverb_workarea[0xa] =
 
 SpuReverbReg g_reverb_data[0xa] =
 {
-    //      mask   dAPF1   dAPF2    vIIR  vCOMB1  vCOMB2  vCOMB3  vCOMB4   vWALL   vAPF1   vAPF2  mLSAME  mRSAME mLCOMB1 mRCOMB1 mLCOMB2 mRCOMB2  dLSAME  dRSAME  mLDIFF  mRDIFF mLCOMB3 mRCOMB3 mLCOMB4 mRCOMB4  dLDIFF  dRDIFF  mLAPF1  mRAPF1  mLAPF2  mRAPF2    vLIN    vRIN 
-    // 0 SPU_REV_MODE_OFF
     { 0x00000000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000 },
-    // 1 SPU_REV_MODE_ROOM
     { 0x00000000, 0x007d, 0x005b, 0x6d80, 0x54b8, 0xbed0, 0x0000, 0x0000, 0xba80, 0x5800, 0x5300, 0x04d6, 0x0333, 0x03f0, 0x0227, 0x0374, 0x01ef, 0x0334, 0x01b5, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x01b4, 0x0136, 0x00b8, 0x005c, 0x8000, 0x8000 },
-    // 2 SPU_REV_MODE_STUDIO_A
     { 0x00000000, 0x0033, 0x0025, 0x70f0, 0x4fa8, 0xbce0, 0x4410, 0xc0f0, 0x9c00, 0x5280, 0x4ec0, 0x03e4, 0x031b, 0x03a4, 0x02af, 0x0372, 0x0266, 0x031c, 0x025d, 0x025c, 0x018e, 0x022f, 0x0135, 0x01d2, 0x00b7, 0x018f, 0x00b5, 0x00b4, 0x0080, 0x004c, 0x0026, 0x8000, 0x8000 },
-    // 3 SPU_REV_MODE_STUDIO_B
     { 0x00000000, 0x00b1, 0x007f, 0x70f0, 0x4fa8, 0xbce0, 0x4510, 0xbef0, 0xb4c0, 0x5280, 0x4ec0, 0x0904, 0x076b, 0x0824, 0x065f, 0x07a2, 0x0616, 0x076c, 0x05ed, 0x05ec, 0x042e, 0x050f, 0x0305, 0x0462, 0x02b7, 0x042f, 0x0265, 0x0264, 0x01b2, 0x0100, 0x0080, 0x8000, 0x8000 },
-    // 4 SPU_REV_MODE_STUDIO_C
     { 0x00000000, 0x00e3, 0x00a9, 0x6f60, 0x4fa8, 0xbce0, 0x4510, 0xbef0, 0xa680, 0x5680, 0x52c0, 0x0dfb, 0x0b58, 0x0d09, 0x0a3c, 0x0bd9, 0x0973, 0x0b59, 0x08da, 0x08d9, 0x05e9, 0x07ec, 0x04b0, 0x06ef, 0x03d2, 0x05ea, 0x031d, 0x031c, 0x0238, 0x0154, 0x00aa, 0x8000, 0x8000 },
-    // 5 SPU_REV_MODE_HALL
     { 0x00000000, 0x01a5, 0x0139, 0x6000, 0x5000, 0x4c00, 0xb800, 0xbc00, 0xc000, 0x6000, 0x5c00, 0x15ba, 0x11bb, 0x14c2, 0x10bd, 0x11bc, 0x0dc1, 0x11c0, 0x0dc3, 0x0dc0, 0x09c1, 0x0bc4, 0x07c1, 0x0a00, 0x06cd, 0x09c2, 0x05c1, 0x05c0, 0x041a, 0x0274, 0x013a, 0x8000, 0x8000 },
-    // 6 SPU_REV_MODE_SPACE
     { 0x00000000, 0x033d, 0x0231, 0x7e00, 0x5000, 0xb400, 0xb000, 0x4c00, 0xb000, 0x6000, 0x5400, 0x1ed6, 0x1a31, 0x1d14, 0x183b, 0x1bc2, 0x16b2, 0x1a32, 0x15ef, 0x15ee, 0x1055, 0x1334, 0x0f2d, 0x11f6, 0x0c5d, 0x1056, 0x0ae1, 0x0ae0, 0x07a2, 0x0464, 0x0232, 0x8000, 0x8000 },
-    // 7 SPU_REV_MODE_ECHO
     { 0x00000000, 0x0001, 0x0001, 0x7fff, 0x7fff, 0x0000, 0x0000, 0x0000, 0x8100, 0x0000, 0x0000, 0x1fff, 0x0fff, 0x1005, 0x0005, 0x0000, 0x0000, 0x1005, 0x0005, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x1004, 0x1002, 0x0004, 0x0002, 0x8000, 0x8000 },
-    // 8 SPU_REV_MODE_DELAY
     { 0x00000000, 0x0001, 0x0001, 0x7fff, 0x7fff, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x1fff, 0x0fff, 0x1005, 0x0005, 0x0000, 0x0000, 0x1005, 0x0005, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x1004, 0x1002, 0x0004, 0x0002, 0x8000, 0x8000 },
-    // 9 SPU_REV_MODE_PIPE
     { 0x00000000, 0x0017, 0x0013, 0x70f0, 0x4fa8, 0xbce0, 0x4510, 0xbef0, 0x8500, 0x5f80, 0x54c0, 0x0371, 0x02af, 0x02e5, 0x01df, 0x02b0, 0x01d7, 0x0358, 0x026a, 0x01d6, 0x011e, 0x012d, 0x00b1, 0x011f, 0x0059, 0x01a0, 0x00e3, 0x0058, 0x0040, 0x0028, 0x0014, 0x8000, 0x8000 }
 };
 
@@ -115,6 +106,8 @@ void PsyqSpuInit()
     SPU::Execute( nullptr, 0x1 * 0x300, 0 );
     SPU::WriteRegister( 0x180, 0 ); // Mainvolume left
     SPU::WriteRegister( 0x182, 0 ); // Mainvolume right
+
+    g_spu_shift = 0x3;
 
     SPU::WriteRegister( 0x1ac, 0x0004 ); // Sound RAM Data Transfer Control (should be 0004h)
     SPU::WriteRegister( 0x184, 0x0 ); // Reverb Output Volume Left
@@ -215,7 +208,7 @@ void PsyqSpuSetVoiceStartAddr( s32 voiceNum, u32 startAddr )
 {
     std::lock_guard<std::mutex> lock( spuMutex );
 
-    SPU::WriteRegister( voiceNum * 0x10 + 0x6, startAddr >> 0x3 );
+    SPU::WriteRegister( voiceNum * 0x10 + 0x6, startAddr >> g_spu_shift );
 }
 
 
@@ -224,7 +217,7 @@ void PsyqSpuSetVoiceLoopStartAddr( s32 voiceNum, u32 loopStartAddr )
 {
     std::lock_guard<std::mutex> lock( spuMutex );
 
-    SPU::WriteRegister( voiceNum * 0x10 + 0xe, loopStartAddr >> 0x3 );
+    SPU::WriteRegister( voiceNum * 0x10 + 0xe, loopStartAddr >> g_spu_shift );
 }
 
 
@@ -375,41 +368,66 @@ s32 PsyqSpuSetReverb( s32 on_off )
 
 
 
+s32 SpuReverbClearWorkarea( s32 mode )
+{
+    if( mode >= SPU_REV_MODE_MAX ) return -1;
+
+    u32 dst, size;
+
+    if( mode == 0 )
+    {
+        size = 0x10 << g_spu_shift;
+        dst = 0xfff0 << g_spu_shift;
+    }
+    else
+    {
+        size = (0x10000 - g_reverb_workarea[mode]) << g_spu_shift;
+        dst = g_reverb_workarea[mode] << g_spu_shift;
+    }
+
+    auto& s_ram = SPU::GetWritableRAM();
+    std::memset( &s_ram[dst], 0, size );
+
+    return 0;
+}
+
+
+
 void SpuSetReverbReg(SpuReverbReg* attr)
 {
     u32 mask = attr->mask;
-    if ((mask == 0) || (mask & 0x00000001)) SPU::WriteRegister(0x1c0, attr->dAPF1);
-    if ((mask == 0) || (mask & 0x00000002)) SPU::WriteRegister(0x1c2, attr->dAPF2);
-    if ((mask == 0) || (mask & 0x00000004)) SPU::WriteRegister(0x1c4, attr->vIIR);
-    if ((mask == 0) || (mask & 0x00000008)) SPU::WriteRegister(0x1c6, attr->vCOMB1);
-    if ((mask == 0) || (mask & 0x00000010)) SPU::WriteRegister(0x1c8, attr->vCOMB2);
-    if ((mask == 0) || (mask & 0x00000020)) SPU::WriteRegister(0x1ca, attr->vCOMB3);
-    if ((mask == 0) || (mask & 0x00000040)) SPU::WriteRegister(0x1cc, attr->vCOMB4);
-    if ((mask == 0) || (mask & 0x00000080)) SPU::WriteRegister(0x1ce, attr->vWALL);
-    if ((mask == 0) || (mask & 0x00000100)) SPU::WriteRegister(0x1d0, attr->vAPF1);
-    if ((mask == 0) || (mask & 0x00000200)) SPU::WriteRegister(0x1d2, attr->vAPF2);
-    if ((mask == 0) || (mask & 0x00000400)) SPU::WriteRegister(0x1d4, attr->mLSAME);
-    if ((mask == 0) || (mask & 0x00000800)) SPU::WriteRegister(0x1d6, attr->mRSAME);
-    if ((mask == 0) || (mask & 0x00001000)) SPU::WriteRegister(0x1d8, attr->mLCOMB1);
-    if ((mask == 0) || (mask & 0x00002000)) SPU::WriteRegister(0x1da, attr->mRCOMB1);
-    if ((mask == 0) || (mask & 0x00004000)) SPU::WriteRegister(0x1dc, attr->mLCOMB2);
-    if ((mask == 0) || (mask & 0x00008000)) SPU::WriteRegister(0x1de, attr->mRCOMB2);
-    if ((mask == 0) || (mask & 0x00010000)) SPU::WriteRegister(0x1e0, attr->dLSAME);
-    if ((mask == 0) || (mask & 0x00020000)) SPU::WriteRegister(0x1e2, attr->dRSAME);
-    if ((mask == 0) || (mask & 0x00040000)) SPU::WriteRegister(0x1e4, attr->mLDIFF);
-    if ((mask == 0) || (mask & 0x00080000)) SPU::WriteRegister(0x1e6, attr->mRDIFF);
-    if ((mask == 0) || (mask & 0x00100000)) SPU::WriteRegister(0x1e8, attr->mLCOMB3);
-    if ((mask == 0) || (mask & 0x00200000)) SPU::WriteRegister(0x1ea, attr->mRCOMB3);
-    if ((mask == 0) || (mask & 0x00400000)) SPU::WriteRegister(0x1ec, attr->mLCOMB4);
-    if ((mask == 0) || (mask & 0x00800000)) SPU::WriteRegister(0x1ee, attr->mRCOMB4);
-    if ((mask == 0) || (mask & 0x01000000)) SPU::WriteRegister(0x1f0, attr->dLDIFF);
-    if ((mask == 0) || (mask & 0x02000000)) SPU::WriteRegister(0x1f2, attr->dRDIFF);
-    if ((mask == 0) || (mask & 0x04000000)) SPU::WriteRegister(0x1f4, attr->mLAPF1);
-    if ((mask == 0) || (mask & 0x08000000)) SPU::WriteRegister(0x1f6, attr->mRAPF1);
-    if ((mask == 0) || (mask & 0x10000000)) SPU::WriteRegister(0x1f8, attr->mLAPF2);
-    if ((mask == 0) || (mask & 0x20000000)) SPU::WriteRegister(0x1fa, attr->mRAPF2);
-    if ((mask == 0) || (mask & 0x40000000)) SPU::WriteRegister(0x1fc, attr->vLIN);
-    if ((mask == 0) || (mask & 0x80000000)) SPU::WriteRegister(0x1fe, attr->vRIN);
+    if( (mask == 0) || (mask & 0x00000001) ) SPU::WriteRegister( 0x1c0, attr->dAPF1 );
+    if( (mask == 0) || (mask & 0x00000002) ) SPU::WriteRegister( 0x1c2, attr->dAPF2 );
+    if( (mask == 0) || (mask & 0x00000004) ) SPU::WriteRegister( 0x1c4, attr->vIIR );
+    if( (mask == 0) || (mask & 0x00000008) ) SPU::WriteRegister( 0x1c6, attr->vCOMB1 );
+    if( (mask == 0) || (mask & 0x00000010) ) SPU::WriteRegister( 0x1c8, attr->vCOMB2 );
+    if( (mask == 0) || (mask & 0x00000020) ) SPU::WriteRegister( 0x1ca, attr->vCOMB3 );
+    if( (mask == 0) || (mask & 0x00000040) ) SPU::WriteRegister( 0x1cc, attr->vCOMB4 );
+    if( (mask == 0) || (mask & 0x00000080) ) SPU::WriteRegister( 0x1ce, attr->vWALL );
+    if( (mask == 0) || (mask & 0x00000100) ) SPU::WriteRegister( 0x1d0, attr->vAPF1 );
+    if( (mask == 0) || (mask & 0x00000200) ) SPU::WriteRegister( 0x1d2, attr->vAPF2 );
+    if( (mask == 0) || (mask & 0x00000400) ) SPU::WriteRegister( 0x1d4, attr->mLSAME );
+    if( (mask == 0) || (mask & 0x00000800) ) SPU::WriteRegister( 0x1d6, attr->mRSAME );
+    if( (mask == 0) || (mask & 0x00001000) ) SPU::WriteRegister( 0x1d8, attr->mLCOMB1 );
+    if( (mask == 0) || (mask & 0x00002000) ) SPU::WriteRegister( 0x1da, attr->mRCOMB1 );
+    if( (mask == 0) || (mask & 0x00004000) ) SPU::WriteRegister( 0x1dc, attr->mLCOMB2 );
+    if( (mask == 0) || (mask & 0x00008000) ) SPU::WriteRegister( 0x1de, attr->mRCOMB2 );
+    if( (mask == 0) || (mask & 0x00010000) ) SPU::WriteRegister( 0x1e0, attr->dLSAME );
+    if( (mask == 0) || (mask & 0x00020000) ) SPU::WriteRegister( 0x1e2, attr->dRSAME );
+    if( (mask == 0) || (mask & 0x00040000) ) SPU::WriteRegister( 0x1e4, attr->mLDIFF );
+    if( (mask == 0) || (mask & 0x00080000) ) SPU::WriteRegister( 0x1e6, attr->mRDIFF );
+    if( (mask == 0) || (mask & 0x00100000) ) SPU::WriteRegister( 0x1e8, attr->mLCOMB3 );
+    if( (mask == 0) || (mask & 0x00200000) ) SPU::WriteRegister( 0x1ea, attr->mRCOMB3 );
+    if( (mask == 0) || (mask & 0x00400000) ) SPU::WriteRegister( 0x1ec, attr->mLCOMB4 );
+    if( (mask == 0) || (mask & 0x00800000) ) SPU::WriteRegister( 0x1ee, attr->mRCOMB4 );
+    if( (mask == 0) || (mask & 0x01000000) ) SPU::WriteRegister( 0x1f0, attr->dLDIFF );
+    if( (mask == 0) || (mask & 0x02000000) ) SPU::WriteRegister( 0x1f2, attr->dRDIFF );
+    if( (mask == 0) || (mask & 0x04000000) ) SPU::WriteRegister( 0x1f4, attr->mLAPF1 );
+    if( (mask == 0) || (mask & 0x08000000) ) SPU::WriteRegister( 0x1f6, attr->mRAPF1 );
+    if( (mask == 0) || (mask & 0x10000000) ) SPU::WriteRegister( 0x1f8, attr->mLAPF2 );
+    if( (mask == 0) || (mask & 0x20000000) ) SPU::WriteRegister( 0x1fa, attr->mRAPF2 );
+    if( (mask == 0) || (mask & 0x40000000) ) SPU::WriteRegister( 0x1fc, attr->vLIN );
+    if( (mask == 0) || (mask & 0x80000000) ) SPU::WriteRegister( 0x1fe, attr->vRIN );
 }
 
 
@@ -440,12 +458,8 @@ s32 PsyqSpuSetReverbModeParam( SpuReverbAttr* attr )
 
         loaded_mode = true;
 
-//        if( func37d90( w[0x8004ab5c + mode * 4] ) != 0 ) return -1; // reverb work area already reserved
-
         g_reverb_mode = mode;
-
         g_reverb_workarea_cur = g_reverb_workarea[mode];
-
         rev_reg = g_reverb_data[g_reverb_mode];
 
         if( mode == SPU_REV_MODE_ECHO )
@@ -581,7 +595,7 @@ s32 PsyqSpuSetReverbModeParam( SpuReverbAttr* attr )
 
     if( clear_wa == true )
     {
-//        system_spu_reverb_clear_workarea( g_reverb_mode ); // transfer reverb data to spu ram
+        SpuReverbClearWorkarea( g_reverb_mode );
     }
 
     if( loaded_mode )
