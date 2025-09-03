@@ -22,7 +22,7 @@ void AkaoDebugSequence()
     u32 channels_mask = READ_LE_U32( g_akao_music );
 
     ImGui::SetCursorPos( ImVec2( base_x, add_y ) );
-    ImGui::TextColored( ImVec4( 1.0f, 1.0f, 1.0f, 1.0f ), "PL:%02x ON:%02x OFF%02x", g_channels_1_config.keyed_mask, g_channels_1_config.on_mask, g_channels_1_config.off_mask );
+    ImGui::TextColored( ImVec4( 1.0f, 1.0f, 1.0f, 1.0f ), "PLAY MASK:%02x", g_channels_1_config.keyed_mask );
     add_y += line_height;
     if( g_channels_1_config.timer_lower != 0 )
     {
@@ -47,9 +47,9 @@ void AkaoDebugSequence()
                 info += ( g_channels_1[i].update_flags & AKAO_UPDATE_ALTERNATIVE_CUR ) ? std::string( "2" ) : std::string( "1" );
             }
             if( g_channels_1[i].update_flags & AKAO_UPDATE_DRUM_MODE ) info += std::string( " DRUM" );
-            if( g_channels_1[i].update_flags & AKAO_UPDATE_VIBRATO ) info += std::string( " VIBRATO_" ) + std::to_string( g_channels_1[i].vibrato_type );
-            if( g_channels_1[i].update_flags & AKAO_UPDATE_TREMOLO ) info += std::string( " TREMOLO_" ) + std::to_string( g_channels_1[i].tremolo_type );
-            if( g_channels_1[i].update_flags & AKAO_UPDATE_OVERLAY ) info += std::string( " OVER_" ) + std::to_string( g_channels_1[i].over_voice_id );
+            if( g_channels_1[i].update_flags & AKAO_UPDATE_VIBRATO ) info += std::string( " VIBRATO:" ) + std::to_string( g_channels_1[i].vibrato_type );
+            if( g_channels_1[i].update_flags & AKAO_UPDATE_TREMOLO ) info += std::string( " TREMOLO:" ) + std::to_string( g_channels_1[i].tremolo_type );
+            if( g_channels_1[i].update_flags & AKAO_UPDATE_OVERLAY ) info += std::string( " OVER:" ) + std::to_string( g_channels_1[i].over_voice_id );
             if( g_channels_1[i].pitch_slide_steps_cur != 0 ) info += std::string( " PITCH SLIDE:" ) + std::to_string( g_channels_1[i].pitch_slide_steps_cur );
 
             ImGui::SetCursorPos( ImVec2( base_x, add_y ) );
@@ -107,7 +107,10 @@ void AkaoDebugSequence()
                         case 0xba:
                         case 0xc2:
                         case 0xc3:
+                        case 0xc6:
+                        case 0xc7:
                         case 0xc8:
+                        case 0xca:
                         case 0xcc:
                         case 0xcd:
                         case 0xd0:
@@ -122,6 +125,7 @@ void AkaoDebugSequence()
                             x += 2 * size;
 
                             if( opcode == 0xa0 ) read = false;
+                            if( opcode == 0xca ) read = false;
                         }
                         break;
 
@@ -137,7 +141,11 @@ void AkaoDebugSequence()
                         case 0xb1:
                         case 0xb2:
                         case 0xb5:
+                        case 0xb7:
                         case 0xb9:
+                        case 0xbb:
+                        case 0xbd:
+                        case 0xbf:
                         case 0xc0:
                         case 0xc1:
                         case 0xc9:
@@ -157,6 +165,9 @@ void AkaoDebugSequence()
                         case 0xa4:
                         case 0xa9:
                         case 0xab:
+                        case 0xbc:
+                        case 0xdd:
+                        case 0xde:
                         case 0xe8:
                         case 0xea:
                         case 0xec:

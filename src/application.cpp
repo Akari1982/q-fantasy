@@ -21,6 +21,8 @@ void Application::setup()
     g_GameVram.begin();
     ofClear( 255, 0, 255, 255 );
     g_GameVram.end();
+
+    ImGui::StyleColorsDark();
 }
 
 
@@ -39,7 +41,7 @@ void Application::draw()
     g_GameVram.draw( 0, 0, 640, 480 );
 
     AkaoDebugSequence();
-    //AkaoDebugInstr();
+    AkaoDebugInstr();
 
 /*
     std::string popup_to_open = "";

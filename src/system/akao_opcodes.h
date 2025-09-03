@@ -42,7 +42,7 @@ void AkaoOpcode_a0_finish_channel( AkaoChannel* channel, AkaoConfig* config, u32
 
 //    system_akao_update_noise_voices();
     AkaoUpdateReverbVoices();
-//    system_akao_update_pitch_lfo_voices();
+    AkaoUpdatePitchLfoVoices();
 }
 
 
@@ -443,8 +443,6 @@ void AkaoOpcode_b6_vibrato_off( AkaoChannel* channel, AkaoConfig* config, u32 ma
 
 void AkaoOpcode_b7_attack_mode( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xb7" );
-
     u8* akao = channel->seq;
     channel->seq = akao + 0x1;
 
@@ -513,8 +511,6 @@ void AkaoOpcode_ba_tremolo_off( AkaoChannel* channel, AkaoConfig* config, u32 ma
 
 void AkaoOpcode_bb_sustain_mode( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xbb" );
-
     u8* akao = channel->seq;
     channel->seq = akao + 0x1;
 
@@ -531,37 +527,28 @@ void AkaoOpcode_bb_sustain_mode( AkaoChannel* channel, AkaoConfig* config, u32 m
 
 void AkaoOpcode_bc_pan_lfo( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xbc" );
-
     u8* akao = channel->seq;
     channel->seq = akao + 0x2;
 
-    /*
     channel->update_flags |= AKAO_UPDATE_PAN_LFO;
 
-    u16 rate = bu[akao + 0x0];
+    u16 rate = READ_LE_U8( akao + 0x0 );
     if( rate == 0 ) rate = 0x100;
     channel->pan_lfo_rate = rate;
     channel->pan_lfo_rate_cur = 1;
 
-    u8 type = bu[akao + 0x1]
-    channel->pan_lfo_type = type;
-    channel->pan_lfo_wave = w[0x8004a5cc + type * 0x4];
-    */
+    channel->pan_lfo_type = READ_LE_U8( akao + 0x1 );
+    channel->pan_lfo_wave_id = g_akao_wave_table_key[channel->pan_lfo_type];
 }
 
 
 
 void AkaoOpcode_bd_pan_lfo_depth( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xbd" );
-
     u8* akao = channel->seq;
     channel->seq = akao + 0x1;
 
-    /*
-    channel->pan_lfo_depth = h(bu[akao] << 0x7);
-    */
+    channel->pan_lfo_depth = READ_LE_U8( akao ) << 0x7;
 }
 
 
@@ -581,8 +568,6 @@ void AkaoOpcode_be_pan_lfo_off( AkaoChannel* channel, AkaoConfig* config, u32 ma
 
 void AkaoOpcode_bf_release_mode( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xbf" );
-
     u8* akao = channel->seq;
     channel->seq = akao + 0x1;
 
@@ -707,43 +692,35 @@ void AkaoOpcode_c5_noise_off( AkaoChannel* channel, AkaoConfig* config, u32 mask
 
 void AkaoOpcode_c6_frequency_modulation_on( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xc6" );
-
-    /*
     if( channel->type == AKAO_MUSIC )
     {
         config->pitch_lfo_mask |= mask;
     }
-    else
-    {
-        if( ( mask & 0x00555555 ) == 0 )
-        {
-            g_channels_3_pitch_lfo_mask |= mask;
-        }
-    }
+//    else
+//    {
+//        if( ( mask & 0x00555555 ) == 0 )
+//        {
+//            g_channels_3_pitch_lfo_mask |= mask;
+//        }
+//    }
 
-    system_akao_update_pitch_lfo_voices();
-    */
+    AkaoUpdatePitchLfoVoices();
 }
 
 
 
 void AkaoOpcode_c7_frequency_modulation_off( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xc7" );
-
-    /*
     if( channel->type == AKAO_MUSIC )
     {
         config->pitch_lfo_mask &= ~mask;
     }
-    else
-    {
-        g_channels_3_pitch_lfo_mask &= ~mask;
-    }
+//    else
+//    {
+//        g_channels_3_pitch_lfo_mask &= ~mask;
+//    }
 
-    system_akao_update_pitch_lfo_voices();
-    */
+    AkaoUpdatePitchLfoVoices();
 }
 
 
@@ -785,7 +762,7 @@ void AkaoOpcode_c9_loop_return_times( AkaoChannel* channel, AkaoConfig* config, 
 void AkaoOpcode_ca_loop_return( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
     channel->seq = channel->loop_point[channel->loop_id];
-    channel->loop_times[ channel->loop_id] += 0x1;
+    channel->loop_times[channel->loop_id] += 0x1;
 }
 
 
@@ -1019,37 +996,26 @@ void AkaoOpcode_dc_fix_note_length( AkaoChannel* channel, AkaoConfig* config, u3
 // Creates a depth fade for the frequency lfo. First parameter is the fade speed, second parameter is the destination depth.
 void AkaoOpcode_dd_vibrato_depth_slide( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xdd" );
-
     u8* akao = channel->seq;
     channel->seq = akao + 0x2;
 
-    /*
-    u16 steps = bu[akao + 0x0];
+    u16 steps = READ_LE_U8( akao + 0x0 );
     if( steps == 0 ) steps = 0x100;
     channel->vibrato_depth_slide_steps = steps;
-
-    channel->vibrato_depth_slide_step = ((bu[akao + 0x1] << 0x8) - channel->vibrato_depth) / steps;
-    */
+    channel->vibrato_depth_slide_step = ((READ_LE_U8( akao + 0x1 ) << 0x8) - channel->vibrato_depth) / steps;
 }
 
 
 
 void AkaoOpcode_de_tremolo_depth_slide( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xde" );
-
     u8* akao = channel->seq;
     channel->seq = akao + 0x2;
 
-    /*
-    u16 steps = bu[akao + 0x0];
+    u16 steps = READ_LE_U8( akao + 0x0 );
     if( steps == 0 ) steps = 0x100;
     channel->tremolo_depth_slide_steps = steps;
-
-    u8 depth = bu[akao + 0x1];
-    channel->tremolo_depth_slide_step = ((depth << 0x8) - channel->tremolo_depth) / steps;
-    */
+    channel->tremolo_depth_slide_step = ((READ_LE_U8( akao + 0x1 ) << 0x8) - channel->tremolo_depth) / steps;
 }
 
 

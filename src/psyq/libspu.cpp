@@ -341,14 +341,16 @@ void PsyqSpuSetKey( s32 on_off, u32 voice_bit )
 
 s32 PsyqSpuSetReverb( s32 on_off )
 {
-    if( on_off == 0 )
+    std::lock_guard<std::mutex> lock( spuMutex );
+
+    if( on_off == SPU_OFF )
     {
         g_reverb_on = 0;
         SPU::WriteRegister( 0x1aa, SPU::ReadRegister( 0x1aa ) & 0xff7f ); // Reverb Master Disable
     }
-    else if( on_off == 1 )
+    else if( on_off == SPU_ON )
     {
-//        if( w[0x8004a698] != on_off )
+//        if( w[0x8004a698] != SPU_ON )
 //        {
 //            if( func37d90( g_reverb_workarea_cur ) != 0 ) // reverb work area already reserved
 //            {
@@ -434,6 +436,8 @@ void SpuSetReverbReg(SpuReverbReg* attr)
 
 s32 PsyqSpuSetReverbModeParam( SpuReverbAttr* attr )
 {
+    std::lock_guard<std::mutex> lock( spuMutex );
+
     u32 mask = attr->mask;
 
     bool rev_enabled = false;
@@ -661,8 +665,28 @@ void PsyqSpuSetReverbVoice( s32 on_off, u32 voice_bit )
 
 
 
+void PsyqSpuSetPitchLfoVoice( s32 on_off, u32 voice_bit )
+{
+    std::lock_guard<std::mutex> lock( spuMutex );
+
+    if( on_off == SPU_OFF )
+    {
+        SPU::WriteRegister( 0xc8 * 2, SPU::ReadRegister( 0xc8 * 2 ) & ~(voice_bit & 0xffff) );
+        SPU::WriteRegister( 0xc9 * 2, SPU::ReadRegister( 0xc9 * 2 ) & ~((voice_bit >> 0x10) & 0xff) );
+    }
+    else if( on_off == SPU_ON )
+    {
+        SPU::WriteRegister( 0xc8 * 2, SPU::ReadRegister( 0xc8 * 2 ) | (voice_bit & 0xffff) );
+        SPU::WriteRegister( 0xc9 * 2, SPU::ReadRegister( 0xc9 * 2 ) | ((voice_bit >> 0x10) & 0xff) );
+    }
+}
+
+
+
 void PsyqSpuSetCommonAttr( SpuCommonAttr* attr )
 {
+    std::lock_guard<std::mutex> lock( spuMutex );
+
     u32 mask = attr->mask;
 
     if( (mask == 0) || (mask & SPU_COMMON_MVOLL) )

@@ -103,7 +103,14 @@ field_main_loop()
         //FileRead( "Aerith's_Theme.snd", music );
         //FileRead( "Lurking_In_The_Darkness.snd", music );
         //FileRead( "Fighting.snd", music );
-        FileRead( "1_12_Flowers_Blooming_In_The_Church.snd", music );
+
+        //std::vector<u8> instr2_all;
+        //FileRead( "data/SOUND/INSTR2.ALL", instr2_all );
+        //std::vector<u8> instr2_dat;
+        //FileRead( "data/SOUND/INSTR2.DAT", instr2_dat );
+        //AkaoLoadInstr2( &instr2_all[0], &instr2_dat[0] );
+
+        FileRead( "data/ENEMY6/OVER2.SND", music );
 
         u16 music_size = READ_LE_U16( &music[0x6] );
 

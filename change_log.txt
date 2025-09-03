@@ -12,6 +12,10 @@ To Do
 - Finalize screen rendering borders.
 - Add akao support.
 
+2025-09-03
+----------
+- Add reverb effects. New opcodes and effects. Now all musics works correctly.
+
 2025-09-01
 ----------
 - Switched from Mame SPU engine to DuckStation. Mame version badly plays

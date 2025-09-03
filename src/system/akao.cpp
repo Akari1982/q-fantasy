@@ -313,6 +313,40 @@ void AkaoLoadInstr( u8* instr_all, u8* instr_dat )
 
 
 
+void AkaoLoadInstr2( u8* instr2_all, u8* instr2_dat )
+{
+    PsyqSpuSetTransferStartAddr( READ_LE_U32( instr2_all + 0x0 ) );
+    PsyqSpuWrite( instr2_all + 0x10, READ_LE_U32( instr2_all + 0x4 ) );
+
+    for( int i = 0; i < 0x4b; ++i )
+    {
+        g_akao_instrument[0x35 + i].addr = READ_LE_U32( instr2_dat + i * 0x40 + 0x0 );
+        g_akao_instrument[0x35 + i].loop_addr = READ_LE_U32( instr2_dat + i * 0x40 + 0x4 );
+        g_akao_instrument[0x35 + i].ar = READ_LE_U8( instr2_dat + i * 0x40 + 0x8 );
+        g_akao_instrument[0x35 + i].dr = READ_LE_U8( instr2_dat + i * 0x40 + 0x9 );
+        g_akao_instrument[0x35 + i].sl = READ_LE_U8( instr2_dat + i * 0x40 + 0xa );
+        g_akao_instrument[0x35 + i].sr = READ_LE_U8( instr2_dat + i * 0x40 + 0xb );
+        g_akao_instrument[0x35 + i].rr = READ_LE_U8( instr2_dat + i * 0x40 + 0xc );
+        g_akao_instrument[0x35 + i].a_mode = READ_LE_S8( instr2_dat + i * 0x40 + 0xd );
+        g_akao_instrument[0x35 + i].s_mode = READ_LE_S8( instr2_dat + i * 0x40 + 0xe );
+        g_akao_instrument[0x35 + i].r_mode = READ_LE_S8( instr2_dat + i * 0x40 + 0xf );
+        g_akao_instrument[0x35 + i].pitch[0x0] = READ_LE_S32( instr2_dat + i * 0x40 + 0x10 );
+        g_akao_instrument[0x35 + i].pitch[0x1] = READ_LE_S32( instr2_dat + i * 0x40 + 0x14 );
+        g_akao_instrument[0x35 + i].pitch[0x2] = READ_LE_S32( instr2_dat + i * 0x40 + 0x18 );
+        g_akao_instrument[0x35 + i].pitch[0x3] = READ_LE_S32( instr2_dat + i * 0x40 + 0x1c );
+        g_akao_instrument[0x35 + i].pitch[0x4] = READ_LE_S32( instr2_dat + i * 0x40 + 0x20 );
+        g_akao_instrument[0x35 + i].pitch[0x5] = READ_LE_S32( instr2_dat + i * 0x40 + 0x24 );
+        g_akao_instrument[0x35 + i].pitch[0x6] = READ_LE_S32( instr2_dat + i * 0x40 + 0x28 );
+        g_akao_instrument[0x35 + i].pitch[0x7] = READ_LE_S32( instr2_dat + i * 0x40 + 0x2c );
+        g_akao_instrument[0x35 + i].pitch[0x8] = READ_LE_S32( instr2_dat + i * 0x40 + 0x30 );
+        g_akao_instrument[0x35 + i].pitch[0x9] = READ_LE_S32( instr2_dat + i * 0x40 + 0x34 );
+        g_akao_instrument[0x35 + i].pitch[0xa] = READ_LE_S32( instr2_dat + i * 0x40 + 0x38 );
+        g_akao_instrument[0x35 + i].pitch[0xb] = READ_LE_S32( instr2_dat + i * 0x40 + 0x3c );
+    }
+}
+
+
+
 void AkaoInitData()
 {
     g_akao_stream_mask = 0;
@@ -360,7 +394,7 @@ void AkaoInitData()
 //    g_channels_1_config.active_mask_stored = 0;
 //    g_channels_1_config.noise_mask = 0;
     g_channels_1_config.reverb_mask = 0;
-//    g_channels_1_config.pitch_lfo_mask = 0;
+    g_channels_1_config.pitch_lfo_mask = 0;
     g_channels_1_config.reverb_mode = 0;
     g_channels_1_config.reverb_depth = 0;
 //    g_channels_1_config.music_id = 0;
@@ -566,7 +600,7 @@ void AkaoMainUpdate()
             }
         }
     }
-//
+
 //    if( g_channels_2_config.active_mask != 0 )
 //    {
 //        A0 = g_channels_1_config.tempo >> 0x10;
@@ -629,7 +663,7 @@ void AkaoMainUpdate()
 //            }
 //        }
 //    }
-//
+
 //    if( g_channels_3_active_mask != 0 )
 //    {
 //        [0x80099fe8] = w(w[0x80099fe8] + (hu[0x80099fe0] >> 0x10));
@@ -674,15 +708,15 @@ void AkaoMainUpdate()
 //            }
 //        }
 //    }
-//
+
 //    if( g_channels_1_config.mute_music != 0 )
 //    {
 //        system_akao_command_9b( 0x8009a000 ); // mute music
 //        g_channels_1_config.mute_music = 0;
 //    }
-//
+
 //    system_akao_execute_commands_queue();
-//
+
 //    func30380();
 
     AkaoUpdateKeysOff();
@@ -718,7 +752,7 @@ void AkaoMusicChannelsInit()
     g_channels_1_config.alt_mask = 0;
 //    g_channels_1_config.noise_mask = 0;
     g_channels_1_config.reverb_mask = 0;
-//    g_channels_1_config.pitch_lfo_mask = 0;
+    g_channels_1_config.pitch_lfo_mask = 0;
     g_channels_1_config.update_flags = 0;
     g_channels_1_config.reverb_depth = 0;
 //    g_channels_1_config.reverb_depth_slide_step = 0;
@@ -771,10 +805,10 @@ void AkaoMusicChannelsInit()
 //            channel->portamento_steps = 0;
             channel->sfx_mask = 0;
             channel->vibrato_depth = 0;
-//            channel->vibrato_depth_slide_steps = 0;
+            channel->vibrato_depth_slide_steps = 0;
             channel->tremolo_depth = 0;
-//            channel->tremolo_depth_slide_steps = 0;
-//            channel->pan_lfo_depth = 0;
+            channel->tremolo_depth_slide_steps = 0;
+            channel->pan_lfo_depth = 0;
 //            channel->pan_lfo_depth_slide_steps = 0;
 //            channel->noise_switch_delay = 0;
 //            channel->pitch_lfo_switch_delay = 0;
@@ -785,7 +819,7 @@ void AkaoMusicChannelsInit()
             channel->transpose = 0;
             channel->fine_tuning = 0;
             channel->key_add = 0;
-//            channel->pan_lfo_vol = 0;
+            channel->pan_lfo_vol = 0;
 
             akao += 0x2;
             channels_mask ^= channel_mask;
@@ -804,7 +838,7 @@ void AkaoMusicChannelsInit()
 //
 //    system_akao_update_noise_voices();
     AkaoUpdateReverbVoices();
-//    system_akao_update_pitch_lfo_voices();
+    AkaoUpdatePitchLfoVoices();
 }
 
 
@@ -1010,7 +1044,7 @@ void AkaoExecuteSequence( AkaoChannel* channel, AkaoConfig* config, u32 mask )
             if( channel->update_flags & AKAO_UPDATE_VIBRATO )
             {
                 u32 pitch_base = channel->pitch_base * ((channel->vibrato_depth & 0x7f00) >> 0x8);
-                if( (channel->vibrato_depth & 0x8000) == 0 ) pitch_base *= 0xf / 0x100;
+                if( (channel->vibrato_depth & 0x8000) == 0 ) pitch_base = (pitch_base * 0xf) / 0x100;
                 channel->vibrato_base = pitch_base >> 0x7;
                 channel->vibrato_wave_id = g_akao_wave_table_key[channel->vibrato_type];
                 channel->vibrato_delay_cur = channel->vibrato_delay;
@@ -1024,11 +1058,11 @@ void AkaoExecuteSequence( AkaoChannel* channel, AkaoConfig* config, u32 mask )
                 channel->tremolo_rate_cur = 1;
             }
 
-//            if( channel->update_flags & AKAO_UPDATE_PAN_LFO )
-//            {
-//                channel->pan_lfo_rate_cur = 1;
-//                channel->pan_lfo_wave = w[0x8004a5cc + channel->pan_lfo_type * 0x4];
-//            }
+            if( channel->update_flags & AKAO_UPDATE_PAN_LFO )
+            {
+                channel->pan_lfo_wave_id = g_akao_wave_table_key[channel->pan_lfo_type];
+                channel->pan_lfo_rate_cur = 1;
+            }
 
             channel->vibrato_pitch = 0;
             channel->tremolo_vol = 0;
@@ -1040,9 +1074,6 @@ void AkaoExecuteSequence( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 
         if( channel->key_add != 0 )
         {
-            //ofLog( OF_LOG_NOTICE, "channel->key: " + ofToString( channel->key ) );
-            //ofLog( OF_LOG_NOTICE, "channel->key_add: " + ofToString( channel->key_add ) );
-
             channel->key += channel->key_add;
 
             u16 key = (channel->key & 0xff) + (channel->transpose & 0xff);
@@ -1346,7 +1377,7 @@ void AkaoUpdateKeysOff()
         }
         g_channels_1_config.off_mask = 0;
     }
-//
+
 //    updated_mask |= g_channels_3_off_mask;
 //    g_channels_3_off_mask = 0;
 
@@ -1364,12 +1395,12 @@ void AkaoUpdateReverbVoices()
 
 //    exclude_mask = ~(g_channels_3_active_mask | g_akao_stream_mask);
 //    channels_mask = g_channels_2_config.reverb_mask & w[0x80062f68] & exclude_mask;
-//
+
 //    if( channels_mask != 0 )
 //    {
 //        system_akao_collect_channels_voices_mask( g_channels_2, updated_mask, channels_mask, exclude_mask );
 //    }
-//
+
 //    if( g_akao_control_flags & 0x00000010 )
 //    {
 //        updated_mask = 0x00ffffff;
@@ -1391,6 +1422,36 @@ void AkaoUpdateReverbVoices()
 
     updated_mask ^= 0x00ffffff;
     PsyqSpuSetReverbVoice( SPU_OFF, updated_mask );
+}
+
+
+
+void AkaoUpdatePitchLfoVoices()
+{
+    u32 updated_mask = 0x0;
+
+//    exclude_mask = ~(g_channels_3_active_mask | g_akao_stream_mask);
+//    channels_mask = (g_channels_2_config.pitch_lfo_mask & w[0x80062f68]) & exclude_mask;
+
+//    if( channels_mask != 0 )
+//    {
+//        system_akao_collect_channels_voices_mask( &g_channels_2, updated_mask, channels_mask, exclude_mask );
+//    }
+
+    u32 exclude_mask = ~(/*w[0x80062f68] | g_channels_3_active_mask |*/ g_akao_stream_mask);
+    u32 channels_mask = exclude_mask & g_channels_1_config.pitch_lfo_mask;
+
+    if( channels_mask != 0 )
+    {
+        AkaoCollectChannelsVoicesMask( g_channels_1, updated_mask, channels_mask, exclude_mask );
+    }
+
+//    updated_mask |= g_channels_3_pitch_lfo_mask;
+
+    PsyqSpuSetPitchLfoVoice( SPU_ON, updated_mask );
+
+    updated_mask ^= 0x00ffffff;
+    PsyqSpuSetPitchLfoVoice( SPU_OFF, updated_mask );
 }
 
 
@@ -1493,7 +1554,7 @@ void AkaoMusicUpdateSlideAndDelay( AkaoChannel* channel, AkaoConfig* config, u32
 //            system_akao_update_noise_voices();
 //        }
 //    }
-//
+
 //    if( channel->pitch_lfo_switch_delay != 0 )
 //    {
 //        channel->pitch_lfo_switch_delay -= 1;
@@ -1501,67 +1562,64 @@ void AkaoMusicUpdateSlideAndDelay( AkaoChannel* channel, AkaoConfig* config, u32
 //        if( channel->pitch_lfo_switch_delay == 0 )
 //        {
 //            config->pitch_lfo_mask ^= channel_mask;
-//            system_akao_update_pitch_lfo_voices();
+//            AkaoUpdatePitchLfoVoices();
 //        }
 //    }
-//
-//    if( channel->vibrato_depth_slide_steps != 0 )
-//    {
-//        channel->vibrato_depth_slide_steps -= 1;
-//        channel->vibrato_depth += channel->vibrato_depth_slide_step;
-//
-//        A0 = ((channel->vibrato_depth & 0x7f00) >> 0x8) * channel->pitch_base;
-//        if( (channel->vibrato_depth & 0x8000) == 0 ) A0 *= 0xf / 0x100;
-//        channel->vibrato_base = A0 >> 0x7;
-//
-//        if( channel->vibrato_delay_cur == 0 )
-//        {
-//            if( channel->vibrato_rate_cur != 1 )
-//            {
-//                A0 = channel->vibrato_wave;
-//                if( (h[A0 + 0x0] == 0) && (h[A0 + 2] == 0) )
-//                {
-//                    A0 += h[A0 + 0x4] * 0x2;
-//                }
-//
-//                A1 = (channel->vibrato_base * h[A0 + 0x0]) >> 0x10;
-//                if( A1 != channel->vibrato_pitch )
-//                {
-//                    channel->vibrato_pitch = A1;
-//                    channel->attr.mask |= SPU_VOICE_PITCH;
-//
-//                    if( A1 >= 0 ) channel->vibrato_pitch = A1 * 0x2;
-//                }
-//            }
-//        }
-//    }
-//
-//    if( channel->tremolo_depth_slide_steps != 0 )
-//    {
-//        channel->tremolo_depth_slide_steps -= 1;
-//
-//        channel->tremolo_depth += channel->tremolo_depth_slide_step;
-//
-//        if( channel->tremolo_delay_cur == 0 )
-//        {
-//            if( channel->tremolo_rate_cur != 1 )
-//            {
-//                A0 = channel->tremolo_wave;
-//                if( (h[A0 + 0x0] == 0) && (h[A0 + 0x2] == 0) )
-//                {
-//                    A0 += h[A0 + 0x4] * 0x2;
-//                }
-//
-//                A1 = (((((((channel->volume >> 0x10) * channel->vol_master) >> 0x7) * (channel->tremolo_depth >> 0x8)) << 0x9) >> 0x10) * h[A0 + 0x0]) >> 0xf;
-//                if( A1 != channel->tremolo_vol )
-//                {
-//                    channel->tremolo_vol = A1;
-//                    channel->attr.mask |= AKAO_UPDATE_SPU_VOICE;
-//                }
-//            }
-//        }
-//    }
-//
+
+    if( channel->vibrato_depth_slide_steps != 0 )
+    {
+        channel->vibrato_depth_slide_steps -= 1;
+        channel->vibrato_depth += channel->vibrato_depth_slide_step;
+
+        u32 vibrato_base = ((channel->vibrato_depth & 0x7f00) >> 0x8) * channel->pitch_base;
+        if( (channel->vibrato_depth & 0x8000) == 0 ) vibrato_base = (vibrato_base * 0xf) / 0x100;
+        channel->vibrato_base = vibrato_base >> 0x7;
+
+        if( channel->vibrato_delay_cur == 0 )
+        {
+            if( channel->vibrato_rate_cur != 1 )
+            {
+                if( (g_akao_wave_table[channel->vibrato_wave_id + 0x0] == 0) && (g_akao_wave_table[channel->vibrato_wave_id + 0x1] == 0) )
+                {
+                    channel->vibrato_wave_id += g_akao_wave_table[channel->vibrato_wave_id + 0x2];
+                }
+
+                s16 vibrato_pitch = (channel->vibrato_base * g_akao_wave_table[channel->vibrato_wave_id]) >> 0x10;
+                if( vibrato_pitch != channel->vibrato_pitch )
+                {
+                    channel->vibrato_pitch = vibrato_pitch;
+                    channel->attr.mask |= SPU_VOICE_PITCH;
+
+                    if( vibrato_pitch >= 0 ) channel->vibrato_pitch *= 0x2;
+                }
+            }
+        }
+    }
+
+    if( channel->tremolo_depth_slide_steps != 0 )
+    {
+        channel->tremolo_depth_slide_steps -= 1;
+        channel->tremolo_depth += channel->tremolo_depth_slide_step;
+
+        if( channel->tremolo_delay_cur == 0 )
+        {
+            if( channel->tremolo_rate_cur != 1 )
+            {
+                if( (g_akao_wave_table[channel->tremolo_wave_id + 0x0] == 0) && (g_akao_wave_table[channel->tremolo_wave_id + 0x1] == 0) )
+                {
+                    channel->tremolo_wave_id += g_akao_wave_table[channel->tremolo_wave_id + 0x2];
+                }
+
+                s16 tremolo_vol = (((((((channel->volume >> 0x10) * channel->vol_master) >> 0x7) * (channel->tremolo_depth >> 0x8)) << 0x9) >> 0x10) * g_akao_wave_table[channel->tremolo_wave_id]) >> 0xf;
+                if( tremolo_vol != channel->tremolo_vol )
+                {
+                    channel->tremolo_vol = tremolo_vol;
+                    channel->attr.mask |= AKAO_UPDATE_SPU_VOICE;
+                }
+            }
+        }
+    }
+
 //    if( channel->pan_lfo_depth_slide_steps != 0 )
 //    {
 //        channel->pan_lfo_depth_slide_steps -= 1;
@@ -1617,7 +1675,7 @@ void AkaoMusicUpdatePitchAndVolume( AkaoChannel* channel, u32 channel_mask, u32 
                 channel->vibrato_wave_id += g_akao_wave_table[channel->vibrato_wave_id + 0x2];
             }
 
-            s16 vibrato_pitch = (channel->vibrato_base * g_akao_wave_table[channel->vibrato_wave_id + 0x0]) >> 0x10;
+            s16 vibrato_pitch = (channel->vibrato_base * g_akao_wave_table[channel->vibrato_wave_id]) >> 0x10;
             if( vibrato_pitch != channel->vibrato_pitch )
             {
                 channel->vibrato_pitch = vibrato_pitch;
@@ -1643,7 +1701,7 @@ void AkaoMusicUpdatePitchAndVolume( AkaoChannel* channel, u32 channel_mask, u32 
                 channel->tremolo_wave_id += g_akao_wave_table[channel->tremolo_wave_id + 0x2];
             }
 
-            s16 tremolo_vol = ((((volume_level * (channel->tremolo_depth >> 0x8)) << 0x9) >> 0x10) * g_akao_wave_table[channel->tremolo_wave_id + 0x0]) >> 0xf;
+            s16 tremolo_vol = ((((volume_level * (channel->tremolo_depth >> 0x8)) << 0x9) >> 0x10) * g_akao_wave_table[channel->tremolo_wave_id]) >> 0xf;
             if( tremolo_vol != channel->tremolo_vol )
             {
                 channel->tremolo_vol = tremolo_vol;
@@ -1654,32 +1712,31 @@ void AkaoMusicUpdatePitchAndVolume( AkaoChannel* channel, u32 channel_mask, u32 
         }
     }
 
-//    if( channel->update_flags & AKAO_UPDATE_PAN_LFO )
-//    {
-//        channel->pan_lfo_rate_cur -= 1;
-//
-//        if( channel->pan_lfo_rate_cur == 0 )
-//        {
-//            channel->pan_lfo_rate_cur = channel->pan_lfo_rate;
-//
-//            V1 = channel->pan_lfo_wave;
-//            if( (h[V1 + 0x0] == 0) && (h[V1 + 0x2] == 0) )
-//            {
-//                channel->pan_lfo_wave = V1 + h[V1 + 0x4] * 0x2;
-//            }
-//
-//            V1 = channel->pan_lfo_wave;
-//            channel->pan_lfo_wave = V1 + 0x2;
-//
-//            A3 = ((channel->pan_lfo_depth >> 0x8) * h[V1 + 0x0]) >> 0xf;
-//            if( A3 != channel->pan_lfo_vol )
-//            {
-//                channel->pan_lfo_vol = A3;
-//                channel->attr.mask |= AKAO_UPDATE_SPU_VOICE;
-//            }
-//        }
-//    }
-//
+    if( channel->update_flags & AKAO_UPDATE_PAN_LFO )
+    {
+        channel->pan_lfo_rate_cur -= 1;
+
+        if( channel->pan_lfo_rate_cur == 0 )
+        {
+            channel->pan_lfo_rate_cur = channel->pan_lfo_rate;
+
+            if( (g_akao_wave_table[channel->pan_lfo_wave_id + 0x0] == 0) && (g_akao_wave_table[channel->pan_lfo_wave_id + 0x1] == 0) )
+            {
+                channel->pan_lfo_wave_id += g_akao_wave_table[channel->pan_lfo_wave_id + 0x2];
+            }
+
+            s16 pan_lfo_vol = ((channel->pan_lfo_depth >> 0x8) * g_akao_wave_table[channel->pan_lfo_wave_id]) >> 0xf;
+            if( pan_lfo_vol != channel->pan_lfo_vol )
+            {
+                channel->pan_lfo_vol = pan_lfo_vol;
+                channel->attr.mask |= AKAO_UPDATE_SPU_VOICE;
+            }
+
+            channel->pan_lfo_wave_id += 0x1;
+
+        }
+    }
+
 //    if( channel->update_flags & AKAO_UPDATE_SIDE_CHAIN_VOL )
 //    {
 //        channel->attr.mask |= AKAO_UPDATE_SPU_VOICE;
@@ -1695,7 +1752,7 @@ void AkaoMusicUpdatePitchAndVolume( AkaoChannel* channel, u32 channel_mask, u32 
 //            volume_level = (volume_level * h[0x8009c5a0 + channel_id * 0xc + 0x2]) >> 0x7;
 //        }
 
-        u8 vol_pan = ((channel->vol_pan >> 0x8) /*+ channel->pan_lfo_vol*/) & 0xff;
+        u8 vol_pan = ((channel->vol_pan >> 0x8) + channel->pan_lfo_vol) & 0xff;
 
         if( g_channels_1_config.stereo_mono == AKAO_STEREO )
         {

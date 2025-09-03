@@ -1,5 +1,7 @@
 #include "libapi.h"
 
+#include "ofUtils.h"
+
 #include <array>
 #include <assert.h>
 #include <thread>
@@ -180,22 +182,32 @@ s32 PsyqSetRCnt( u32 spec, u16 target, u32 mode )
 
 void rootCounterThread( u32 spec )
 {
+    static uint64_t last_update_micros = ofGetElapsedTimeMicros();
+    static uint64_t counter_value = 0;
+    double counter_freq = 33868800.0 / 8.0; // 33.8688 MHz / 8 = 4.2336 MHz
+
     u32 counterIndex = spec & 0xffff;
     while( CounterRunning[counterIndex] )
     {
-        sEventState* pEventState = getEventForDesc( spec );
+        uint64_t now = ofGetElapsedTimeMicros();
+        uint64_t delta = now - last_update_micros;
+        last_update_micros = now;
 
-        if( pEventState && pEventState->m_function )
+        uint64_t counter_ticks  = (uint64_t)(delta * counter_freq / 1000000.0);
+        counter_value += counter_ticks;
+
+        if( counter_value >= (double)Counters[counterIndex].m8_max )
         {
-            pEventState->m_function();
+            counter_value -= (double)Counters[counterIndex].m8_max;
+
+            sEventState* event_state = getEventForDesc( spec );
+            if( event_state && event_state->m_function )
+            {
+                event_state->m_function();
+            }
         }
 
-        int baseFreq = 33800000;
-        int baseFreq8 = baseFreq / 8;
-        float numMili = ((float)Counters[counterIndex].m8_max) / baseFreq8;
-        float numMicro = numMili * 1000 * 16 * 16 * 2;
-
-        std::this_thread::sleep_for( std::chrono::microseconds( (int)numMicro ) );
+        std::this_thread::sleep_for( std::chrono::microseconds( 1 ) );
     }
 }
 

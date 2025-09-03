@@ -174,5 +174,6 @@ s32 PsyqSpuSetReverbModeParam( SpuReverbAttr* attr );
 void PsyqSpuGetReverbModeParam( SpuReverbAttr* attr );
 void PsyqSpuSetReverbDepth( SpuReverbAttr* attr );
 void PsyqSpuSetReverbVoice( s32 on_off, u32 voice_bit );
+void PsyqSpuSetPitchLfoVoice( s32 on_off, u32 voice_bit );
 
 void PsyqSpuSetCommonAttr( SpuCommonAttr* attr );

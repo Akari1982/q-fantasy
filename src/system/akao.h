@@ -147,8 +147,8 @@ struct AkaoChannel
     u16 vibrato_base;
     u32 vibrato_wave_id;
     u16 vibrato_depth;
-//    u16 vibrato_depth_slide_steps;      // 0x80
-//    s16 vibrato_depth_slide_step;       // 0x82
+    s16 vibrato_depth_slide_step;
+    u16 vibrato_depth_slide_steps;
 
 //                                        // 0x84
 
@@ -160,19 +160,21 @@ struct AkaoChannel
     u16 tremolo_type;
     u32 tremolo_wave_id;
     u16 tremolo_depth;
-//    u16 tremolo_depth_slide_steps;      // 0x92
-//    s16 tremolo_depth_slide_step;       // 0x94
+    u16 tremolo_depth_slide_steps;
+    s16 tremolo_depth_slide_step;
 
-//    u16 pan_lfo_rate;                   // 0x98
-//    u16 pan_lfo_rate_cur;               // 0x9a
-//    u16 pan_lfo_type;                   // 0x9c
-//    u16 pan_lfo_depth;                  // 0x9e
+    s16 pan_lfo_vol;
+    u16 pan_lfo_rate;
+    u16 pan_lfo_rate_cur;
+    u16 pan_lfo_type;
+    u32 pan_lfo_wave_id;
+    u16 pan_lfo_depth;
 //    u16 pan_lfo_depth_slide_steps;      // 0xa0
 //    s16 pan_lfo_depth_slide_step;       // 0xa2
+
 //    u16 noise_switch_delay;             // 0xa4
 //    u16 pitch_lfo_switch_delay;         // 0xa6
-//    s16 pan_lfo_vol                     // 0xda
-//    u32 pan_lfo_wave;                   // 0x20
+
 
     AkaoVoiceAttr attr;
 };
@@ -192,7 +194,7 @@ struct AkaoConfig
     u32 alt_mask;
 //    u32 noise_mask;                 // 0x2c
     u32 reverb_mask;
-//    u32 pitch_lfo_mask;             // 0x34
+    u32 pitch_lfo_mask;
     u32 update_flags;
     s32 reverb_mode;
     s32 reverb_depth;
@@ -222,6 +224,7 @@ void AkaoInit( u8* instr_all, u8* instr_dat );
 void AkaoQuit();
 void AkaoLoadEffect( u8* effect_all );
 void AkaoLoadInstr( u8* instr_all, u8* instr_dat );
+void AkaoLoadInstr2( u8* instr2_all, u8* instr2_dat );
 void AkaoInitData();
 void AkaoSetReverbMode( s32 mode );
 
@@ -237,6 +240,7 @@ void AkaoExecuteSequence( AkaoChannel* channel, AkaoConfig* config, u32 mask );
 void AkaoUpdateKeysOn();
 void AkaoUpdateKeysOff();
 void AkaoUpdateReverbVoices();
+void AkaoUpdatePitchLfoVoices();
 void AkaoCollectChannelsVoicesMask( AkaoChannel* channel, u32& ret_mask, u32 channels_mask, u32 collect_mask );
 
 void AkaoMusicUpdateSlideAndDelay(AkaoChannel* channel, AkaoConfig* config, u32 channel_mask);
