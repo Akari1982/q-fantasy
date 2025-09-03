@@ -95,7 +95,7 @@ struct SpuCommonAttr
     SpuExtAttr ext;
 };
 
-struct SpuReverbRegParam
+struct SpuReverbReg
 {
     u32 mask;
     u16 dAPF1;
