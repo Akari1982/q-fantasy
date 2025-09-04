@@ -1,9 +1,9 @@
 #include "akao.h"
 #include "system.h"
-#include "../field/field.h"
-#include "../psyq/filesystem.h"
-#include "../psyq/libgte.h"
-#include "../psyq/libspu.h"
+#include "field/field.h"
+#include "psyq/filesystem.h"
+#include "psyq/libgte.h"
+#include "psyq/libspu.h"
 
 
 

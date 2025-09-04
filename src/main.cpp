@@ -1,7 +1,7 @@
 #include "ofMain.h"
 
-#include "application.h"
-#include "game.h"
+#include "system/application.h"
+#include "system/game.h"
 
 
 

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../psyq/typedef.h"
-#include "../psyq/libspu.h"
+#include "psyq/typedef.h"
+#include "psyq/libspu.h"
 
 #define AKAO_MUSIC 0x0
 #define AKAO_SOUND 0x1

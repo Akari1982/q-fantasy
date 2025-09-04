@@ -10,7 +10,11 @@ To Do
 - Add enviroment settings.
 - Add line transparency (for rain).
 - Finalize screen rendering borders.
-- Add akao support.
+- Implement start credits.
+- Unify music debug with sequence, sfx, instruments, SPU manipulation and so on.
+- Add support for sfx.
+- Comment all AKAO music code.
+- Create browser for all music in game.
 
 2025-09-03
 ----------

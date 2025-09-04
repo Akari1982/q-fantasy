@@ -1,5 +1,5 @@
 #include "libgpu.h"
-#include "../game.h"
+#include "system/game.h"
 
 
 

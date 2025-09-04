@@ -1,9 +1,10 @@
 #include "field.h"
-#include "../game.h"
-#include "../system/system.h"
-#include "../system/akao.h"
-#include "../psyq/filesystem.h"
-#include "../psyq/libgte.h"
+#include "system/game.h"
+#include "kernel/system.h"
+#include "kernel/akao.h"
+#include "psyq/filesystem.h"
+#include "psyq/libgte.h"
+
 #include <vector>
 
 

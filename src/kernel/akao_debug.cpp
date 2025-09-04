@@ -1,9 +1,8 @@
 #include "akao.h"
 #include "akao_debug.h"
+#include "system/icons_font.h"
 
 #include "ofxImGui.h"
-#include "IconsFontAwesome5.h"
-
 #include <format>
 
 bool g_akao_debug = false;

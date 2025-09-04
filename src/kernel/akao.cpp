@@ -1,6 +1,6 @@
 #include "akao.h"
-#include "../psyq/libapi.h"
-#include "../psyq/libspu.h"
+#include "psyq/libapi.h"
+#include "psyq/libspu.h"
 
 #include "ofLog.h"
 #include "ofUtils.h"

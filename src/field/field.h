@@ -2,8 +2,8 @@
 
 #include <array>
 
-#include "../psyq/typedef.h"
-#include "../psyq/libgpu.h"
+#include "psyq/typedef.h"
+#include "psyq/libgpu.h"
 
 
 

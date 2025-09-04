@@ -105,9 +105,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\field\field.cpp" />
-    <ClCompile Include="src\game.cpp" />
+    <ClCompile Include="src\kernel\akao.cpp" />
+    <ClCompile Include="src\kernel\akao_debug.cpp" />
+    <ClCompile Include="src\kernel\system.cpp" />
     <ClCompile Include="src\main.cpp" />
-    <ClCompile Include="src\application.cpp" />
     <ClCompile Include="src\psyq\filesystem.cpp" />
     <ClCompile Include="src\psyq\libapi.cpp" />
     <ClCompile Include="src\psyq\libgpu.cpp" />
@@ -120,9 +121,8 @@
     <ClCompile Include="src\psyq\psxspu\of_audio_stream.cpp" />
     <ClCompile Include="src\psyq\psxspu\spu.cpp" />
     <ClCompile Include="src\psyq\typedef.cpp" />
-    <ClCompile Include="src\system\akao.cpp" />
-    <ClCompile Include="src\system\akao_debug.cpp" />
-    <ClCompile Include="src\system\system.cpp" />
+    <ClCompile Include="src\system\application.cpp" />
+    <ClCompile Include="src\system\game.cpp" />
     <ClCompile Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_glfw.cpp" />
     <ClCompile Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_glfw_context_support.cpp" />
     <ClCompile Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_opengl2.cpp" />
@@ -143,9 +143,12 @@
     <ClCompile Include="third_party\ofxImGui\src\ofxImGuiLoggerChannel.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\application.h" />
     <ClInclude Include="src\field\field.h" />
-    <ClInclude Include="src\game.h" />
+    <ClInclude Include="src\kernel\akao.h" />
+    <ClInclude Include="src\kernel\akao_commands.h" />
+    <ClInclude Include="src\kernel\akao_debug.h" />
+    <ClInclude Include="src\kernel\akao_opcodes.h" />
+    <ClInclude Include="src\kernel\system.h" />
     <ClInclude Include="src\psyq\filesystem.h" />
     <ClInclude Include="src\psyq\libapi.h" />
     <ClInclude Include="src\psyq\libgpu.h" />
@@ -163,11 +166,9 @@
     <ClInclude Include="src\psyq\psxspu\common\types.h" />
     <ClInclude Include="src\psyq\psxspu\spu.h" />
     <ClInclude Include="src\psyq\typedef.h" />
-    <ClInclude Include="src\system\akao.h" />
-    <ClInclude Include="src\system\akao_commands.h" />
-    <ClInclude Include="src\system\akao_debug.h" />
-    <ClInclude Include="src\system\akao_opcodes.h" />
-    <ClInclude Include="src\system\system.h" />
+    <ClInclude Include="src\system\application.h" />
+    <ClInclude Include="src\system\game.h" />
+    <ClInclude Include="src\system\icons_font.h" />
     <ClInclude Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_glfw.h" />
     <ClInclude Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_glfw_arc_support.h" />
     <ClInclude Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_glfw_context_support.h" />

@@ -1,10 +1,6 @@
 #include "application.h"
-#include "system/akao_debug.h"
-
-#include "ofxImGui.h"
-
-#include <filesystem>
-#include "IconsFontAwesome5.h"
+#include "icons_font.h"
+#include "kernel/akao_debug.h"
 
 
 

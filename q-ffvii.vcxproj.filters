@@ -55,13 +55,7 @@
     <ClCompile Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_opengl3.cpp">
       <Filter>third_party\ofxImGui\libs\imgui\backends</Filter>
     </ClCompile>
-    <ClCompile Include="src\game.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="src\main.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="src\application.cpp">
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="src\field\field.cpp">
@@ -76,9 +70,6 @@
     <ClCompile Include="src\psyq\psxgte.cpp">
       <Filter>src\psyq</Filter>
     </ClCompile>
-    <ClCompile Include="src\system\system.cpp">
-      <Filter>src\system</Filter>
-    </ClCompile>
     <ClCompile Include="src\psyq\filesystem.cpp">
       <Filter>src\psyq</Filter>
     </ClCompile>
@@ -91,14 +82,8 @@
     <ClCompile Include="src\psyq\libspu.cpp">
       <Filter>src\psyq</Filter>
     </ClCompile>
-    <ClCompile Include="src\system\akao.cpp">
-      <Filter>src\system</Filter>
-    </ClCompile>
     <ClCompile Include="src\psyq\libapi.cpp">
       <Filter>src\psyq</Filter>
-    </ClCompile>
-    <ClCompile Include="src\system\akao_debug.cpp">
-      <Filter>src\system</Filter>
     </ClCompile>
     <ClCompile Include="src\psyq\psxspu\audio_stream.cpp">
       <Filter>src\psyq\psxspu</Filter>
@@ -111,6 +96,21 @@
     </ClCompile>
     <ClCompile Include="src\psyq\psxspu\of_audio_stream.cpp">
       <Filter>src\psyq\psxspu</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\akao.cpp">
+      <Filter>src\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\akao_debug.cpp">
+      <Filter>src\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\system.cpp">
+      <Filter>src\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="src\system\application.cpp">
+      <Filter>src\system</Filter>
+    </ClCompile>
+    <ClCompile Include="src\system\game.cpp">
+      <Filter>src\system</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -195,12 +195,6 @@
     <ClInclude Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_opengl3_loader.h">
       <Filter>third_party\ofxImGui\libs\imgui\backends</Filter>
     </ClInclude>
-    <ClInclude Include="src\application.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="src\game.h">
-      <Filter>src</Filter>
-    </ClInclude>
     <ClInclude Include="src\field\field.h">
       <Filter>src\field</Filter>
     </ClInclude>
@@ -216,9 +210,6 @@
     <ClInclude Include="src\psyq\typedef.h">
       <Filter>src\psyq</Filter>
     </ClInclude>
-    <ClInclude Include="src\system\system.h">
-      <Filter>src\system</Filter>
-    </ClInclude>
     <ClInclude Include="src\psyq\filesystem.h">
       <Filter>src\psyq</Filter>
     </ClInclude>
@@ -228,20 +219,8 @@
     <ClInclude Include="src\psyq\libspu.h">
       <Filter>src\psyq</Filter>
     </ClInclude>
-    <ClInclude Include="src\system\akao.h">
-      <Filter>src\system</Filter>
-    </ClInclude>
-    <ClInclude Include="src\system\akao_commands.h">
-      <Filter>src\system</Filter>
-    </ClInclude>
-    <ClInclude Include="src\system\akao_opcodes.h">
-      <Filter>src\system</Filter>
-    </ClInclude>
     <ClInclude Include="src\psyq\libapi.h">
       <Filter>src\psyq</Filter>
-    </ClInclude>
-    <ClInclude Include="src\system\akao_debug.h">
-      <Filter>src\system</Filter>
     </ClInclude>
     <ClInclude Include="src\psyq\psxspu\audio_stream.h">
       <Filter>src\psyq\psxspu</Filter>
@@ -269,6 +248,30 @@
     </ClInclude>
     <ClInclude Include="src\psyq\psxspu\common\types.h">
       <Filter>src\psyq\psxspu\common</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernel\akao.h">
+      <Filter>src\kernel</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernel\akao_commands.h">
+      <Filter>src\kernel</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernel\akao_debug.h">
+      <Filter>src\kernel</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernel\akao_opcodes.h">
+      <Filter>src\kernel</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernel\system.h">
+      <Filter>src\kernel</Filter>
+    </ClInclude>
+    <ClInclude Include="src\system\application.h">
+      <Filter>src\system</Filter>
+    </ClInclude>
+    <ClInclude Include="src\system\game.h">
+      <Filter>src\system</Filter>
+    </ClInclude>
+    <ClInclude Include="src\system\icons_font.h">
+      <Filter>src\system</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -310,6 +313,9 @@
     </Filter>
     <Filter Include="src\psyq\psxspu\common">
       <UniqueIdentifier>{ec6290ca-9c76-427e-b192-2153300e9dee}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\kernel">
+      <UniqueIdentifier>{4c9b4ade-c377-499e-921d-48f73d803bc8}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
