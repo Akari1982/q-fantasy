@@ -1,7 +1,10 @@
 #include "application.h"
 #include "system/akao_debug.h"
 
+#include "ofxImGui.h"
+
 #include <filesystem>
+#include "IconsFontAwesome5.h"
 
 
 
@@ -14,6 +17,25 @@ void Application::setup()
     ofSetLogLevel(OF_LOG_VERBOSE);
 
     gui.setup( nullptr, true, ImGuiConfigFlags_ViewportsEnable );
+    ImGui::StyleColorsDark();
+
+    // imGui fonts load and settings
+    {
+        ImGuiIO& io = ImGui::GetIO();
+        //ImFont* font = io.Fonts->AddFontFromFileTTF( "system/Roboto-Regular.ttf", 15.0f );
+        ImFont* font = io.Fonts->AddFontFromFileTTF( "system/RobotoMono-Regular.ttf", 17.0f );
+        if( !font ) ofLogError() << "ERROR: can't load font.";
+        io.FontDefault = font;
+        static const ImWchar icons_ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
+        ImFontConfig icons_config;
+        icons_config.MergeMode = true;
+        icons_config.PixelSnapH = true;
+        if( !io.Fonts->AddFontFromFileTTF( "system/FontAwesome5-Free-Solid.otf", 14.0f, &icons_config, icons_ranges ) )
+        {
+            ofLogError() << "ERROR: can't load font.";
+        }
+        io.Fonts->Build();
+    }
 
     backgroundColor = ofColor( 255, 255, 255 );
 
@@ -21,8 +43,6 @@ void Application::setup()
     g_GameVram.begin();
     ofClear( 255, 0, 255, 255 );
     g_GameVram.end();
-
-    ImGui::StyleColorsDark();
 }
 
 
@@ -40,48 +60,19 @@ void Application::draw()
     //g_GameVram.draw( 0, 0, ofGetWidth(), ofGetHeight() );
     g_GameVram.draw( 0, 0, 640, 480 );
 
-    AkaoDebugSequence();
-    AkaoDebugInstr();
+    AkaoDebug();
 
-/*
     std::string popup_to_open = "";
     if( ImGui::BeginMainMenuBar() )
     {
-        if( ImGui::BeginMenu( "AKAO" ) )
+        if( ImGui::BeginMenu( "AkaoDebug" ) )
         {
-            if( ImGui::BeginListBox( "Akao list" ) )
-            {
-                std::string path = "./data/FIELD";
-
-                for( const auto& entry : std::filesystem::directory_iterator( path ) )
-                {
-                    if( entry.is_regular_file() )
-                    {
-                        auto ext = entry.path().extension().string();
-
-                        // Приведение к верхнему регистру для нечувствительности к регистру
-                        for( auto& c : ext ) c = std::toupper( static_cast<unsigned char>( c ) );
-
-                        if( ext == ".DAT" )
-                        {
-                            bool is_selected = false;
-
-                            if( ImGui::Selectable( entry.path().filename().string().c_str(), &is_selected))
-                            {
-                            }
-                        }
-                    }
-                }
-
-                ImGui::EndListBox();
-            }
-
+            g_akao_debug = true;
             ImGui::EndMenu();
         }
 
         ImGui::EndMainMenuBar();
     }
-*/
 
     g_GameVram.begin();
     ofClear( 100, 100, 100, 255 );

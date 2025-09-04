@@ -2,8 +2,78 @@
 #include "akao_debug.h"
 
 #include "ofxImGui.h"
+#include "IconsFontAwesome5.h"
 
 #include <format>
+
+bool g_akao_debug = false;
+
+
+
+void AkaoDebug()
+{
+    if( g_akao_debug == false ) return;
+
+    ImGui::SetNextWindowSize( ImVec2( 600, 500 ), ImGuiCond_Once );
+    if( ImGui::Begin( "Akao Debug", &g_akao_debug, ImGuiWindowFlags_NoCollapse ) )
+    {
+        if( ImGui::BeginTabBar( "AkaoDebug" ) )
+        {
+            if( ImGui::BeginTabItem( "SND Browser" ) )
+            {
+                AkaoDebugSndBrowser();
+                ImGui::EndTabItem();
+            }
+
+            if( ImGui::BeginTabItem( "SFX Browser" ) )
+            {
+                ImGui::Text("This is content 2.");
+                ImGui::EndTabItem();
+            }
+
+            if( ImGui::BeginTabItem( "Instruments Browser" ) )
+            {
+                AkaoDebugInstr();
+                ImGui::EndTabItem();
+            }
+
+            ImGui::EndTabBar();   // закрыли бар
+        }
+    }
+    ImGui::End();
+}
+
+
+
+void AkaoDebugSndBrowser()
+{
+    ImGui::BeginChild( "LeftPane", ImVec2( 100, 0 ), true );
+
+    if( ImGui::Button( ICON_FA_SEARCH "  Поиск" ) ) {}
+    std::string path = "./data/FIELD";
+
+    for( const auto& entry : std::filesystem::directory_iterator( path ) )
+    {
+        if( entry.is_regular_file() )
+        {
+            auto ext = entry.path().extension().string();
+
+            // Приведение к верхнему регистру для нечувствительности к регистру
+            for( auto& c : ext ) c = std::toupper( static_cast<unsigned char>( c ) );
+
+            if( ext == ".DAT" )
+            {
+                bool is_selected = false;
+
+                if( ImGui::Selectable( entry.path().filename().string().c_str(), &is_selected))
+                {
+                }
+            }
+        }
+    }
+
+    ImGui::EndChild();
+}
 
 
 
