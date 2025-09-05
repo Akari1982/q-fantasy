@@ -13,7 +13,7 @@ void Application::setup()
     ofSetLogLevel(OF_LOG_VERBOSE);
 
     gui.setup( nullptr, true, ImGuiConfigFlags_ViewportsEnable );
-    ImGui::StyleColorsDark();
+    ImGui::StyleColorsLight();
 
     // imGui fonts load and settings
     {
@@ -52,6 +52,7 @@ void Application::update()
 void Application::draw()
 {
     gui.begin(); //required to call this at beginning
+    //ImGui::ShowDemoWindow();
 
     //g_GameVram.draw( 0, 0, ofGetWidth(), ofGetHeight() );
     g_GameVram.draw( 0, 0, 640, 480 );

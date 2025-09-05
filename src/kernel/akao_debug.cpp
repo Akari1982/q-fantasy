@@ -46,32 +46,70 @@ void AkaoDebug()
 
 void AkaoDebugSndBrowser()
 {
-    ImGui::BeginChild( "LeftPane", ImVec2( 100, 0 ), true );
+// Делаем "разделенное" окно
+    ImGui::Columns(2, nullptr, true); // 2 колонки, ресайз между ними
+    
+    // ===== левая колонка =====
+    static char search[128];
 
-    if( ImGui::Button( ICON_FA_SEARCH "  Поиск" ) ) {}
-    std::string path = "./data/FIELD";
+    // Рисуем иконку (можно просто текст без кнопки)
+    ImGui::TextUnformatted(ICON_FA_SEARCH);
+    // Делаем то же самое, но идем на одну линию
+    ImGui::SameLine();
+    // Теперь инпут с плейсхолдером
+    ImGui::InputTextWithHint("##search", "Type to filter...", search, IM_ARRAYSIZE(search));
 
-    for( const auto& entry : std::filesystem::directory_iterator( path ) )
+    // Список (лучше оформить child, чтобы был скролл)
+    ImGui::BeginChild("left_panel", ImVec2(0, 0), true);
+    for (int i = 0; i < 50; i++)
     {
-        if( entry.is_regular_file() )
+        char buf[64];
+        sprintf(buf, "Элемент %d", i);
+        bool selected = (i == 1);
+        if (ImGui::Selectable(buf, selected))
         {
-            auto ext = entry.path().extension().string();
-
-            // Приведение к верхнему регистру для нечувствительности к регистру
-            for( auto& c : ext ) c = std::toupper( static_cast<unsigned char>( c ) );
-
-            if( ext == ".DAT" )
-            {
-                bool is_selected = false;
-
-                if( ImGui::Selectable( entry.path().filename().string().c_str(), &is_selected))
-                {
-                }
-            }
+            // обработка выбора
         }
     }
-
     ImGui::EndChild();
+    
+    ImGui::NextColumn(); // вправую колонку
+
+    // ===== правая колонка =====
+    ImGui::BeginChild("right_panel", ImVec2(0, 0), true);
+    ImGui::Text("Детали выбранного элемента");
+    ImGui::Separator();
+    ImGui::TextWrapped("Здесь можно показывать свойства, данные, таблицы, что угодно.");
+    ImGui::EndChild();
+
+    ImGui::Columns(1); // вернуться к одной колонке
+
+//    ImGui::BeginChild( "LeftPane", ImVec2( 100, 0 ), true );
+//
+//    if( ImGui::Button( ICON_FA_SEARCH "  Поиск" ) ) {}
+//    std::string path = "./data/FIELD";
+//
+//    for( const auto& entry : std::filesystem::directory_iterator( path ) )
+//    {
+//        if( entry.is_regular_file() )
+//        {
+//            auto ext = entry.path().extension().string();
+//
+//            // Приведение к верхнему регистру для нечувствительности к регистру
+//            for( auto& c : ext ) c = std::toupper( static_cast<unsigned char>( c ) );
+//
+//            if( ext == ".DAT" )
+//            {
+//                bool is_selected = false;
+//
+//                if( ImGui::Selectable( entry.path().filename().string().c_str(), &is_selected))
+//                {
+//                }
+//            }
+//        }
+//    }
+//
+//    ImGui::EndChild();
 }
 
 
