@@ -14,7 +14,10 @@ To Do
 - Unify music debug with sequence, sfx, instruments, SPU manipulation and so on.
 - Add support for sfx.
 - Comment all AKAO music code.
-- Create browser for all music in game.
+
+2025-09-08
+----------
+- Add music browser.
 
 2025-09-03
 ----------

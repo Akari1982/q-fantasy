@@ -88,7 +88,7 @@ void FileRead( const std::string& name, std::vector<u8>& output )
 {
     printf( "Load file: %s\n", name.c_str() );
 
-    FILE* file = fopen( name.c_str(), "rb" );
+    FILE* file = fopen( ("data/" + name).c_str(), "rb" );
 
     if( file == NULL )
     {

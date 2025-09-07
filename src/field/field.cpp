@@ -8,7 +8,7 @@
 #include <vector>
 
 
-u32 field_dat_base_addr = 0x80114fe4;
+u32 g_field_dat_base_addr = 0x80114fe4;
 std::vector<u8> field_dat;
 
 struct sBaseDrawOffset
@@ -88,45 +88,7 @@ field_main_loop()
     //V0 = w[V0];
     //[80114458] = w(A0 + hu[V0] * 18); // walkmesh triangle access block
 
-    if( 0 )
-    {
-        u32 events_addr = READ_LE_U32( &field_dat[0x0] ) - field_dat_base_addr;
-        u8 number_of_entity = READ_LE_U8( &field_dat[events_addr + 0x2] );
-        u32 music_offset = events_addr + READ_LE_U32( &field_dat[events_addr + 0x20 + number_of_entity * 0x8 + 0 * 0x4] );
-        u16 music_size = READ_LE_U16( &field_dat[music_offset + 0x6] );
-
-        AkaoCopyMusic( &field_dat[music_offset + 0x10], music_size );
-        AkaoMusicChannelsInit();
-    }
-    else
-    {
-        std::vector<u8> music;
-        //FileRead( "Aerith's_Theme.snd", music );
-        //FileRead( "Lurking_In_The_Darkness.snd", music );
-        //FileRead( "Fighting.snd", music );
-
-        //std::vector<u8> instr2_all;
-        //FileRead( "data/SOUND/INSTR2.ALL", instr2_all );
-        //std::vector<u8> instr2_dat;
-        //FileRead( "data/SOUND/INSTR2.DAT", instr2_dat );
-        //AkaoLoadInstr2( &instr2_all[0], &instr2_dat[0] );
-
-        FileRead( "data/ENEMY6/OVER2.SND", music );
-
-        u16 music_size = READ_LE_U16( &music[0x6] );
-
-        //AkaoSetReverbMode( READ_LE_S16( &music[0x8] ) );
-        //AkaoCopyMusic( &music[0x10], music_size );
-        //AkaoMusicChannelsInit();
-    }
-
-
-
-
-
-
-
-    u32 walkmesh_addr = READ_LE_U32( &field_dat[ 0x4 ] ) - field_dat_base_addr;
+    u32 walkmesh_addr = READ_LE_U32( &field_dat[ 0x4 ] ) - g_field_dat_base_addr;
     u32 id_n = READ_LE_U32( &field_dat[ walkmesh_addr ] );
     walkmesh_addr += 0x4;
     u32 walkmesh_access_addr = walkmesh_addr + id_n * 0x18;
@@ -258,7 +220,7 @@ void field_update_drawenv()
 
 void field_load_mim_dat_files()
 {
-    FileLZS( "data/FIELD/MD1STIN.DAT", field_dat );
+    FileLZS( "FIELD/MD1STIN.DAT", field_dat );
 }
 
 

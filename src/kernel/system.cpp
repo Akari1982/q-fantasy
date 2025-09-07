@@ -39,13 +39,13 @@ void system_init_base()
 void system_init_akao_engine()
 {
     std::vector<u8> instr_all;
-    FileRead( "data/SOUND/INSTR.ALL", instr_all );
+    FileRead( "SOUND/INSTR.ALL", instr_all );
 
     std::vector<u8> instr_dat;
-    FileRead( "data/SOUND/INSTR.DAT", instr_dat );
+    FileRead( "SOUND/INSTR.DAT", instr_dat );
 
     std::vector<u8> effect_all;
-    FileRead( "data/SOUND/EFFECT.ALL", effect_all );
+    FileRead( "SOUND/EFFECT.ALL", effect_all );
 
     AkaoInit( &instr_all[0], &instr_dat[0] );
     AkaoLoadEffect( &effect_all[0] );
