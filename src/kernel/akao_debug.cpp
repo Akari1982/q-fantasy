@@ -324,7 +324,7 @@ void AkaoDebugSndBrowser()
 
     if( ImGui::BeginListBox( "##AkaoList", ImVec2( -FLT_MIN, -FLT_MIN ) ) )
     {
-        ImGui::TextDisabled( "Field Files" );
+        ImGui::TextDisabled( "Music List" );
         ImGui::Separator();
 
         for( int i = 0; i < g_musics.size(); ++i )
