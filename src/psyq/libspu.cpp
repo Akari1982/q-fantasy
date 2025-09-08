@@ -190,6 +190,7 @@ void PsyqSpuSetVoicePitch( s32 voiceNum, u16 pitch )
     std::lock_guard<std::mutex> lock( spuMutex );
 
     SPU::WriteRegister( voiceNum * 0x10 + 0x4, pitch );
+    SPU::Execute( nullptr, 0x1 * 0x300, 0 );
 }
 
 
@@ -200,6 +201,7 @@ void PsyqSpuSetVoiceVolume( s32 voiceNum, s16 volumeL, s16 volumeR )
 
     SPU::WriteRegister( voiceNum * 0x10 + 0x0, volumeL & 0x7fff );
     SPU::WriteRegister( voiceNum * 0x10 + 0x2, volumeR & 0x7fff );
+    SPU::Execute( nullptr, 0x1 * 0x300, 0 );
 }
 
 
@@ -209,6 +211,7 @@ void PsyqSpuSetVoiceStartAddr( s32 voiceNum, u32 startAddr )
     std::lock_guard<std::mutex> lock( spuMutex );
 
     SPU::WriteRegister( voiceNum * 0x10 + 0x6, startAddr >> g_spu_shift );
+    SPU::Execute( nullptr, 0x1 * 0x300, 0 );
 }
 
 
@@ -218,6 +221,7 @@ void PsyqSpuSetVoiceLoopStartAddr( s32 voiceNum, u32 loopStartAddr )
     std::lock_guard<std::mutex> lock( spuMutex );
 
     SPU::WriteRegister( voiceNum * 0x10 + 0xe, loopStartAddr >> g_spu_shift );
+    SPU::Execute( nullptr, 0x1 * 0x300, 0 );
 }
 
 
@@ -235,6 +239,7 @@ void PsyqSpuSetVoiceSRAttr( s32 voiceNum, u16 SR, s32 SRmode )
     value &= 0x003f;
     value |= (SR | mode_f) << 0x6;
     SPU::WriteRegister( voiceNum * 0x10 + 0xa, value );
+    SPU::Execute( nullptr, 0x1 * 0x300, 0 );
 }
 
 
@@ -248,6 +253,7 @@ void PsyqSpuSetVoiceRRAttr( s32 voiceNum, u16 RR, s32 RRmode )
     value |= RR;
     value |= (RRmode == 0x7) << 0x5;
     SPU::WriteRegister( voiceNum * 0x10 + 0xa, value );
+    SPU::Execute( nullptr, 0x1 * 0x300, 0 );
 }
 
 
@@ -260,6 +266,7 @@ void PsyqSpuSetVoiceARAttr( s32 voiceNum, u16 AR, s32 Armode )
     value &= 0x00ff;
     value |= (AR | ((Armode == 0x5) << 0x7)) << 0x8;
     SPU::WriteRegister( voiceNum * 0x10 + 0x8, value );
+    SPU::Execute( nullptr, 0x1 * 0x300, 0 );
 }
 
 
@@ -272,6 +279,7 @@ void PsyqSpuSetVoiceDR( s32 voiceNum, u16 DR )
     value &= 0xff0f;
     value |= DR << 0x4;
     SPU::WriteRegister( voiceNum * 0x10 + 0x8, value );
+    SPU::Execute( nullptr, 0x1 * 0x300, 0 );
 }
 
 
@@ -284,6 +292,7 @@ void PsyqSpuSetVoiceSL( s32 voiceNum, u16 SL )
     value &= 0xfff0;
     value |= SL;
     SPU::WriteRegister( voiceNum * 0x10 + 0x8, value );
+    SPU::Execute( nullptr, 0x1 * 0x300, 0 );
 }
 
 
@@ -317,6 +326,7 @@ void PsyqSpuSetVoiceVolumeAttr( s32 voiceNum, s16 volumeL, s16 volumeR, s16 volM
         case 0x7: mode = 0xe000; break;
     }
     SPU::WriteRegister( voiceNum * 0x10 + 0x2, mode | (volumeR & 0x7fff) );
+    SPU::Execute( nullptr, 0x1 * 0x300, 0 );
 }
 
 
@@ -335,6 +345,9 @@ void PsyqSpuSetKey( s32 on_off, u32 voice_bit )
         SPU::WriteRegister( 0x188, voice_bit & 0xffff );
         SPU::WriteRegister( 0x18a, voice_bit >> 0x10 );
     }
+    // we need to call update immediately, because we execute only when sample update called and
+    // registers may change by that time and cause some akward sounds
+    SPU::Execute( nullptr, 0x1 * 0x300, 0 );
 }
 
 
@@ -347,6 +360,7 @@ s32 PsyqSpuSetReverb( s32 on_off )
     {
         g_reverb_on = 0;
         SPU::WriteRegister( 0x1aa, SPU::ReadRegister( 0x1aa ) & 0xff7f ); // Reverb Master Disable
+        SPU::Execute( nullptr, 0x1 * 0x300, 0 );
     }
     else if( on_off == SPU_ON )
     {
@@ -363,6 +377,7 @@ s32 PsyqSpuSetReverb( s32 on_off )
 
         g_reverb_on = on_off;
         SPU::WriteRegister( 0x1aa, SPU::ReadRegister( 0x1aa ) | 0x0080 ); // Reverb Master Enable
+        SPU::Execute( nullptr, 0x1 * 0x300, 0 );
     }
 
     return g_reverb_on;
@@ -430,6 +445,7 @@ void SpuSetReverbReg(SpuReverbReg* attr)
     if( (mask == 0) || (mask & 0x20000000) ) SPU::WriteRegister( 0x1fa, attr->mRAPF2 );
     if( (mask == 0) || (mask & 0x40000000) ) SPU::WriteRegister( 0x1fc, attr->vLIN );
     if( (mask == 0) || (mask & 0x80000000) ) SPU::WriteRegister( 0x1fe, attr->vRIN );
+    SPU::Execute( nullptr, 0x1 * 0x300, 0 );
 }
 
 
@@ -612,6 +628,8 @@ s32 PsyqSpuSetReverbModeParam( SpuReverbAttr* attr )
         }
     }
 
+    SPU::Execute( nullptr, 0x1 * 0x300, 0 );
+
     return 0;
 }
 
@@ -643,6 +661,8 @@ void PsyqSpuSetReverbDepth( SpuReverbAttr* attr )
         SPU::WriteRegister( 0x186, attr->depth.right );
         g_reverb_depth_right = attr->depth.right;
     }
+
+    SPU::Execute( nullptr, 0x1 * 0x300, 0 );
 }
 
 
@@ -661,6 +681,7 @@ void PsyqSpuSetReverbVoice( s32 on_off, u32 voice_bit )
         SPU::WriteRegister( 0xcc * 2, SPU::ReadRegister( 0xcc * 2 ) | (voice_bit & 0xffff) );
         SPU::WriteRegister( 0xcd * 2, SPU::ReadRegister( 0xcd * 2 ) | ((voice_bit >> 0x10) & 0xff) );
     }
+    SPU::Execute( nullptr, 0x1 * 0x300, 0 );
 }
 
 
@@ -679,6 +700,7 @@ void PsyqSpuSetPitchLfoVoice( s32 on_off, u32 voice_bit )
         SPU::WriteRegister( 0xc8 * 2, SPU::ReadRegister( 0xc8 * 2 ) | (voice_bit & 0xffff) );
         SPU::WriteRegister( 0xc9 * 2, SPU::ReadRegister( 0xc9 * 2 ) | ((voice_bit >> 0x10) & 0xff) );
     }
+    SPU::Execute( nullptr, 0x1 * 0x300, 0 );
 }
 
 
@@ -828,4 +850,5 @@ void PsyqSpuSetCommonAttr( SpuCommonAttr* attr )
             SPU::WriteRegister( 0x1aa, SPU::ReadRegister( 0x1aa ) | 0x0002 );
         }
     }
+    SPU::Execute( nullptr, 0x1 * 0x300, 0 );
 }

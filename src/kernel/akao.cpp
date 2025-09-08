@@ -893,6 +893,7 @@ void AkaoExecuteSequence( AkaoChannel* channel, AkaoConfig* config, u32 mask )
             channel->length_2 = (g_akao_length_table[length_id] & 0xff00) >> 0x8;
         }
 
+        // stop playing note before start playing next note
         if( ((AkaoGetNextKey( channel ) - 0x84) >= 0xb) && ((channel->sfx_mask & (AKAO_SFX_FULL_LENGTH | AKAO_SFX_LEGATO)) == 0) )
         {
             channel->length_2 -= 0x2;
