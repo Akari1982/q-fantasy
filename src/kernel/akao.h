@@ -92,6 +92,10 @@ struct AkaoChannel
     u32 update_flags;
 
     u32 over_voice_id;
+    s16 over_vol_balance;
+    s16 over_vol_balance_slide_step;
+    u16 over_vol_balance_slide_steps;
+
     u32 alt_voice_id;
 
     s32 volume;
@@ -102,9 +106,6 @@ struct AkaoChannel
     u16 vol_pan;
     s16 vol_pan_slide_step;
     u16 vol_pan_slide_steps;
-    s16 vol_balance;
-    s16 vol_balance_slide_step;
-    u16 vol_balance_slide_steps;
 
     u16 key;
     u16 key_stored;
@@ -126,8 +127,8 @@ struct AkaoChannel
 //                                        // 0x50 [][][][] ???.
     u16 type;
 
-    u8 length_1;
-    u8 length_2;
+    u8 length_start;
+    u8 length_stop;
     s16 length_stored;
     s16 length_fixed;
 

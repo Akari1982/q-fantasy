@@ -232,10 +232,13 @@ AkaoOpcode akao_opcodes[] =
 
 
 
+// Init AKAO tracker, load instruments, init SPU RAM
+// init inner data and structures, open new thread with main handler
 void AkaoInit( u8* instr_all, u8* instr_dat )
 {
     AkaoLoadInstr( instr_all, instr_dat );
 
+    // load default ADPCM Sample
     PsyqSpuSetTransferStartAddr( 0x76fe0 );
     PsyqSpuWrite( g_akao_default_sound, 0x20 );
 
@@ -349,6 +352,7 @@ void AkaoLoadInstr2( u8* instr2_all, u8* instr2_dat )
 
 void AkaoInitData()
 {
+    // init global AKAO settings
     g_akao_stream_mask = 0;
 //    g_akao_pitch_mul_music_slide_steps = 0;
 //    g_akao_vol_mul_music_slide_steps = 0;
@@ -386,6 +390,7 @@ void AkaoInitData()
 //    g_channels_3_reverb_mask = 0;
 //    g_channels_3_pitch_lfo_mask = 0;
 
+    // init music channels config
     g_channels_1_config.stereo_mono = AKAO_STEREO;
     g_channels_1_config.active_mask = 0;
     g_channels_1_config.on_mask = 0;
@@ -407,6 +412,7 @@ void AkaoInitData()
 //    g_channels_2_config.active_mask = 0;
 //    g_channels_2_config.music_id = 0;
 
+    // init SPU registers
     g_spu_common_attr.mask = AKAO_COMMON_ATTR;
     g_spu_common_attr.mvol.left = 0x3fff;
     g_spu_common_attr.mvol.right = 0x3fff;
@@ -420,9 +426,9 @@ void AkaoInitData()
     g_spu_common_attr.ext.volume.right = 0;
     g_spu_common_attr.ext.reverb = 0;
     g_spu_common_attr.ext.mix = 0;
-
     PsyqSpuSetCommonAttr( &g_spu_common_attr );
 
+    // init music channels
     for( int i = 0; i < 0x18; ++i )
     {
 //        [0x8009c5a0 + i * 0xc + 0x0] = w(0x7f0000);
@@ -446,8 +452,8 @@ void AkaoInitData()
 //        [0x80099788 + i * 0x108 + 0x50] = w(0);
 //        g_channels_3[i].type = AKAO_SOUND;
 //        g_channels_3[i].pitch_mul_sound_slide_steps = 0;
-//        g_channels_3[i].vol_balance_slide_steps = 0;
-//        g_channels_3[i].vol_balance = 0x7f00;
+//        g_channels_3[i].over_vol_balance_slide_steps = 0;
+//        g_channels_3[i].over_vol_balance = 0x7f00;
 //        g_channels_3[i].attr.voice_id = i + 0x10;
 //    }
 }
@@ -475,6 +481,8 @@ void AkaoSetReverbMode( s32 mode )
 
 
 
+// Main AKAO handler working in separate thread. It updates all SPU registers and inner
+// structures. Calls AKAO sequence executions and polls external AKAO commands from queue.
 void AkaoMain()
 {
 //    r_cnt = system_psyq_get_r_cnt( RCntCNT2 );
@@ -517,8 +525,11 @@ void AkaoMainUpdate()
 {
     AkaoUpdateKeysOn();
 
+    // handle main music channels
     if( g_channels_1_config.active_mask != 0 )
     {
+        // logic updates only few times per seconds
+        // this rate depends on tempo fixed point variable
         u16 tempo = g_channels_1_config.tempo >> 0x10;
 //        u8 tempo_mul = (g_akao_tempo_mul_music >> 0x10) & 0xff;
 //        if( tempo_mul != 0 )
@@ -546,16 +557,18 @@ void AkaoMainUpdate()
             {
                 if( channels_mask & channel_mask )
                 {
-                    channel->length_1 -= 0x1;
-                    channel->length_2 -= 0x1;
+                    channel->length_start -= 0x1;
+                    channel->length_stop -= 0x1;
 
-                    if( channel->length_1 == 0 )
+                    // when start pause ends then we update opcodes and set next note to play
+                    if( channel->length_start == 0 )
                     {
                         AkaoExecuteSequence( channel, &g_channels_1_config, channel_mask );
                     }
-                    else if( channel->length_2 == 0 )
+                    // when stop pause ends we stop this channel
+                    else if( channel->length_stop == 0 )
                     {
-                        channel->length_2 |= 0x1;
+                        channel->length_stop |= 0x1; // set default stop length
                         g_channels_1_config.keyed_mask &= ~channel_mask;
                         g_channels_1_config.off_mask |= channel_mask;
                     }
@@ -582,6 +595,7 @@ void AkaoMainUpdate()
 //                g_channels_1_config.update_flags |= AKAO_UPDATE_REVERB;
 //            }
 
+            // update main timer
             if( g_channels_1_config.timer_lower != 0 )
             {
                 g_channels_1_config.timer_lower_cur += 1;
@@ -630,18 +644,18 @@ void AkaoMainUpdate()
 //            {
 //                if( channels_mask & channel_mask )
 //                {
-//                    channel->length_1 -= 0x1;
-//                    channel->length_2 -= 0x1;
+//                    channel->length_start -= 0x1;
+//                    channel->length_stop -= 0x1;
 //
-//                    if( channel->length_1 == 0 )
+//                    if( channel->length_start == 0 )
 //                    {
 //                        system_akao_execute_sequence( channel, 0x8009a164, channel_mask )
 //                    }
 //                    else
 //                    {
-//                        if( channel->length_2 == 0 )
+//                        if( channel->length_stop == 0 )
 //                        {
-//                            channel->length_2 |= 0x1;
+//                            channel->length_stop |= 0x1;
 //                            g_channels_2_config.keyed_mask &= ~channel_mask;
 //                            g_channels_2_config.off_mask |= channel_mask;
 //                        }
@@ -683,16 +697,16 @@ void AkaoMainUpdate()
 //                    {
 //                        [channel + 0x50] = w(w[channel + 0x50] + 0x1);
 //
-//                        channel->length_1 -= 0x1;
-//                        channel->length_2 -= 0x1;
+//                        channel->length_start -= 0x1;
+//                        channel->length_stop -= 0x1;
 //
-//                        if( channel->length_1 == 0 )
+//                        if( channel->length_start == 0 )
 //                        {
 //                            system_akao_execute_sequence( channel, &g_channels_2_config, channel_mask );
 //                        }
-//                        else if( channel->length_2 == 0 )
+//                        else if( channel->length_stop == 0 )
 //                        {
-//                            channel->length_2 |= 0x1;
+//                            channel->length_stop |= 0x1;
 //                            [0x80099fd4] = w(w[0x80099fd4] & ~channel_mask);
 //                            g_channels_3_off_mask |= channel_mask;
 //                        }
@@ -788,8 +802,8 @@ void AkaoMusicChannelsInit()
             }
 
             channel->vol_master = 0x7f;
-            channel->length_1 = 0x3;
-            channel->length_2 = 0x1;
+            channel->length_start = 0x3;
+            channel->length_stop = 0x1;
 
             AkaoInstrInit( channel, 0x14 );
 
@@ -798,7 +812,7 @@ void AkaoMusicChannelsInit()
             channel->update_flags = 0;
             channel->volume = 0x3fff0000;
             channel->vol_slide_steps = 0;
-            channel->vol_balance_slide_steps = 0;
+            channel->over_vol_balance_slide_steps = 0;
             channel->vol_pan = 0x4000;
             channel->vol_pan_slide_steps = 0;
             channel->pitch_slide_steps_cur = 0;
@@ -815,7 +829,7 @@ void AkaoMusicChannelsInit()
             channel->loop_id = 0;
             channel->length_stored = 0;
             channel->length_fixed = 0;
-            channel->vol_balance = 0x4000;
+            channel->over_vol_balance = 0x4000;
             channel->transpose = 0;
             channel->fine_tuning = 0;
             channel->key_add = 0;
@@ -864,6 +878,8 @@ void AkaoInstrInit( AkaoChannel* channel, u16 instr_id )
 void AkaoExecuteSequence( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
     u8 opcode = 0;
+
+    // execute all settings opcodes until note
     while( opcode != 0xa0 )
     {
         u8* akao = channel->seq;
@@ -871,36 +887,39 @@ void AkaoExecuteSequence( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 
         opcode = READ_LE_U8( akao );
 
-        //ofLog(OF_LOG_NOTICE, "channel" + ofToHex(channel->attr.voice_id) + ": opcode " + ofToHex((int)opcode));
-
-        if( opcode < 0xa0 ) break;
+        if( opcode < 0xa0 ) break; // if next opcode is note then break
 
         akao_opcodes[opcode - 0xa0]( channel, config, mask );
     }
 
+    // if next opcode is note and not the end of channel then play this note
     if( opcode != 0xa0 )
     {
 //        if( channel->length_fixed != 0 )
 //        {
-//            channel->length_1 = channel->length_fixed;
-//            channel->length_2 = channel->length_fixed;
+//            channel->length_start = channel->length_fixed;
+//            channel->length_stop = channel->length_fixed;
 //        }
 
-        if( channel->length_1 == 0 )
+        // if length was not set in settings opcode then use note to get length
+        if( channel->length_start == 0 )
         {
+            // notes divided into 0xc semitones with 0xb preset length for each
             u8 length_id = opcode % 0xb;
-            channel->length_1 = g_akao_length_table[length_id] & 0x00ff;
-            channel->length_2 = (g_akao_length_table[length_id] & 0xff00) >> 0x8;
+            channel->length_start = g_akao_length_table[length_id] & 0x00ff;
+            channel->length_stop = (g_akao_length_table[length_id] & 0xff00) >> 0x8;
         }
 
         // stop playing note before start playing next note
         if( ((AkaoGetNextKey( channel ) - 0x84) >= 0xb) && ((channel->sfx_mask & (AKAO_SFX_FULL_LENGTH | AKAO_SFX_LEGATO)) == 0) )
         {
-            channel->length_2 -= 0x2;
+            channel->length_stop -= 0x2;
         }
 
-        channel->length_stored = channel->length_1;
+        channel->length_stored = channel->length_start;
 
+        // if this note is stop effect note
+        // note 0x8f-0x99
         if( opcode >= 0x8f )
         {
 //            channel->portamento_steps = 0;
@@ -908,6 +927,7 @@ void AkaoExecuteSequence( AkaoChannel* channel, AkaoConfig* config, u32 mask )
             channel->tremolo_vol = 0;
             channel->sfx_mask &= ~AKAO_SFX_LEGATO_ACT;
         }
+        // if this is usual note 0x00-0x83
         else if( opcode < 0x84 )
         {
             u32 pitch_base = 0;
@@ -1495,6 +1515,7 @@ void AkaoCollectChannelsVoicesMask( AkaoChannel* channel, u32& ret_mask, u32 cha
 
 void AkaoMusicUpdateSlideAndDelay( AkaoChannel* channel, AkaoConfig* config, u32 channel_mask )
 {
+    // update volume slide logic controlled by opcode 0xa9
     if( channel->vol_slide_steps != 0 )
     {
         channel->vol_slide_steps -= 0x1;
@@ -1507,21 +1528,23 @@ void AkaoMusicUpdateSlideAndDelay( AkaoChannel* channel, AkaoConfig* config, u32
         channel->volume = vol_new;
     }
 
-    if( channel->vol_balance_slide_steps != 0 )
+    // update volume balance slide between main and overlay channels logic controlled by opcode 0xf7
+    if( channel->over_vol_balance_slide_steps != 0 )
     {
-        channel->vol_balance_slide_steps -= 1;
+        channel->over_vol_balance_slide_steps -= 1;
 
-        s16 vol_balance = channel->vol_balance + channel->vol_balance_slide_step;
+        s16 over_vol_balance = channel->over_vol_balance + channel->over_vol_balance_slide_step;
         if( channel->update_flags & AKAO_UPDATE_OVERLAY )
         {
-            if( (vol_balance & 0xff00) != (channel->vol_balance & 0xff00) )
+            if( (over_vol_balance & 0xff00) != (channel->over_vol_balance & 0xff00) )
             {
                 channel->attr.mask |= AKAO_UPDATE_SPU_VOICE;
             }
         }
-        channel->vol_balance = vol_balance;
+        channel->over_vol_balance = over_vol_balance;
     }
 
+    // update volume pan slide between left and right volume logic controlled by opcode 0xab
     if( channel->vol_pan_slide_steps != 0 )
     {
         channel->vol_pan_slide_steps -= 0x1;
@@ -1534,11 +1557,13 @@ void AkaoMusicUpdateSlideAndDelay( AkaoChannel* channel, AkaoConfig* config, u32
         channel->vol_pan = vol_pan_new;
     }
 
+    // update delay before starting of vibrato effect after start of playing note controlled by opcode 0xb4
     if( channel->vibrato_delay_cur != 0 )
     {
         channel->vibrato_delay_cur -= 1;
     }
 
+    // update delay before starting of tremolo effect after start of playing note controlled by opcode 0xb8
     if( channel->tremolo_delay_cur != 0 )
     {
         channel->tremolo_delay_cur -= 1;
@@ -1567,6 +1592,7 @@ void AkaoMusicUpdateSlideAndDelay( AkaoChannel* channel, AkaoConfig* config, u32
 //        }
 //    }
 
+    // update vibrato depth slide effect controlled by opcode 0xdd
     if( channel->vibrato_depth_slide_steps != 0 )
     {
         channel->vibrato_depth_slide_steps -= 1;
@@ -1644,6 +1670,7 @@ void AkaoMusicUpdateSlideAndDelay( AkaoChannel* channel, AkaoConfig* config, u32
 //        }
 //    }
 
+    // update pitch slide effect controlled by opcode 0xa4
     if( channel->pitch_slide_steps_cur != 0 )
     {
         channel->pitch_slide_steps_cur -= 1;
@@ -1827,11 +1854,11 @@ void AkaoUpdateChannelAndOverlayParamsToSpu( AkaoChannel* channel, u32 mask, u32
 {
     AkaoChannel* channel_2 = &g_channels_1[channel->over_voice_id];
 
-    s16 volume_mod = 0x7f - (channel->vol_balance >> 0x8);
+    s16 volume_mod = 0x7f - (channel->over_vol_balance >> 0x8);
 
-    channel_2->attr.vol_l = (channel->attr.vol_l * channel->vol_balance) >> 0x10;
+    channel_2->attr.vol_l = (channel->attr.vol_l * channel->over_vol_balance) >> 0x10;
     channel->attr.vol_l = (channel->attr.vol_l * volume_mod) >> 0x8;
-    channel_2->attr.vol_r = (channel->attr.vol_r * channel->vol_balance) >> 0x10;
+    channel_2->attr.vol_r = (channel->attr.vol_r * channel->over_vol_balance) >> 0x10;
     channel->attr.vol_r = (channel->attr.vol_r * volume_mod) >> 0x8;
 
     channel_2->attr.pitch = channel->attr.pitch;

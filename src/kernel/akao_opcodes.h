@@ -101,8 +101,8 @@ void AkaoOpcode_a2_next_note_length( AkaoChannel* channel, AkaoConfig* config, u
     channel->seq = akao + 0x1;
 
     u8 length = READ_LE_U8( akao );
-    channel->length_1 = length;
-    channel->length_2 = length;
+    channel->length_start = length;
+    channel->length_stop = length;
     channel->length_stored = length;
     channel->length_fixed = 0;
 }
@@ -1308,8 +1308,8 @@ void AkaoOpcode_f6_overlay_volume_balance( AkaoChannel* channel, AkaoConfig* con
     u8* akao = channel->seq;
     channel->seq = akao + 0x1;
 
-    channel->vol_balance = READ_LE_U8( akao ) << 0x8;
-    channel->vol_balance_slide_steps = 0;
+    channel->over_vol_balance = READ_LE_U8( akao ) << 0x8;
+    channel->over_vol_balance_slide_steps = 0;
 
     if( channel->update_flags & AKAO_UPDATE_OVERLAY )
     {
@@ -1326,10 +1326,10 @@ void AkaoOpcode_f7_overlay_volume_balance_slide( AkaoChannel* channel, AkaoConfi
 
     u16 steps = READ_LE_U8( akao );
     if( steps == 0 ) steps = 0x100;
-    channel->vol_balance_slide_steps = steps;
+    channel->over_vol_balance_slide_steps = steps;
 
-    channel->vol_balance &= 0xff00;
-    channel->vol_balance_slide_step = ((READ_LE_U8( akao + 0x1 ) << 0x8) - channel->vol_balance) / steps;
+    channel->over_vol_balance &= 0xff00;
+    channel->over_vol_balance_slide_step = ((READ_LE_U8( akao + 0x1 ) << 0x8) - channel->over_vol_balance) / steps;
 }
 
 
