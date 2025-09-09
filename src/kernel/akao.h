@@ -234,6 +234,7 @@ void AkaoMainUpdate();
 
 void AkaoCopyMusic( u8* src, u32 size );
 void AkaoMusicChannelsInit();
+void AkaoMusicChannelsStop();
 void AkaoInstrInit( AkaoChannel* channel, u16 instr_id );
 
 void AkaoExecuteSequence( AkaoChannel* channel, AkaoConfig* config, u32 mask );

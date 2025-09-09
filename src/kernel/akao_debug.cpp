@@ -22,7 +22,7 @@ std::string g_music_names_en[] =
     "",                                 "",                        "",                                     "",
     "",                                 "Lurking In the Darkness", "Shinra, Inc",                          "",
     "Under the Rotting Pizza",          "",                        "",                                     "Tifa's Theme",
-    "",                                 "",                        "Flowers Blooming in the Church",       "",
+    "",                                 "The Oppressed",           "Flowers Blooming in the Church",       "",
     "",                                 "",                        "Barret's Theme",                       "",
     "",                                 "",                        "Turks' Theme ",                        "Fanfare",
     "",                                 "",                        "",                                     "",
@@ -30,7 +30,7 @@ std::string g_music_names_en[] =
     "",                                 "",                        "",                                     "",
     "",                                 "",                        "",                                     "",
     "",                                 "",                        "",                                     "",
-    "",                                 "",                        "",                                     "",
+    "Honeybee Inn",                     "",                        "",                                     "",
     "",                                 "",                        "",                                     "",
     "",                                 "",                        "",                                     "",
     "",                                 "",                        "",                                     "",
@@ -50,7 +50,7 @@ std::string g_music_names_jp[] =
     "",                                 "",                        "",                                     "",
     "",                                 "闇に潜む",                 "神羅カンパニー lit. \"Shinra Company\"", "",
     "腐ったピザの下で",                   "",                        "",                                     "ティファのテーマ",
-    "",                                 "",                        "教会に咲く花",                           "",
+    "",                                 "虐げられた民衆",            "教会に咲く花",                           "",
     "",                                 "",                        "バレットのテーマ",                       "",
     "",                                 "",                        "タークスのテーマ",                       "ファンファーレ",
     "",                                 "",                        "",                                     "",
@@ -58,7 +58,7 @@ std::string g_music_names_jp[] =
     "",                                 "",                        "",                                     "",
     "",                                 "",                        "",                                     "",
     "",                                 "",                        "",                                     "",
-    "",                                 "",                        "",                                     "",
+    "蜜蜂の館",                          "",                        "",                                     "",
     "",                                 "",                        "",                                     "",
     "",                                 "",                        "",                                     "",
     "",                                 "",                        "",                                     "",
@@ -367,9 +367,10 @@ void AkaoDebugSndBrowser()
         {
             // remove "data/" to clean output
             ImGui::Text( "    %s (%d)", g_musics[selected_id].files[i].path.c_str(), g_musics[selected_id].files[i].id );
-            ImGui::SameLine();
 
             ImGui::PushID( i );
+
+            ImGui::SameLine();
             if( ImGui::Button( ICON_FA_PLAY ) )
             {
                 if( g_musics[selected_id].files[i].is_dat )
@@ -395,6 +396,21 @@ void AkaoDebugSndBrowser()
 
                 g_akao_playing = true;
             }
+
+            if( g_akao_playing == true )
+            {
+                ImGui::SameLine();
+                if( ImGui::Button( ICON_FA_PAUSE ) )
+                {
+                }
+
+                ImGui::SameLine();
+                if( ImGui::Button( ICON_FA_STOP ) )
+                {
+                    AkaoMusicChannelsStop();
+                }
+            }
+
             ImGui::PopID();
         }
     }

@@ -62,10 +62,9 @@ u8 g_akao_default_sound[0x20] =
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-u16 g_akao_length_table[0xb] =
-{
-    0xc0c0, 0x6060, 0x3030, 0x1818, 0x0c0c, 0x0606, 0x0303, 0x2020, 0x1010, 0x0808, 0x0404
-};
+u8 g_akao_default_seq[0x4] = { 0xa0, 0x00, 0x00, 0x00 };
+
+u16 g_akao_length_table[0xb] = { 0xc0c0, 0x6060, 0x3030, 0x1818, 0x0c0c, 0x0606, 0x0303, 0x2020, 0x1010, 0x0808, 0x0404 };
 
 s16 g_akao_left_volume_table[ 0x100 ] =
 {
@@ -107,10 +106,7 @@ s16 g_akao_right_volume_table[ 0x100 ] =
     (s16)0xff1f, (s16)0xff3c, (s16)0xff57, (s16)0xff70, (s16)0xff87, (s16)0xff9c, (s16)0xffaf, (s16)0xffc0, (s16)0xffcf, (s16)0xffdc, (s16)0xffe7, (s16)0xfff0, (s16)0xfff7, (s16)0xfffc, (s16)0xffff, (s16)0x0000
 };
 
-u32 g_akao_wave_table_key[ 0x10 ] =
-{
-    0x0, 0xc, 0x12, 0x1c, 0x22, 0x2c, 0x32, 0xd2, 0x168, 0x1ac, 0xfc, 0x150, 0x1c0, 0x1ac, 0x168, 0x1ac
-};
+u32 g_akao_wave_table_key[ 0x10 ] = { 0x0, 0xc, 0x12, 0x1c, 0x22, 0x2c, 0x32, 0xd2, 0x168, 0x1ac, 0xfc, 0x150, 0x1c0, 0x1ac, 0x168, 0x1ac };
 
 s16 g_akao_wave_table[ 0x2c4 ] =
 {
@@ -853,6 +849,38 @@ void AkaoMusicChannelsInit()
 //    system_akao_update_noise_voices();
     AkaoUpdateReverbVoices();
     AkaoUpdatePitchLfoVoices();
+}
+
+
+
+void AkaoMusicChannelsStop()
+{
+    if( g_channels_1_config.active_mask != 0 )
+    {
+        g_channels_1_config.active_mask |= g_channels_1_config.over_mask | g_channels_1_config.alt_mask;
+        g_channels_1_config.on_mask = 0;
+        g_channels_1_config.keyed_mask = 0;
+        g_channels_1_config.over_mask = 0;
+        g_channels_1_config.alt_mask = 0;
+
+        g_channels_1_config.off_mask |= g_channels_1_config.active_mask;
+
+        u32 channel_mask = 0x1;
+        u32 channels_mask = g_channels_1_config.active_mask;
+        AkaoChannel* channel = g_channels_1;
+        while( channels_mask != 0 )
+        {
+            if( channels_mask & channel_mask )
+            {
+                channel->seq = g_akao_default_seq;
+                channel->length_start = 0x4;
+                channel->length_stop = 0x2;
+                channels_mask ^= channel_mask;
+            }
+            channel_mask <<= 1;
+            channel += 1;
+        }
+    }
 }
 
 
