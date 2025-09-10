@@ -15,12 +15,12 @@ std::string g_music_names_en[] =
 {
     "",                                 "(empty)",                 "Opening - Bombing Mission",            "Bombing Mission",
     "",                                 "",                        "",                                     "Mako Reactor",
-    "Let the Battles Begin!",           "",                        "Anxiety",                              "",
+    "Let the Battles Begin!",           "",                        "Anxiety",                              "Fight On!",
     "",                                 "",                        "",                                     "",
+    "",                                 "",                        "",                                     "Who...Are You?",
     "",                                 "",                        "",                                     "",
-    "",                                 "",                        "",                                     "",
-    "",                                 "",                        "",                                     "",
-    "",                                 "Lurking In the Darkness", "Shinra, Inc",                          "",
+    "Don of the Slums",                 "",                        "",                                     "",
+    "",                                 "Lurking In the Darkness", "Shinra, Inc",                          "Infiltrating Shinra",
     "Under the Rotting Pizza",          "",                        "",                                     "Tifa's Theme",
     "",                                 "The Oppressed",           "Flowers Blooming in the Church",       "",
     "",                                 "",                        "Barret's Theme",                       "",
@@ -43,12 +43,12 @@ std::string g_music_names_jp[] =
 {
     "",                                 "",                        "オープニング~爆破ミッション",              "爆破ミッション",
     "",                                 "",                        "",                                     "魔晄炉",
-    "闘う者達 lit. \"Those Who Fight\"", "",                        "不安な心 lit. \"Anxious Heart\"",       "",
+    "闘う者達 lit. \"Those Who Fight\"", "",                        "不安な心 lit. \"Anxious Heart\"",       "更に闘う者達 lit. \"Those Who Fight Further\"",
     "",                                 "",                        "",                                     "",
+    "",                                 "",                        "",                                     "お前は…誰だ",
     "",                                 "",                        "",                                     "",
-    "",                                 "",                        "",                                     "",
-    "",                                 "",                        "",                                     "",
-    "",                                 "闇に潜む",                 "神羅カンパニー lit. \"Shinra Company\"", "",
+    "スラムのドン",                       "",                        "",                                     "",
+    "",                                 "闇に潜む",                 "神羅カンパニー lit. \"Shinra Company\"", "神羅ビル潜入",
     "腐ったピザの下で",                   "",                        "",                                     "ティファのテーマ",
     "",                                 "虐げられた民衆",            "教会に咲く花",                           "",
     "",                                 "",                        "バレットのテーマ",                       "",
@@ -478,7 +478,7 @@ void AkaoDebugSequence()
 
             while( read && (akao < g_channels_1[i].seq_end) )
             {
-                if( akao == g_channels_1[ i ].seq )
+                if( akao < g_channels_1[ i ].seq )
                 {
                     color = ImVec4( 0.0f, 1.0f, 0.0f, 1.0f );
                 }
@@ -506,9 +506,9 @@ void AkaoDebugSequence()
                 if( opcode  < 0xa0 )
                 {
                     ImGui::SetCursorPos( ImVec2( x, add_y ) );
-                    if( opcode < 0x84 ) ImGui::TextColored( color, "|" );
-                    else if( opcode >= 0x8f ) ImGui::TextColored( color, ":" );
-                    else ImGui::TextColored( color, "." );
+                    if( opcode < 0x84 ) ImGui::TextColored( color, "|" ); // note
+                    else if( opcode >= 0x8f ) ImGui::TextColored( color, "_" ); // stop effect and pause
+                    else ImGui::TextColored( color, "-" ); // continue play same note
                     x += 1 * size;
                 }
                 else

@@ -526,6 +526,7 @@ void AkaoMainUpdate()
     {
         // logic updates only few times per seconds
         // this rate depends on tempo fixed point variable
+        // tempo can be modified by global settings controlled by commands 0xd0, 0xdq and 0xd2
         u16 tempo = g_channels_1_config.tempo >> 0x10;
 //        u8 tempo_mul = (g_akao_tempo_mul_music >> 0x10) & 0xff;
 //        if( tempo_mul != 0 )
@@ -557,6 +558,8 @@ void AkaoMainUpdate()
                     channel->length_stop -= 0x1;
 
                     // when start pause ends then we update opcodes and set next note to play
+                    // if start and stop length are equal (in case of legato or full length effect) channel
+                    // never stops, only notes setting changes and note smoothly transitions from one to another
                     if( channel->length_start == 0 )
                     {
                         AkaoExecuteSequence( channel, &g_channels_1_config, channel_mask );
@@ -932,13 +935,15 @@ void AkaoExecuteSequence( AkaoChannel* channel, AkaoConfig* config, u32 mask )
         // if length was not set in settings opcode then use note to get length
         if( channel->length_start == 0 )
         {
-            // notes divided into 0xc semitones with 0xb preset length for each
+            // notes divided into 0xc semitones with 0xb presets length for each
             u8 length_id = opcode % 0xb;
             channel->length_start = g_akao_length_table[length_id] & 0x00ff;
             channel->length_stop = (g_akao_length_table[length_id] & 0xff00) >> 0x8;
         }
 
-        // stop playing note before start playing next note
+        // by default we reduce stop length to end note before playing another
+        // in case of legato we skip this part to create smooth transition between notes
+        // full length note has same effect
         if( ((AkaoGetNextKey( channel ) - 0x84) >= 0xb) && ((channel->sfx_mask & (AKAO_SFX_FULL_LENGTH | AKAO_SFX_LEGATO)) == 0) )
         {
             channel->length_stop -= 0x2;
@@ -946,8 +951,7 @@ void AkaoExecuteSequence( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 
         channel->length_stored = channel->length_start;
 
-        // if this note is stop effect note
-        // note 0x8f-0x99
+        // if this note is pause/stop effect note 0x8f-0x99
         if( opcode >= 0x8f )
         {
 //            channel->portamento_steps = 0;
@@ -956,11 +960,15 @@ void AkaoExecuteSequence( AkaoChannel* channel, AkaoConfig* config, u32 mask )
             channel->sfx_mask &= ~AKAO_SFX_LEGATO_ACT;
         }
         // if this is usual note 0x00-0x83
+        // notes 0x84-0x8e are just continue play same note with new length settings
+        // they are played without pause
         else if( opcode < 0x84 )
         {
             u32 pitch_base = 0;
             u8 semitone = opcode / 0xb;
 
+            // in drum mode semitone used to determine drum to use
+            // from drum data it loads instrument, key and volume settings
             if( channel->update_flags & AKAO_UPDATE_DRUM_MODE )
             {
                 if( channel->type == AKAO_MUSIC )
@@ -1016,6 +1024,7 @@ void AkaoExecuteSequence( AkaoChannel* channel, AkaoConfig* config, u32 mask )
             }
             else
             {
+                // calculate key by note semitone and octave set in opcodes 0xa5, 0xa6 and 0xa7
                 u8 key = channel->octave * 0xc + semitone;
 
 //                if( ( channel->portamento_steps != 0 ) && ( channel->key_stored != 0 ) )
@@ -1026,11 +1035,14 @@ void AkaoExecuteSequence( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 //                    key = (channel->key_stored & 0xff) + (channel->transpose_stored & 0xff);
 //                }
 //                else
+                // store unmodified key and transpose key for calculations by settings from opcodes 0xc0 or 0xc1
                 {
                     channel->key = key;
                     key += channel->transpose & 0xff;
                 }
 
+                // if legato active then we don't need start note (it's still playing)
+                // and we don't need restart pitch slide
                 if( (channel->sfx_mask & AKAO_SFX_LEGATO_ACT) == 0 )
                 {
                     if( channel->type == AKAO_MUSIC )
@@ -1049,9 +1061,11 @@ void AkaoExecuteSequence( AkaoChannel* channel, AkaoConfig* config, u32 mask )
                     channel->pitch_slide_steps_cur = 0;
                 }
 
+                // get pitch for semitone for new key after effects applied for defined instrument
                 u8 semitone = key % 0xc;
                 pitch_base = g_akao_instrument[channel->instr_id].pitch[semitone];
 
+                // modify pitch by octave from key
                 u8 octave = key / 0xc;
                 if( octave >= 0x7 )
                 {
@@ -1063,6 +1077,7 @@ void AkaoExecuteSequence( AkaoChannel* channel, AkaoConfig* config, u32 mask )
                 }
             }
 
+            // set this channel as active and played now
             if( channel->type == AKAO_MUSIC )
             {
                 config->keyed_mask |= mask;
@@ -1074,6 +1089,7 @@ void AkaoExecuteSequence( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 
             channel->attr.mask |= AKAO_UPDATE_SPU_VOICE | SPU_VOICE_PITCH;
 
+            // perform fine tuning set by opcodes 0xd8 and 0xd9
             s16 fine_tuning = channel->fine_tuning;
             if( fine_tuning != 0 )
             {
@@ -1090,6 +1106,7 @@ void AkaoExecuteSequence( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 
             channel->pitch_base = pitch_base;
 
+            // reset vibrato effect for new note
             if( channel->update_flags & AKAO_UPDATE_VIBRATO )
             {
                 u32 pitch_base = channel->pitch_base * ((channel->vibrato_depth & 0x7f00) >> 0x8);
@@ -1100,6 +1117,7 @@ void AkaoExecuteSequence( AkaoChannel* channel, AkaoConfig* config, u32 mask )
                 channel->vibrato_rate_cur = 1;
             }
 
+            // reset tremolo effect for new note
             if( channel->update_flags & AKAO_UPDATE_TREMOLO )
             {
                 channel->tremolo_wave_id = g_akao_wave_table_key[channel->tremolo_type];
@@ -1107,20 +1125,24 @@ void AkaoExecuteSequence( AkaoChannel* channel, AkaoConfig* config, u32 mask )
                 channel->tremolo_rate_cur = 1;
             }
 
+            // reset pan lfo effect for new note
             if( channel->update_flags & AKAO_UPDATE_PAN_LFO )
             {
                 channel->pan_lfo_wave_id = g_akao_wave_table_key[channel->pan_lfo_type];
                 channel->pan_lfo_rate_cur = 1;
             }
 
+            // reset all additions for new note
             channel->vibrato_pitch = 0;
             channel->tremolo_vol = 0;
             channel->pitch_slide = 0;
         }
 
+        // renew legato in action flag for next note if legato still active
         channel->sfx_mask &= ~AKAO_SFX_LEGATO_ACT;
         channel->sfx_mask |= (channel->sfx_mask & AKAO_SFX_LEGATO) << 1;
 
+        // activate pitch bend slide effect set by 0xa4 opcode and recalculate pitch and fine tuning
         if( channel->key_add != 0 )
         {
             channel->key += channel->key_add;
@@ -1161,13 +1183,9 @@ void AkaoExecuteSequence( AkaoChannel* channel, AkaoConfig* config, u32 mask )
             channel->pitch_slide_steps_cur = channel->pitch_slide_steps;
             channel->key_add = 0;
             channel->pitch_slide_step = ((s32)(pitch - (channel->pitch_base << 0x10)) - channel->pitch_slide) / channel->pitch_slide_steps;
-
-            //ofLog( OF_LOG_NOTICE, "pitch: " + ofToString( pitch >> 0x10 ) );
-            //ofLog( OF_LOG_NOTICE, "channel->pitch_base: " + ofToString( channel->pitch_base ) );
-            //ofLog( OF_LOG_NOTICE, "channel->pitch_slide: " + ofToString( channel->pitch_slide >> 0x10 ) );
-            //ofLog( OF_LOG_NOTICE, "channel->pitch_slide_step: " + ofToString( channel->pitch_slide_step >> 0x10 ) );
         }
 
+        // store current key and transpose for next note effects
         channel->transpose_stored = channel->transpose;
         channel->key_stored = channel->key;
     }
