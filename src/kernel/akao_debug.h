@@ -4,7 +4,7 @@
 
 void AkaoDebug();
 void AkaoDebugSndBrowser();
-void AkaoDebugSequence();
+void AkaoDebugSequencer();
 void AkaoDebugInstr();
 
 
