@@ -586,7 +586,7 @@ void AkaoMainUpdate()
 //                g_channels_1_config.tempo_slide_steps -= 1;
 //                g_channels_1_config.tempo += g_channels_1_config.tempo_slide_step;
 //            }
-//
+
 //            if( g_channels_1_config.reverb_depth_slide_steps != 0 )
 //            {
 //                g_channels_1_config.reverb_depth_slide_steps -= 1;
@@ -1197,6 +1197,7 @@ void AkaoUpdateKeysOn()
 {
     u32 updated_mask = 0;
 
+    // update reverb if reverb depth was changed by opcode 0xea or 0xeb
     if( g_channels_1_config.update_flags & AKAO_UPDATE_REVERB )
     {
         s16 reverb_depth = g_channels_1_config.reverb_depth >> 0x10;
@@ -1212,6 +1213,7 @@ void AkaoUpdateKeysOn()
 //            reverb_depth = (reverb_depth * g_akao_reverb_mul) >> 0x8;
 //        }
 
+        // change reverb depth pan by global AKAO setting set by command 0xe0
         if( g_akao_reverb_pan < 0x40 )
         {
             g_spu_reverb_attr.depth.left = reverb_depth;
@@ -1309,6 +1311,7 @@ void AkaoUpdateKeysOn()
 //        g_channels_2_config.on_mask = 0;
 //    }
 
+    // update music channels
     if( g_channels_1_config.active_mask != 0 )
     {
         u32 exclude_mask = ~(/*w[0x80062f68] | g_channels_3_active_mask |*/ g_akao_stream_mask);
@@ -1333,39 +1336,40 @@ void AkaoUpdateKeysOn()
 //                        channel->attr.vol_r = 0;
 //                    }
 
+                    // if this channel has additional overlay channel then update  this channel too
+                    // because it doesn't has mask bit on it's own in active_mask
                     if( channel->update_flags & AKAO_UPDATE_OVERLAY )
                     {
                         AkaoUpdateChannelAndOverlayParamsToSpu( channel, exclude_mask, channel->over_voice_id );
                     }
+                    // update channel with alternative voice logic
                     else if( channel->update_flags & AKAO_UPDATE_ALTERNATIVE )
                     {
                         if( g_channels_1_config.on_mask & channel_mask )
                         {
-                            channel->update_flags ^= AKAO_UPDATE_ALTERNATIVE_CUR;
                             channel->attr.mask |= AKAO_UPDATE_SPU_ALL;
+
+                            // switch which voice update this cycle
+                            channel->update_flags ^= AKAO_UPDATE_ALTERNATIVE_CUR;
                         }
 
-                        if( channel->update_flags & AKAO_UPDATE_ALTERNATIVE_CUR )
+                        // update alternative voice if we don't has it's voice busy with some else channel
+                        if( (channel->update_flags & AKAO_UPDATE_ALTERNATIVE_CUR) && (exclude_mask & (1 << channel->alt_voice_id)) )
                         {
-                            if( exclude_mask & ( 1 << channel->alt_voice_id ) )
-                            {
-                                AkaoUpdateChannelParamsToSpu( channel->alt_voice_id, channel->attr );
+                            AkaoUpdateChannelParamsToSpu( channel->alt_voice_id, channel->attr );
 
-                                if( updated_mask & channel_mask )
-                                {
-                                    updated_mask = (updated_mask | (1 << channel->alt_voice_id)) & ~channel_mask;
-                                }
-                            }
-                            else
+                            if( updated_mask & channel_mask )
                             {
-                                AkaoUpdateChannelParamsToSpu( channel->attr.voice_id, channel->attr );
+                                updated_mask = (updated_mask | (1 << channel->alt_voice_id)) & ~channel_mask;
                             }
                         }
+                        // update normal voice
                         else
                         {
                             AkaoUpdateChannelParamsToSpu( channel->attr.voice_id, channel->attr );
                         }
                     }
+                    // update normal voice
                     else
                     {
                         AkaoUpdateChannelParamsToSpu( channel->attr.voice_id, channel->attr );
@@ -1532,6 +1536,7 @@ void AkaoCollectChannelsVoicesMask( AkaoChannel* channel, u32& ret_mask, u32 cha
     {
         if( channels_mask & channel_mask )
         {
+            // collect overlay voices if they not busy with some other channels
             if( channel->update_flags & AKAO_UPDATE_OVERLAY )
             {
                 u32 over_voice_id = channel->over_voice_id;
@@ -1541,6 +1546,7 @@ void AkaoCollectChannelsVoicesMask( AkaoChannel* channel, u32& ret_mask, u32 cha
                     ret_mask |= 0x1 << over_voice_id;
                 }
             }
+            // collect alternative voices if they not busy with some other channels
             else if( channel->update_flags & AKAO_UPDATE_ALTERNATIVE )
             {
                 if( exclude_mask & (0x1 << channel->alt_voice_id) )
