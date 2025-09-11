@@ -9,7 +9,16 @@
 
 bool g_akao_debug = false;
 bool g_akao_sequencer = false;
-int g_akao_playing = 0;
+bool g_akao_sequencer_prev = false;
+enum PlayingState
+{
+    PLAY,
+    PAUSE,
+    STOP,
+};
+PlayingState g_akao_playing = STOP;
+u32 g_akao_playing_music = 0;
+u32 g_akao_playing_file = 0;
 
 // music id from 0x1 - 0x60
 std::string g_music_names_en[] =
@@ -17,20 +26,20 @@ std::string g_music_names_en[] =
     "",                                 "(empty)",                 "Opening - Bombing Mission",            "Bombing Mission",
     "",                                 "",                        "",                                     "Mako Reactor",
     "Let the Battles Begin!",           "",                        "Anxiety",                              "Fight On!",
-    "",                                 "",                        "",                                     "",
+    "",                                 "",                        "Main Theme",                           "",
     "",                                 "",                        "",                                     "Who...Are You?",
     "",                                 "",                        "",                                     "",
-    "Don of the Slums",                 "",                        "",                                     "",
+    "Don of the Slums",                 "",                        "Red XIII's Theme",                     "",
     "",                                 "Lurking In the Darkness", "Shinra, Inc",                          "Infiltrating Shinra",
     "Under the Rotting Pizza",          "",                        "",                                     "Tifa's Theme",
-    "",                                 "The Oppressed",           "Flowers Blooming in the Church",       "",
+    "",                                 "The Oppressed",           "Flowers Blooming in the Church",       "The Chase",
     "",                                 "",                        "Barret's Theme",                       "",
     "",                                 "",                        "Turks' Theme ",                        "Fanfare",
     "",                                 "",                        "",                                     "",
     "",                                 "",                        "",                                     "Hurry!",
     "",                                 "",                        "",                                     "",
     "",                                 "",                        "",                                     "",
-    "",                                 "",                        "",                                     "",
+    "",                                 "Dear to the Heart",       "",                                     "",
     "Honeybee Inn",                     "",                        "",                                     "",
     "",                                 "",                        "",                                     "",
     "",                                 "",                        "",                                     "",
@@ -42,18 +51,18 @@ std::string g_music_names_en[] =
 };
 std::string g_music_names_jp[] =
 {
-    "",                                 "",                        "オープニング~爆破ミッション",              "爆破ミッション",
+    "",                                 "",                        "オープニング~爆破ミッション",                 "爆破ミッション",
     "",                                 "",                        "",                                     "魔晄炉",
     "闘う者達 lit. \"Those Who Fight\"", "",                        "不安な心 lit. \"Anxious Heart\"",       "更に闘う者達 lit. \"Those Who Fight Further\"",
-    "",                                 "",                        "",                                     "",
+    "",                                 "",                        "メインテーマ",                             "",
     "",                                 "",                        "",                                     "お前は…誰だ",
     "",                                 "",                        "",                                     "",
-    "スラムのドン",                       "",                        "",                                     "",
+    "スラムのドン",                         "",                        "レッドXIIIのテーマ",                       "",
     "",                                 "闇に潜む",                 "神羅カンパニー lit. \"Shinra Company\"", "神羅ビル潜入",
-    "腐ったピザの下で",                   "",                        "",                                     "ティファのテーマ",
-    "",                                 "虐げられた民衆",            "教会に咲く花",                           "",
-    "",                                 "",                        "バレットのテーマ",                       "",
-    "",                                 "",                        "タークスのテーマ",                       "ファンファーレ",
+    "腐ったピザの下で",                     "",                        "",                                     "ティファのテーマ",
+    "",                                 "虐げられた民衆",            "教会に咲く花",                           "クレイジーモーターサイクル lit. \"Crazy Motorcycle\"",
+    "",                                 "",                        "バレットのテーマ",                         "",
+    "",                                 "",                        "タークスのテーマ",                         "ファンファーレ",
     "",                                 "",                        "",                                     "",
     "",                                 "",                        "",                                     "急げ!",
     "",                                 "",                        "",                                     "",
@@ -266,10 +275,35 @@ static void AkaoDebugFillSongInfo()
 
 
 
+void AkaoDebugMusicPlay()
+{
+    AkaoMusicChannelsInit();
+    g_akao_playing = PLAY;
+    g_akao_sequencer = true;
+}
+
+
+
+void AkaoDebugMusicPause()
+{
+    g_akao_playing = PAUSE;
+}
+
+
+
+void AkaoDebugMusicStop()
+{
+    AkaoMusicChannelsStop();
+    g_akao_playing = STOP;
+}
+
+
+
 void AkaoDebug()
 {
     if( g_akao_debug == false ) return;
 
+    ImGui::SetNextWindowPos( ImGui::GetWindowPos() + ImVec2( 0, 0 ), ImGuiCond_FirstUseEver );
     ImGui::SetNextWindowSize( ImVec2( 900, 650 ), ImGuiCond_Once );
     if( ImGui::Begin( "Akao Debug", &g_akao_debug, ImGuiWindowFlags_NoCollapse ) )
     {
@@ -315,11 +349,6 @@ void AkaoDebugSndBrowser()
 
         AkaoDebugFillSongInfo();
     }
-
-    //static char search[128];
-    //ImGui::TextUnformatted( ICON_FA_SEARCH );
-    //ImGui::SameLine();
-    //ImGui::InputTextWithHint( "##search", "Type to filter...", search, IM_ARRAYSIZE( search ) );
 
     static int selected_id = 0;
 
@@ -393,23 +422,24 @@ void AkaoDebugSndBrowser()
                 }
 
                 AkaoSetReverbMode( g_musics[selected_id].reverb_type );
-                AkaoMusicChannelsInit();
 
-                g_akao_playing = g_musics[selected_id].id;
-                g_akao_sequencer = true;
+                g_akao_playing_music = g_musics[selected_id].id;
+                g_akao_playing_file = i;
+                AkaoDebugMusicPlay();
             }
 
-            if( g_akao_playing == g_musics[selected_id].id )
+            if( (g_akao_playing != STOP) && (g_akao_playing_music == g_musics[selected_id].id) && (g_akao_playing_file == i) )
             {
                 ImGui::SameLine();
                 if( ImGui::Button( ICON_FA_PAUSE ) )
                 {
+                    AkaoDebugMusicPause();
                 }
 
                 ImGui::SameLine();
                 if( ImGui::Button( ICON_FA_STOP ) )
                 {
-                    AkaoMusicChannelsStop();
+                    AkaoDebugMusicStop();
                 }
             }
 
@@ -428,7 +458,8 @@ void AkaoDebugSequencer()
 {
     if( g_akao_sequencer == false ) return;
 
-    ImGui::SetNextWindowSize( ImVec2( 900, 650 ), ImGuiCond_Once );
+    ImGui::SetNextWindowPos( ImGui::GetWindowPos() + ImVec2( 260, 150 ), ImGuiCond_FirstUseEver );
+    ImGui::SetNextWindowSize( ImVec2( 600, 500 ), ImGuiCond_Once );
     ImGui::Begin( "Akao Sequencer", &g_akao_sequencer, ImGuiWindowFlags_NoCollapse );
     {
         float width = ImGui::GetWindowContentRegionMax().x;
@@ -439,6 +470,22 @@ void AkaoDebugSequencer()
         ImVec4 color = ImVec4( 1.0f, 1.0f, 1.0f, 1.0f );
 
         u32 channels_mask = READ_LE_U32( g_akao_music );
+
+        if( ImGui::Button( ICON_FA_PLAY ) )
+        {
+            AkaoDebugMusicPlay();
+        }
+        ImGui::SameLine();
+        if( ImGui::Button( ICON_FA_PAUSE ) )
+        {
+            AkaoDebugMusicPause();
+        }
+        ImGui::SameLine();
+        if( ImGui::Button( ICON_FA_STOP ) )
+        {
+            AkaoDebugMusicStop();
+        }
+        add_y += line_height + 20;
 
         ImGui::SetCursorPos( ImVec2( base_x, add_y ) );
         ImGui::TextColored( ImVec4( 1.0f, 1.0f, 1.0f, 1.0f ), "PLAY MASK:%02x", g_channels_1_config.keyed_mask );
@@ -484,7 +531,7 @@ void AkaoDebugSequencer()
                 {
                     if( akao < g_channels_1[ i ].seq )
                     {
-                        color = ImVec4( 0.0f, 1.0f, 0.0f, 1.0f );
+                        color = ImVec4( 0.8f, 0.8f, 0.2f, 1.0f );
                     }
                     else
                     {
@@ -644,6 +691,13 @@ void AkaoDebugSequencer()
     }
 
     ImGui::End();
+
+    if( g_akao_sequencer != g_akao_sequencer_prev )
+    {
+        if( !g_akao_sequencer ) AkaoDebugMusicStop();
+
+        g_akao_sequencer_prev = g_akao_sequencer;
+    }
 }
 
 

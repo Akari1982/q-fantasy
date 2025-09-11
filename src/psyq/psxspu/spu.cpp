@@ -11,10 +11,6 @@
 //#include "timing_event.h"
 
 #include "audio_stream.h"
-//#include "util/imgui_manager.h"
-//#include "util/media_capture.h"
-//#include "util/state_wrapper.h"
-//#include "util/wav_reader_writer.h"
 
 #include "common/bitfield.h"
 #include "common/bitutils.h"
@@ -29,6 +25,7 @@
 //#include "imgui.h"
 
 #include <memory>
+#include <chrono>
 
 //LOG_CHANNEL(SPU);
 
@@ -358,13 +355,6 @@ static void ProcessReverb(s32 left_in, s32 right_in, s32* left_out, s32* right_o
 static void InternalGeneratePendingSamples();
 static void UpdateEventInterval();
 
-static void ExecuteFIFOWriteToRAM(TickCount& ticks);
-static void ExecuteFIFOReadFromRAM(TickCount& ticks);
-static void ExecuteTransfer(void* param, TickCount ticks, TickCount ticks_late);
-static void ManualTransferWrite(u16 value);
-static void UpdateTransferEvent();
-static void UpdateDMARequest();
-
 static void CreateOutputStream();
 
 namespace {
@@ -430,13 +420,6 @@ struct SPUState
   // +1 for reverb output
   std::array<std::unique_ptr<WAVWriter>, NUM_VOICES + 1> s_voice_dump_writers;
 #endif
-
-//#ifdef SPU_ENABLE_VU_METER
-//  s16 output_peaks[2] = {};
-//  s16 cd_audio_peaks[2] = {};
-//  s16 reverb_peaks[2] = {};
-//  s16 voice_peaks[NUM_VOICES][2] = {};
-//#endif
 };
 } // namespace
 
@@ -446,20 +429,7 @@ ALIGN_TO_CACHE_LINE static std::array<s16, (44100 / 60) * 2> s_muted_output_buff
 
 } // namespace SPU
 
-//#ifdef SPU_ENABLE_VU_METER
-//
-//static bool IsVUMeterActive()
-//{
-//  return ImGuiManager::IsSPUDebugWindowEnabled();
-//}
-//
-//ALWAYS_INLINE_RELEASE static void UpdateDebugPeaks(s16 peaks[2], s32 left, s32 right)
-//{
-//  peaks[0] = std::max(static_cast<s16>(std::abs(Clamp16(left))), peaks[0]);
-//  peaks[1] = std::max(static_cast<s16>(std::abs(Clamp16(right))), peaks[1]);
-//}
-//
-//#endif
+
 
 void SPU::Initialize()
 {
@@ -497,6 +467,8 @@ void SPU::Initialize()
 //#endif
 }
 
+
+
 void SPU::CreateOutputStream()
 {
 //  INFO_LOG("Creating '{}' audio stream, sample rate = {}, buffer = {}, latency = {}{}, stretching = {}",
@@ -527,20 +499,15 @@ void SPU::CreateOutputStream()
 //  s_state.audio_stream->SetPaused(System::IsPaused());
 }
 
+
+
 void SPU::RecreateOutputStream()
 {
   s_state.audio_stream.reset();
   CreateOutputStream();
 }
 
-void SPU::CPUClockChanged()
-{
-//  // (X * D) / N / 768 -> (X * D) / (N * 768)
-//  s_state.cpu_ticks_per_spu_tick = System::ScaleTicksToOverclock(SYSCLK_TICKS_PER_SPU_TICK);
-//  s_state.cpu_tick_divider = static_cast<TickCount>(g_settings.cpu_overclock_numerator * SYSCLK_TICKS_PER_SPU_TICK);
-//  s_state.ticks_carry = 0;
-//  UpdateEventInterval();
-}
+
 
 void SPU::Shutdown()
 {
@@ -553,6 +520,8 @@ void SPU::Shutdown()
 //  s_state.transfer_event.Deactivate();
   s_state.audio_stream.reset();
 }
+
+
 
 void SPU::Reset()
 {
@@ -614,136 +583,7 @@ void SPU::Reset()
   UpdateEventInterval();
 }
 
-//template<bool COMPATIBILITY>
-//bool SPU::DoCompatibleState(StateWrapper& sw)
-//{
-//  struct OldEnvelope
-//  {
-//    s32 counter;
-//    u8 rate;
-//    bool decreasing;
-//    bool exponential;
-//    bool phase_invert;
-//  };
-//  struct OldSweep
-//  {
-//    OldEnvelope env;
-//    bool envelope_active;
-//    s16 current_level;
-//  };
-//
-//  static constexpr const auto do_compatible_volume_envelope = [](StateWrapper& sw, VolumeEnvelope* env) {
-//    if constexpr (COMPATIBILITY)
-//    {
-//      if (sw.GetVersion() < 70) [[unlikely]]
-//      {
-//        OldEnvelope oenv;
-//        sw.DoPOD(&oenv);
-//        env->Reset(oenv.rate, 0x7f, oenv.decreasing, oenv.exponential, oenv.phase_invert);
-//        env->counter = oenv.counter; // wrong
-//        return;
-//      }
-//    }
-//
-//    sw.DoPOD(env);
-//  };
-//  static constexpr const auto do_compatible_volume_sweep = [](StateWrapper& sw, VolumeSweep* sweep) {
-//    if constexpr (COMPATIBILITY)
-//    {
-//      if (sw.GetVersion() < 70) [[unlikely]]
-//      {
-//        OldSweep osweep;
-//        sw.DoPOD(&osweep);
-//        sweep->envelope.Reset(osweep.env.rate, 0x7f, osweep.env.decreasing, osweep.env.exponential,
-//                              osweep.env.phase_invert);
-//        sweep->envelope.counter = osweep.env.counter; // wrong
-//        sweep->envelope_active = osweep.envelope_active;
-//        sweep->current_level = osweep.current_level;
-//        return;
-//      }
-//    }
-//
-//    sw.DoPOD(sweep);
-//  };
-//
-//  sw.Do(&s_state.ticks_carry);
-//  sw.Do(&s_state.SPUCNT.bits);
-//  sw.Do(&s_state.SPUSTAT.bits);
-//  sw.Do(&s_state.transfer_control.bits);
-//  sw.Do(&s_state.transfer_address);
-//  sw.Do(&s_state.transfer_address_reg);
-//  sw.Do(&s_state.irq_address);
-//  sw.Do(&s_state.capture_buffer_position);
-//  sw.Do(&s_state.main_volume_left_reg.bits);
-//  sw.Do(&s_state.main_volume_right_reg.bits);
-//  do_compatible_volume_sweep(sw, &s_state.main_volume_left);
-//  do_compatible_volume_sweep(sw, &s_state.main_volume_right);
-//  sw.Do(&s_state.cd_audio_volume_left);
-//  sw.Do(&s_state.cd_audio_volume_right);
-//  sw.Do(&s_state.external_volume_left);
-//  sw.Do(&s_state.external_volume_right);
-//  sw.Do(&s_state.key_on_register);
-//  sw.Do(&s_state.key_off_register);
-//  sw.Do(&s_state.endx_register);
-//  sw.Do(&s_state.pitch_modulation_enable_register);
-//  sw.Do(&s_state.noise_mode_register);
-//  sw.Do(&s_state.noise_count);
-//  sw.Do(&s_state.noise_level);
-//  sw.Do(&s_state.reverb_on_register);
-//  sw.Do(&s_state.reverb_base_address);
-//  sw.Do(&s_state.reverb_current_address);
-//  sw.Do(&s_state.reverb_registers.vLOUT);
-//  sw.Do(&s_state.reverb_registers.vROUT);
-//  sw.Do(&s_state.reverb_registers.mBASE);
-//  sw.DoArray(s_state.reverb_registers.rev, NUM_REVERB_REGS);
-//  for (u32 i = 0; i < 2; i++)
-//    sw.DoArray(s_state.reverb_downsample_buffer.data(), s_state.reverb_downsample_buffer.size());
-//  for (u32 i = 0; i < 2; i++)
-//    sw.DoArray(s_state.reverb_upsample_buffer.data(), s_state.reverb_upsample_buffer.size());
-//  sw.Do(&s_state.reverb_resample_buffer_position);
-//  for (u32 i = 0; i < NUM_VOICES; i++)
-//  {
-//    Voice& v = s_state.voices[i];
-//    sw.Do(&v.current_address);
-//    sw.DoArray(v.regs.index, NUM_VOICE_REGISTERS);
-//    sw.Do(&v.counter.bits);
-//    sw.Do(&v.current_block_flags.bits);
-//    if constexpr (COMPATIBILITY)
-//      sw.DoEx(&v.is_first_block, 47, false);
-//    else
-//      sw.Do(&v.is_first_block);
-//    sw.DoArray(&v.current_block_samples[NUM_SAMPLES_FROM_LAST_ADPCM_BLOCK], NUM_SAMPLES_PER_ADPCM_BLOCK);
-//    sw.DoArray(&v.current_block_samples[0], NUM_SAMPLES_FROM_LAST_ADPCM_BLOCK);
-//    sw.Do(&v.adpcm_last_samples);
-//    sw.Do(&v.last_volume);
-//    do_compatible_volume_sweep(sw, &v.left_volume);
-//    do_compatible_volume_sweep(sw, &v.right_volume);
-//    do_compatible_volume_envelope(sw, &v.adsr_envelope);
-//    sw.Do(&v.adsr_phase);
-//    sw.Do(&v.adsr_target);
-//    sw.Do(&v.has_samples);
-//    sw.Do(&v.ignore_loop_address);
-//  }
-//
-//  sw.Do(&s_state.transfer_fifo);
-//  sw.DoBytes(s_ram.data(), RAM_SIZE);
-//
-//  if (sw.IsReading())
-//  {
-//    UpdateEventInterval();
-//    UpdateTransferEvent();
-//  }
-//
-//  return !sw.HasError();
-//}
 
-//bool SPU::DoState(StateWrapper& sw)
-//{
-//  if (sw.GetVersion() < 70) [[unlikely]]
-//    return DoCompatibleState<true>(sw);
-//  else
-//    return DoCompatibleState<false>(sw);
-//}
 
 u16 SPU::ReadRegister(u32 offset)
 {
@@ -1028,17 +868,14 @@ void SPU::WriteRegister(u32 offset, u16 value)
 
     case 0x1F801DA8 - SPU_BASE:
     {
-//      TRACE_LOG("SPU transfer data register <- 0x{:04X} (RAM offset 0x{:08X})", ZeroExtend32(value),
-//                s_state.transfer_address);
-
-      ManualTransferWrite(value);
+      // don't support manual transfer write
       return;
     }
 
     case 0x1F801DAA - SPU_BASE:
     {
 //      DEBUG_LOG("SPU control register <- 0x{:04X}", value);
-//      GeneratePendingSamples();
+      GeneratePendingSamples();
 
       const SPUCNTRegister new_value{value};
 //      if (new_value.ram_transfer_mode != s_state.SPUCNT.ram_transfer_mode &&
@@ -1377,309 +1214,54 @@ void SPU::IncrementCaptureBufferPosition()
   s_state.SPUSTAT.second_half_capture_buffer = s_state.capture_buffer_position >= (CAPTURE_BUFFER_SIZE_PER_CHANNEL / 2);
 }
 
-ALWAYS_INLINE_RELEASE void SPU::ExecuteFIFOReadFromRAM(TickCount& ticks)
-{
-//  while (ticks > 0 && !s_state.transfer_fifo.IsFull())
-//  {
-//    u16 value;
-//    std::memcpy(&value, &s_ram[s_state.transfer_address], sizeof(u16));
-//    s_state.transfer_address = (s_state.transfer_address + sizeof(u16)) & RAM_MASK;
-//    s_state.transfer_fifo.Push(value);
-//    ticks -= TRANSFER_TICKS_PER_HALFWORD;
-//
-//    if (IsRAMIRQTriggerable() && CheckRAMIRQ(s_state.transfer_address))
-//    {
-//      DEBUG_LOG("Trigger IRQ @ {:08X} ({:04X}) from transfer read", s_state.transfer_address,
-//                s_state.transfer_address / 8);
-//      TriggerRAMIRQ();
-//    }
-//  }
-}
 
-ALWAYS_INLINE_RELEASE void SPU::ExecuteFIFOWriteToRAM(TickCount& ticks)
-{
-//  while (ticks > 0 && !s_state.transfer_fifo.IsEmpty())
-//  {
-//    u16 value = s_state.transfer_fifo.Pop();
-//    std::memcpy(&s_ram[s_state.transfer_address], &value, sizeof(u16));
-//    s_state.transfer_address = (s_state.transfer_address + sizeof(u16)) & RAM_MASK;
-//    ticks -= TRANSFER_TICKS_PER_HALFWORD;
-//
-//    if (IsRAMIRQTriggerable() && CheckRAMIRQ(s_state.transfer_address))
-//    {
-//      DEBUG_LOG("Trigger IRQ @ {:08X} ({:04X}) from transfer write", s_state.transfer_address,
-//                s_state.transfer_address / 8);
-//      TriggerRAMIRQ();
-//    }
-//  }
-}
-
-void SPU::ExecuteTransfer(void* param, TickCount ticks, TickCount ticks_late)
-{
-//  const RAMTransferMode mode = s_state.SPUCNT.ram_transfer_mode;
-//  DebugAssert(mode != RAMTransferMode::Stopped);
-//  InternalGeneratePendingSamples();
-//
-//  if (mode == RAMTransferMode::DMARead)
-//  {
-//    while (ticks > 0 && !s_state.transfer_fifo.IsFull())
-//    {
-//      ExecuteFIFOReadFromRAM(ticks);
-//
-//      // this can result in the FIFO being emptied, hence double the while loop
-//      UpdateDMARequest();
-//    }
-
-    // we're done if we have no more data to read
-//    if (s_state.transfer_fifo.IsFull())
-//    {
-//      s_state.SPUSTAT.transfer_busy = false;
-//      s_state.transfer_event.Deactivate();
-//      return;
-//    }
-
-//    s_state.SPUSTAT.transfer_busy = true;
-//    const TickCount ticks_until_complete =
-//      TickCount(s_state.transfer_fifo.GetSpace() * u32(TRANSFER_TICKS_PER_HALFWORD)) + ((ticks < 0) ? -ticks : 0);
-//    s_state.transfer_event.Schedule(ticks_until_complete);
-//  }
-//  else
-//  {
-//    // write the fifo to ram, request dma again when empty
-//    while (ticks > 0 && !s_state.transfer_fifo.IsEmpty())
-//    {
-//      ExecuteFIFOWriteToRAM(ticks);
-//
-//      // similar deal here, the FIFO can be written out in a long slice
-//      UpdateDMARequest();
-//    }
-//
-//    // we're done if we have no more data to write
-//    if (s_state.transfer_fifo.IsEmpty())
-//    {
-//      s_state.SPUSTAT.transfer_busy = false;
-//      s_state.transfer_event.Deactivate();
-//      return;
-//    }
-//
-//    s_state.SPUSTAT.transfer_busy = true;
-//    const TickCount ticks_until_complete =
-//      TickCount(s_state.transfer_fifo.GetSize() * u32(TRANSFER_TICKS_PER_HALFWORD)) + ((ticks < 0) ? -ticks : 0);
-//    s_state.transfer_event.Schedule(ticks_until_complete);
-//  }
-}
-
-void SPU::ManualTransferWrite(u16 value)
-{
-//  if (!s_state.transfer_fifo.IsEmpty() && s_state.SPUCNT.ram_transfer_mode != RAMTransferMode::DMARead)
-//  {
-//    WARNING_LOG("FIFO not empty on manual SPU write, draining to hopefully avoid corruption. Game is silly.");
-//    if (s_state.SPUCNT.ram_transfer_mode != RAMTransferMode::Stopped)
-//      ExecuteTransfer(nullptr, std::numeric_limits<s32>::max(), 0);
-//  }
-//
-//  std::memcpy(&s_ram[s_state.transfer_address], &value, sizeof(u16));
-//  s_state.transfer_address = (s_state.transfer_address + sizeof(u16)) & RAM_MASK;
-//
-//  if (IsRAMIRQTriggerable() && CheckRAMIRQ(s_state.transfer_address))
-//  {
-//    DEBUG_LOG("Trigger IRQ @ {:08X} ({:04X}) from manual write", s_state.transfer_address,
-//              s_state.transfer_address / 8);
-//    TriggerRAMIRQ();
-//  }
-}
-
-void SPU::UpdateTransferEvent()
-{
-//  const RAMTransferMode mode = s_state.SPUCNT.ram_transfer_mode;
-//  if (mode == RAMTransferMode::Stopped)
-//  {
-//    s_state.transfer_event.Deactivate();
-//  }
-//  else if (mode == RAMTransferMode::DMARead)
-//  {
-//    // transfer event fills the fifo
-//    if (s_state.transfer_fifo.IsFull())
-//      s_state.transfer_event.Deactivate();
-//    else if (!s_state.transfer_event.IsActive())
-//      s_state.transfer_event.Schedule(TickCount(s_state.transfer_fifo.GetSpace() * u32(TRANSFER_TICKS_PER_HALFWORD)));
-//  }
-//  else
-//  {
-//    // transfer event copies from fifo to ram
-//    if (s_state.transfer_fifo.IsEmpty())
-//      s_state.transfer_event.Deactivate();
-//    else if (!s_state.transfer_event.IsActive())
-//      s_state.transfer_event.Schedule(TickCount(s_state.transfer_fifo.GetSize() * u32(TRANSFER_TICKS_PER_HALFWORD)));
-//  }
-//
-//  s_state.SPUSTAT.transfer_busy = s_state.transfer_event.IsActive();
-}
-
-void SPU::UpdateDMARequest()
-{
-//  switch (s_state.SPUCNT.ram_transfer_mode)
-//  {
-//    case RAMTransferMode::DMARead:
-//      s_state.SPUSTAT.dma_read_request = s_state.transfer_fifo.IsFull();
-//      s_state.SPUSTAT.dma_write_request = false;
-//      s_state.SPUSTAT.dma_request = s_state.SPUSTAT.dma_read_request;
-//      break;
-//
-//    case RAMTransferMode::DMAWrite:
-//      s_state.SPUSTAT.dma_read_request = false;
-//      s_state.SPUSTAT.dma_write_request = s_state.transfer_fifo.IsEmpty();
-//      s_state.SPUSTAT.dma_request = s_state.SPUSTAT.dma_write_request;
-//      break;
-//
-//    case RAMTransferMode::Stopped:
-//    case RAMTransferMode::ManualWrite:
-//    default:
-//      s_state.SPUSTAT.dma_read_request = false;
-//      s_state.SPUSTAT.dma_write_request = false;
-//      s_state.SPUSTAT.dma_request = false;
-//      break;
-//  }
-//
-//  // This might call us back directly.
-//  DMA::SetRequest(DMA::Channel::SPU, s_state.SPUSTAT.dma_request);
-}
-
-void SPU::DMARead(u32* words, u32 word_count)
-{
-  /*
-    From @JaCzekanski - behavior when block size is larger than the FIFO size
-    for blocks <= 0x16 - all data is transferred correctly
-    using block size 0x20 transfer behaves strange:
-    % Writing 524288 bytes to SPU RAM to 0x00000000 using DMA... ok
-    % Reading 256 bytes from SPU RAM from 0x00001000 using DMA... ok
-    % 0x00001000: 00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f ................
-    % 0x00001010: 10 11 12 13 14 15 16 17 18 19 1a 1b 1c 1d 1e 1f ................
-    % 0x00001020: 20 21 22 23 24 25 26 27 28 29 2a 2b 2c 2d 2e 2f  !"#$%&'()*+,-./
-    % 0x00001030: 30 31 32 33 34 35 36 37 38 39 3a 3b 3c 3d 3e 3f 0123456789:;<=>?
-    % 0x00001040: 3e 3f 3e 3f 3e 3f 3e 3f 3e 3f 3e 3f 3e 3f 3e 3f >?>?>?>?>?>?>?>?
-    % 0x00001050: 3e 3f 3e 3f 3e 3f 3e 3f 3e 3f 3e 3f 3e 3f 3e 3f >?>?>?>?>?>?>?>?
-    % 0x00001060: 3e 3f 3e 3f 3e 3f 3e 3f 3e 3f 3e 3f 3e 3f 3e 3f >?>?>?>?>?>?>?>?
-    % 0x00001070: 3e 3f 3e 3f 3e 3f 3e 3f 3e 3f 3e 3f 3e 3f 3e 3f >?>?>?>?>?>?>?>?
-    % 0x00001080: 40 41 42 43 44 45 46 47 48 49 4a 4b 4c 4d 4e 4f @ABCDEFGHIJKLMNO
-    % 0x00001090: 50 51 52 53 54 55 56 57 58 59 5a 5b 5c 5d 5e 5f PQRSTUVWXYZ[\]^_
-    % 0x000010a0: 60 61 62 63 64 65 66 67 68 69 6a 6b 6c 6d 6e 6f `abcdefghijklmno
-    % 0x000010b0: 70 71 72 73 74 75 76 77 78 79 7a 7b 7c 7d 7e 7f pqrstuvwxyz{|}~.
-    % 0x000010c0: 7e 7f 7e 7f 7e 7f 7e 7f 7e 7f 7e 7f 7e 7f 7e 7f ~.~.~.~.~.~.~.~.
-    % 0x000010d0: 7e 7f 7e 7f 7e 7f 7e 7f 7e 7f 7e 7f 7e 7f 7e 7f ~.~.~.~.~.~.~.~.
-    % 0x000010e0: 7e 7f 7e 7f 7e 7f 7e 7f 7e 7f 7e 7f 7e 7f 7e 7f ~.~.~.~.~.~.~.~.
-    % 0x000010f0: 7e 7f 7e 7f 7e 7f 7e 7f 7e 7f 7e 7f 7e 7f 7e 7f ~.~.~.~.~.~.~.~.
-    Using Block size = 0x10 (correct data)
-    % Reading 256 bytes from SPU RAM from 0x00001000 using DMA... ok
-    % 0x00001000: 00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f ................
-    % 0x00001010: 10 11 12 13 14 15 16 17 18 19 1a 1b 1c 1d 1e 1f ................
-    % 0x00001020: 20 21 22 23 24 25 26 27 28 29 2a 2b 2c 2d 2e 2f  !"#$%&'()*+,-./
-    % 0x00001030: 30 31 32 33 34 35 36 37 38 39 3a 3b 3c 3d 3e 3f 0123456789:;<=>?
-    % 0x00001040: 40 41 42 43 44 45 46 47 48 49 4a 4b 4c 4d 4e 4f @ABCDEFGHIJKLMNO
-    % 0x00001050: 50 51 52 53 54 55 56 57 58 59 5a 5b 5c 5d 5e 5f PQRSTUVWXYZ[\]^_
-    % 0x00001060: 60 61 62 63 64 65 66 67 68 69 6a 6b 6c 6d 6e 6f `abcdefghijklmno
-    % 0x00001070: 70 71 72 73 74 75 76 77 78 79 7a 7b 7c 7d 7e 7f pqrstuvwxyz{|}~.
-    % 0x00001080: 80 81 82 83 84 85 86 87 88 89 8a 8b 8c 8d 8e 8f ................
-    % 0x00001090: 90 91 92 93 94 95 96 97 98 99 9a 9b 9c 9d 9e 9f ................
-    % 0x000010a0: a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 aa ab ac ad ae af ................
-    % 0x000010b0: b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 ba bb bc bd be bf ................
-    % 0x000010c0: c0 c1 c2 c3 c4 c5 c6 c7 c8 c9 ca cb cc cd ce cf ................
-    % 0x000010d0: d0 d1 d2 d3 d4 d5 d6 d7 d8 d9 da db dc dd de df ................
-    % 0x000010e0: e0 e1 e2 e3 e4 e5 e6 e7 e8 e9 ea eb ec ed ee ef ................
-    % 0x000010f0: f0 f1 f2 f3 f4 f5 f6 f7 f8 f9 fa fb fc fd fe ff ................
-   */
-
-//  u16* halfwords = reinterpret_cast<u16*>(words);
-//  u32 halfword_count = word_count * 2;
-//
-//  const u32 size = s_state.transfer_fifo.GetSize();
-//  if (word_count > size)
-//  {
-//    u16 fill_value = 0;
-//    if (size > 0)
-//    {
-//      s_state.transfer_fifo.PopRange(halfwords, size);
-//      fill_value = halfwords[size - 1];
-//    }
-
-//    WARNING_LOG("Transfer FIFO underflow, filling with 0x{:04X}", fill_value);
-//    std::fill_n(&halfwords[size], halfword_count - size, fill_value);
-//  }
-//  else
-//  {
-//    s_state.transfer_fifo.PopRange(halfwords, halfword_count);
-//  }
-//
-//  UpdateDMARequest();
-//  UpdateTransferEvent();
-}
-
-void SPU::DMAWrite(const u32* words, u32 word_count)
-{
-//  const u16* halfwords = reinterpret_cast<const u16*>(words);
-//  u32 halfword_count = word_count * 2;
-//
-//  const u32 words_to_transfer = std::min(s_state.transfer_fifo.GetSpace(), halfword_count);
-//  s_state.transfer_fifo.PushRange(halfwords, words_to_transfer);
-//
-//  if (words_to_transfer != halfword_count) [[unlikely]]
-//    WARNING_LOG("Transfer FIFO overflow, dropping {} halfwords", halfword_count - words_to_transfer);
-//
-//  UpdateDMARequest();
-//  UpdateTransferEvent();
-}
 
 void SPU::GeneratePendingSamples()
 {
-//  if (s_state.transfer_event.IsActive())
-//    s_state.transfer_event.InvokeEarly();
-
   InternalGeneratePendingSamples();
 }
 
 void SPU::InternalGeneratePendingSamples()
 {
-//  const TickCount ticks_pending = s_state.tick_event.GetTicksSinceLastExecution();
-//  TickCount frames_to_execute;
-//  if (g_settings.cpu_overclock_active)
-//  {
-//    frames_to_execute = static_cast<u32>((static_cast<u64>(ticks_pending) * g_settings.cpu_overclock_denominator) +
-//                                         static_cast<u32>(s_state.ticks_carry)) /
-//                        static_cast<u32>(s_state.cpu_tick_divider);
-//  }
-//  else
-//  {
-//    frames_to_execute = (ticks_pending + s_state.ticks_carry) / SYSCLK_TICKS_PER_SPU_TICK;
-//  }
-//
-//  const bool force_exec = (frames_to_execute > 0);
-//  s_state.tick_event.InvokeEarly(force_exec);
+    // we need to generate all samples till this point because state of SPU is changed
+    static uint64_t time_prev = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::steady_clock::now().time_since_epoch() ).count();
+    uint64_t time_cur = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::steady_clock::now().time_since_epoch() ).count();
+    uint64_t delta = time_cur - time_prev;
+    double counter_freq = 33868800.0; // 33.8688 MHz
+    uint64_t cpu_ticks  = (uint64_t)(delta * counter_freq / 1000000.0);
+    SPU::Execute( nullptr, cpu_ticks + s_state.ticks_carry, 0 );
+    time_prev = time_cur;
 }
+
+
 
 const std::array<u8, SPU::RAM_SIZE>& SPU::GetRAM()
 {
   return s_ram;
 }
 
+
+
 std::array<u8, SPU::RAM_SIZE>& SPU::GetWritableRAM()
 {
   return s_ram;
 }
+
+
 
 bool SPU::IsAudioOutputMuted()
 {
   return s_state.audio_output_muted;
 }
 
+
+
 void SPU::SetAudioOutputMuted(bool muted)
 {
   s_state.audio_output_muted = muted;
 }
 
-//AudioStream* SPU::GetOutputStream()
-//{
-//  return s_state.audio_stream.get();
-//}
+
 
 void SPU::Voice::KeyOn()
 {
@@ -2053,14 +1635,6 @@ ALWAYS_INLINE_RELEASE std::tuple<s32, s32> SPU::SampleVoice(u32 voice_index)
   {
     voice.last_volume = 0;
 
-//#ifdef SPU_DUMP_ALL_VOICES
-//    if (s_state.s_voice_dump_writers[voice_index])
-//    {
-//      const s16 dump_samples[2] = {0, 0};
-//      s_state.s_voice_dump_writers[voice_index]->WriteFrames(dump_samples, 1);
-//    }
-//#endif
-
     return {};
   }
 
@@ -2391,19 +1965,8 @@ void SPU::ProcessReverb(s32 left_in, s32 right_in, s32* left_out, s32* right_out
 void SPU::Execute(void* param, TickCount ticks, TickCount ticks_late)
 {
   u32 remaining_frames;
-//  if (g_settings.cpu_overclock_active)
-//  {
-//    // (X * D) / N / 768 -> (X * D) / (N * 768)
-//    const u64 num =
-//      (static_cast<u64>(ticks) * g_settings.cpu_overclock_denominator) + static_cast<u32>(s_state.ticks_carry);
-//    remaining_frames = static_cast<u32>(num / s_state.cpu_tick_divider);
-//    s_state.ticks_carry = static_cast<TickCount>(num % s_state.cpu_tick_divider);
-//  }
-//  else
-  {
-    remaining_frames = static_cast<u32>((ticks + s_state.ticks_carry) / SYSCLK_TICKS_PER_SPU_TICK);
-    s_state.ticks_carry = (ticks + s_state.ticks_carry) % SYSCLK_TICKS_PER_SPU_TICK;
-  }
+  remaining_frames = static_cast<u32>((ticks + s_state.ticks_carry) / SYSCLK_TICKS_PER_SPU_TICK);
+  s_state.ticks_carry = (ticks + s_state.ticks_carry) % SYSCLK_TICKS_PER_SPU_TICK;
 
   while (remaining_frames > 0)
   {
@@ -2537,14 +2100,6 @@ void SPU::Execute(void* param, TickCount ticks, TickCount ticks_late)
       }
     }
 
-#ifndef __ANDROID__
-//    if (MediaCapture* cap = System::GetMediaCapture(); cap && !s_state.audio_output_muted) [[unlikely]]
-//    {
-//      if (!cap->DeliverAudioFrames(output_frame_start, frames_in_this_batch))
-//        System::StopMediaCapture();
-//    }
-#endif
-
     if (!s_state.audio_output_muted) [[likely]]
       s_state.audio_stream->EndWrite(frames_in_this_batch);
     remaining_frames -= frames_in_this_batch;
@@ -2568,310 +2123,4 @@ void SPU::UpdateEventInterval()
 //  const TickCount new_downcount = interval_ticks - s_state.ticks_carry;
 //  s_state.tick_event.SetInterval(interval_ticks);
 //  s_state.tick_event.Schedule(new_downcount);
-}
-
-void SPU::DrawDebugStateWindow(float scale)
-{
-//  static const ImVec4 active_color{1.0f, 1.0f, 1.0f, 1.0f};
-//  static const ImVec4 inactive_color{0.4f, 0.4f, 0.4f, 1.0f};
-//
-//#ifdef SPU_ENABLE_VU_METER
-//  const auto draw_vu_meter = [&scale](s16* peaks) {
-//    constexpr s32 num_sections = 12;
-//    constexpr s32 amp_per_section = 32767 / num_sections;
-//    const s32 lidx = peaks[0] / amp_per_section;
-//    const s32 ridx = peaks[1] / amp_per_section;
-//
-//    const ImVec2 section_size = ImVec2(std::floor(scale * 8.0f), std::floor(scale * 4.0f));
-//    const float divider_size = std::floor(scale * 1.0f);
-//    ImVec2 left_start = ImGui::GetCursorScreenPos() + ImVec2(0.0f, std::floor(scale * 4.0f));
-//    ImVec2 right_start = left_start + ImVec2(0.0f, section_size.y + divider_size);
-//    for (s32 i = 0; i < num_sections; i++)
-//    {
-//      u32 left_color = IM_COL32(30, 30, 30, 255);
-//      if (peaks[0] > 0 && lidx >= i)
-//      {
-//        left_color = IM_COL32(255, 0, 0, 255);
-//        left_color = (i <= 8) ? IM_COL32(255, 255, 0, 255) : left_color;
-//        left_color = (i <= 6) ? IM_COL32(0, 255, 0, 255) : left_color;
-//      }
-//      u32 right_color = IM_COL32(30, 30, 30, 255);
-//      if (peaks[1] > 0 && ridx >= i)
-//      {
-//        right_color = IM_COL32(255, 0, 0, 255);
-//        right_color = (i <= 8) ? IM_COL32(255, 255, 0, 255) : right_color;
-//        right_color = (i <= 6) ? IM_COL32(0, 255, 0, 255) : right_color;
-//      }
-//
-//      ImGui::GetWindowDrawList()->AddRectFilled(left_start, left_start + section_size, left_color);
-//      ImGui::GetWindowDrawList()->AddRectFilled(right_start, right_start + section_size, right_color);
-//      left_start.x += section_size.x + divider_size;
-//      right_start.x += section_size.x + divider_size;
-//    }
-//
-//    peaks[0] = 0;
-//    peaks[1] = 0;
-//  };
-//#endif
-//
-//  // status
-//  if (ImGui::CollapsingHeader("Status", ImGuiTreeNodeFlags_DefaultOpen))
-//  {
-//    static constexpr std::array<const char*, 4> transfer_modes = {
-//      {"Transfer Stopped", "Manual Write", "DMA Write", "DMA Read"}};
-//    const std::array<float, 6> offsets = {
-//      {100.0f * scale, 200.0f * scale, 300.0f * scale, 420.0f * scale, 500.0f * scale, 600.0f * scale}};
-//
-//    ImGui::Text("Control: ");
-//    ImGui::SameLine(offsets[0]);
-//    ImGui::TextColored(s_state.SPUCNT.enable ? active_color : inactive_color, "SPU Enable");
-//    ImGui::SameLine(offsets[1]);
-//    ImGui::TextColored(s_state.SPUCNT.mute_n ? inactive_color : active_color, "Mute SPU");
-//    ImGui::SameLine(offsets[2]);
-//    ImGui::TextColored(s_state.SPUCNT.external_audio_enable ? active_color : inactive_color, "External Audio");
-//    ImGui::SameLine(offsets[3]);
-//    ImGui::TextColored(s_state.SPUCNT.ram_transfer_mode != RAMTransferMode::Stopped ? active_color : inactive_color,
-//                       "%s", transfer_modes[static_cast<u8>(s_state.SPUCNT.ram_transfer_mode.GetValue())]);
-//
-//    ImGui::Text("Status: ");
-//    ImGui::SameLine(offsets[0]);
-//    ImGui::TextColored(s_state.SPUSTAT.irq9_flag ? active_color : inactive_color, "IRQ9");
-//    ImGui::SameLine(offsets[1]);
-//    ImGui::TextColored(s_state.SPUSTAT.dma_request ? active_color : inactive_color, "DMA Request");
-//    ImGui::SameLine(offsets[2]);
-//    ImGui::TextColored(s_state.SPUSTAT.dma_read_request ? active_color : inactive_color, "DMA Read");
-//    ImGui::SameLine(offsets[3]);
-//    ImGui::TextColored(s_state.SPUSTAT.dma_write_request ? active_color : inactive_color, "DMA Write");
-//    ImGui::SameLine(offsets[4]);
-//    ImGui::TextColored(s_state.SPUSTAT.transfer_busy ? active_color : inactive_color, "Transfer Busy");
-//    ImGui::SameLine(offsets[5]);
-//    ImGui::TextColored(s_state.SPUSTAT.second_half_capture_buffer ? active_color : inactive_color,
-//                       "Second Capture Buffer");
-//
-//    ImGui::Text("Interrupt: ");
-//    ImGui::SameLine(offsets[0]);
-//    ImGui::TextColored(s_state.SPUCNT.irq9_enable ? active_color : inactive_color,
-//                       s_state.SPUCNT.irq9_enable ? "Enabled @ 0x%04X (actual 0x%08X)" :
-//                                                    "Disabled @ 0x%04X (actual 0x%08X)",
-//                       s_state.irq_address, (ZeroExtend32(s_state.irq_address) * 8) & RAM_MASK);
-//
-//    ImGui::Text("Volume: ");
-//    ImGui::SameLine(offsets[0]);
-//    ImGui::Text("Left: %d%%", ApplyVolume(100, s_state.main_volume_left.current_level));
-//    ImGui::SameLine(offsets[1]);
-//    ImGui::Text("Right: %d%%", ApplyVolume(100, s_state.main_volume_right.current_level));
-//#ifdef SPU_ENABLE_VU_METER
-//    ImGui::SameLine(offsets[2]);
-//    draw_vu_meter(s_state.output_peaks);
-//    ImGui::NewLine();
-//#endif
-//
-//    ImGui::Text("CD Audio: ");
-//    ImGui::SameLine(offsets[0]);
-//    ImGui::TextColored(s_state.SPUCNT.cd_audio_enable ? active_color : inactive_color,
-//                       s_state.SPUCNT.cd_audio_enable ? "Enabled" : "Disabled");
-//    ImGui::SameLine(offsets[1]);
-//    ImGui::TextColored(s_state.SPUCNT.cd_audio_enable ? active_color : inactive_color, "Left Volume: %d%%",
-//                       ApplyVolume(100, s_state.cd_audio_volume_left));
-//    ImGui::SameLine(offsets[3]);
-//    ImGui::TextColored(s_state.SPUCNT.cd_audio_enable ? active_color : inactive_color, "Right Volume: %d%%",
-//                       ApplyVolume(100, s_state.cd_audio_volume_left));
-//#ifdef SPU_ENABLE_VU_METER
-//    ImGui::SameLine(offsets[5]);
-//    draw_vu_meter(s_state.cd_audio_peaks);
-//    ImGui::NewLine();
-//#endif
-
-//    ImGui::Text("Transfer FIFO: ");
-//    ImGui::SameLine(offsets[0]);
-//    ImGui::TextColored(s_state.transfer_event.IsActive() ? active_color : inactive_color, "%u halfwords (%u bytes)",
-//                       s_state.transfer_fifo.GetSize(), s_state.transfer_fifo.GetSize() * 2);
-//  }
-
-//  // draw voice states
-//  if (ImGui::CollapsingHeader("Voice State", ImGuiTreeNodeFlags_DefaultOpen))
-//  {
-//    static constexpr std::array column_titles = {
-//      "#",       "StartAddr", "RepeatAddr", "CurAddr", "SampleIdx", "SampleRate",
-//      "VolLeft", "VolRight",  "ADSRPhase",  "ADSRVol", "ADSRTicks",
-//#ifdef SPU_ENABLE_VU_METER
-//      "VUMeter",
-//#endif
-//    };
-//    static constexpr std::array adsr_phases = {"Off", "Attack", "Decay", "Sustain", "Release"};
-//
-//    ImGui::Columns(static_cast<int>(column_titles.size()));
-//
-//    // headers
-//    for (const char* column_title : column_titles)
-//    {
-//      ImGui::TextUnformatted(column_title);
-//      ImGui::NextColumn();
-//    }
-//
-//    // states
-//    for (u32 voice_index = 0; voice_index < NUM_VOICES; voice_index++)
-//    {
-//      const Voice& v = s_state.voices[voice_index];
-//      ImVec4 color = v.IsOn() ? ImVec4(1.0f, 1.0f, 1.0f, 1.0f) : ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
-//      ImGui::TextColored(color, "%u", ZeroExtend32(voice_index));
-//      ImGui::NextColumn();
-//      ImGui::TextColored(color, "%04X", ZeroExtend32(v.regs.adpcm_start_address));
-//      ImGui::NextColumn();
-//      ImGui::TextColored(color, "%04X", ZeroExtend32(v.regs.adpcm_repeat_address));
-//      ImGui::NextColumn();
-//      ImGui::TextColored(color, "%04X", ZeroExtend32(v.current_address));
-//      ImGui::NextColumn();
-//      if (IsVoiceNoiseEnabled(voice_index))
-//        ImGui::TextColored(color, "NOISE");
-//      else
-//        ImGui::TextColored(color, "%u", ZeroExtend32(v.counter.sample_index.GetValue()));
-//      ImGui::NextColumn();
-//      ImGui::TextColored(color, "%.2f", (float(v.regs.adpcm_sample_rate) / 4096.0f) * 44100.0f);
-//      ImGui::NextColumn();
-//      ImGui::TextColored(color, "%d%%", ApplyVolume(100, v.left_volume.current_level));
-//      ImGui::NextColumn();
-//      ImGui::TextColored(color, "%d%%", ApplyVolume(100, v.right_volume.current_level));
-//      ImGui::NextColumn();
-//      ImGui::TextColored(color, "%s", adsr_phases[static_cast<u8>(v.adsr_phase)]);
-//      ImGui::NextColumn();
-//      ImGui::TextColored(color, "%d%%", ApplyVolume(100, v.regs.adsr_volume));
-//      ImGui::NextColumn();
-//      ImGui::TextColored(color, "%d", v.adsr_envelope.counter);
-//      ImGui::NextColumn();
-//#ifdef SPU_ENABLE_VU_METER
-//      draw_vu_meter(s_state.voice_peaks[voice_index]);
-//      ImGui::NextColumn();
-//#endif
-//    }
-//
-//    ImGui::Columns(1);
-//  }
-//
-//  if (ImGui::CollapsingHeader("Reverb", ImGuiTreeNodeFlags_DefaultOpen))
-//  {
-//    ImGui::TextColored(s_state.SPUCNT.reverb_master_enable ? active_color : inactive_color, "Master Enable: %s",
-//                       s_state.SPUCNT.reverb_master_enable ? "Yes" : "No");
-//    ImGui::Text("Voices Enabled: ");
-//
-//    for (u32 i = 0; i < NUM_VOICES; i++)
-//    {
-//      ImGui::SameLine(0.0f, 16.0f);
-//
-//      const bool active = IsVoiceReverbEnabled(i);
-//      ImGui::TextColored(active ? active_color : inactive_color, "%u", i);
-//    }
-//
-//    ImGui::TextColored(s_state.SPUCNT.cd_audio_reverb ? active_color : inactive_color, "CD Audio Enable: %s",
-//                       s_state.SPUCNT.cd_audio_reverb ? "Yes" : "No");
-//
-//    ImGui::TextColored(s_state.SPUCNT.external_audio_reverb ? active_color : inactive_color,
-//                       "External Audio Enable: %s", s_state.SPUCNT.external_audio_reverb ? "Yes" : "No");
-//
-//    ImGui::Text("Base Address: 0x%08X (%04X)", s_state.reverb_base_address, s_state.reverb_registers.mBASE);
-//    ImGui::Text("Current Address: 0x%08X", s_state.reverb_current_address);
-//    ImGui::Text("Current Amplitude: Input (%d, %d) Output (%d, %d)", s_state.last_reverb_input[0],
-//                s_state.last_reverb_input[1], s_state.last_reverb_output[0], s_state.last_reverb_output[1]);
-//    ImGui::Text("Output Volume: Left %d%% Right %d%%", ApplyVolume(100, s_state.reverb_registers.vLOUT),
-//                ApplyVolume(100, s_state.reverb_registers.vROUT));
-//#ifdef SPU_ENABLE_VU_METER
-//    ImGui::SameLine();
-//    draw_vu_meter(s_state.reverb_peaks);
-//    ImGui::NewLine();
-//#endif
-//
-//    ImGui::Text("Pitch Modulation: ");
-//    for (u32 i = 1; i < NUM_VOICES; i++)
-//    {
-//      ImGui::SameLine(0.0f, 16.0f);
-//
-//      const bool active = IsPitchModulationEnabled(i);
-//      ImGui::TextColored(active ? active_color : inactive_color, "%u", i);
-//    }
-//  }
-//
-//  if (ImGui::CollapsingHeader("Reverb Environment"))
-//  {
-//    ImGui::Columns(4);
-//
-//    ImGui::Text("[0] FB_SRC_A: 0x%04X", static_cast<u32>(s_state.reverb_registers.FB_SRC_A));
-//    ImGui::NextColumn();
-//    ImGui::Text("[1] FB_SRC_B: 0x%04X", static_cast<u32>(s_state.reverb_registers.FB_SRC_B));
-//    ImGui::NextColumn();
-//    ImGui::Text("[2] IIR_ALPHA: %d", static_cast<s32>(s_state.reverb_registers.IIR_ALPHA));
-//    ImGui::NextColumn();
-//    ImGui::Text("[3] ACC_COEF_A: %d", static_cast<s32>(s_state.reverb_registers.ACC_COEF_A));
-//    ImGui::NextColumn();
-//    ImGui::Text("[4] ACC_COEF_B: %d", static_cast<s32>(s_state.reverb_registers.ACC_COEF_B));
-//    ImGui::NextColumn();
-//    ImGui::Text("[5] ACC_COEF_C: %d", static_cast<s32>(s_state.reverb_registers.ACC_COEF_C));
-//    ImGui::NextColumn();
-//    ImGui::Text("[6] ACC_COEF_D: %d", static_cast<s32>(s_state.reverb_registers.ACC_COEF_D));
-//    ImGui::NextColumn();
-//    ImGui::Text("[7] IIR_COEF: %d", static_cast<s32>(s_state.reverb_registers.IIR_COEF));
-//    ImGui::NextColumn();
-//    ImGui::Text("[8] FB_ALPHA: %d", static_cast<s32>(s_state.reverb_registers.FB_ALPHA));
-//    ImGui::NextColumn();
-//    ImGui::Text("[9] FB_X: %d", static_cast<s32>(s_state.reverb_registers.FB_X));
-//    ImGui::NextColumn();
-//    ImGui::Text("[10] IIR_DEST_A[L]: 0x%04X", static_cast<u32>(s_state.reverb_registers.IIR_DEST_A[0]));
-//    ImGui::NextColumn();
-//    ImGui::Text("[11] IIR_DEST_A[R]: 0x%04X", static_cast<u32>(s_state.reverb_registers.IIR_DEST_A[1]));
-//    ImGui::NextColumn();
-//    ImGui::Text("[12] ACC_SRC_A[L]: 0x%04X", static_cast<u32>(s_state.reverb_registers.ACC_SRC_A[0]));
-//    ImGui::NextColumn();
-//    ImGui::Text("[13] ACC_SRC_A[R]: 0x%04X", static_cast<u32>(s_state.reverb_registers.ACC_SRC_A[1]));
-//    ImGui::NextColumn();
-//    ImGui::Text("[14] ACC_SRC_B[L]: 0x%04X", static_cast<u32>(s_state.reverb_registers.ACC_SRC_B[0]));
-//    ImGui::NextColumn();
-//    ImGui::Text("[15] ACC_SRC_B[R]: 0x%04X", static_cast<u32>(s_state.reverb_registers.ACC_SRC_B[1]));
-//    ImGui::NextColumn();
-//    ImGui::Text("[16] IIR_SRC_A[L]: 0x%04X", static_cast<u32>(s_state.reverb_registers.IIR_SRC_A[0]));
-//    ImGui::NextColumn();
-//    ImGui::Text("[17] IIR_SRC_A[L]: 0x%04X", static_cast<u32>(s_state.reverb_registers.IIR_SRC_A[1]));
-//    ImGui::NextColumn();
-//    ImGui::Text("[18] IIR_DEST_B[L]: 0x%04X", static_cast<u32>(s_state.reverb_registers.IIR_DEST_B[0]));
-//    ImGui::NextColumn();
-//    ImGui::Text("[19] IIR_DEST_B[R]: 0x%04X", static_cast<u32>(s_state.reverb_registers.IIR_DEST_B[1]));
-//    ImGui::NextColumn();
-//    ImGui::Text("[20] ACC_SRC_C[L]: 0x%04X", static_cast<u32>(s_state.reverb_registers.ACC_SRC_C[0]));
-//    ImGui::NextColumn();
-//    ImGui::Text("[21] ACC_SRC_C[R]: 0x%04X", static_cast<u32>(s_state.reverb_registers.ACC_SRC_C[1]));
-//    ImGui::NextColumn();
-//    ImGui::Text("[22] ACC_SRC_D[L]: 0x%04X", static_cast<u32>(s_state.reverb_registers.ACC_SRC_D[0]));
-//    ImGui::NextColumn();
-//    ImGui::Text("[23] ACC_SRC_D[R]: 0x%04X", static_cast<u32>(s_state.reverb_registers.ACC_SRC_D[1]));
-//    ImGui::NextColumn();
-//    ImGui::Text("[24] IIR_SRC_B[L]: 0x%04X", static_cast<u32>(s_state.reverb_registers.IIR_SRC_B[0]));
-//    ImGui::NextColumn();
-//    ImGui::Text("[25] IIR_SRC_B[R]: 0x%04X", static_cast<u32>(s_state.reverb_registers.IIR_SRC_B[1]));
-//    ImGui::NextColumn();
-//    ImGui::Text("[26] MIX_DEST_A[L]: 0x%04X", static_cast<u32>(s_state.reverb_registers.MIX_DEST_A[0]));
-//    ImGui::NextColumn();
-//    ImGui::Text("[27] MIX_DEST_A[R]: 0x%04X", static_cast<u32>(s_state.reverb_registers.MIX_DEST_A[1]));
-//    ImGui::NextColumn();
-//    ImGui::Text("[28] MIX_DEST_B[L]: 0x%04X", static_cast<u32>(s_state.reverb_registers.MIX_DEST_B[0]));
-//    ImGui::NextColumn();
-//    ImGui::Text("[29] MIX_DEST_B[R]: 0x%04X", static_cast<u32>(s_state.reverb_registers.MIX_DEST_B[1]));
-//    ImGui::NextColumn();
-//    ImGui::Text("[30] IIR_SRC_A[L]: %d", static_cast<u32>(s_state.reverb_registers.IN_COEF[0]));
-//    ImGui::NextColumn();
-//    ImGui::Text("[31] IIR_SRC_A[R]: %d", static_cast<u32>(s_state.reverb_registers.IN_COEF[1]));
-//    ImGui::NextColumn();
-//
-//    ImGui::Columns(1);
-//  }
-//
-//  if (ImGui::CollapsingHeader("Hacks", ImGuiTreeNodeFlags_DefaultOpen))
-//  {
-//    if (ImGui::Button("Key Off All Voices"))
-//    {
-//      for (u32 i = 0; i < NUM_VOICES; i++)
-//      {
-//        s_state.voices[i].KeyOff();
-//        s_state.voices[i].adsr_envelope.counter = 0;
-//        s_state.voices[i].regs.adsr_volume = 0;
-//      }
-//    }
-//  }
 }

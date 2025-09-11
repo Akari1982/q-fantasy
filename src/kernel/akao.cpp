@@ -573,7 +573,6 @@ void AkaoMainUpdate()
                     }
 
                     AkaoMusicUpdateSlideAndDelay( channel, &g_channels_1_config, channel_mask );
-
                     channels_mask ^= channel_mask;
                 }
 

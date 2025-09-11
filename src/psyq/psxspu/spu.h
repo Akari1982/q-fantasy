@@ -24,16 +24,9 @@ void Initialize();
 void CPUClockChanged();
 void Shutdown();
 void Reset();
-//bool DoState(StateWrapper& sw);
 
 u16 ReadRegister(u32 offset);
 void WriteRegister(u32 offset, u16 value);
-
-void DMARead(u32* words, u32 word_count);
-void DMAWrite(const u32* words, u32 word_count);
-
-// Render statistics debug window.
-void DrawDebugStateWindow(float scale);
 
 // Executes the SPU, generating any pending samples.
 void GeneratePendingSamples();
@@ -49,7 +42,6 @@ std::array<u8, RAM_SIZE>& GetWritableRAM();
 bool IsAudioOutputMuted();
 void SetAudioOutputMuted(bool muted);
 
-//AudioStream* GetOutputStream();
 void RecreateOutputStream();
 
 }; // namespace SPU
