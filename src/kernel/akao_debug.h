@@ -3,9 +3,6 @@
 
 
 void AkaoDebug();
-void AkaoDebugSndBrowser();
-void AkaoDebugSequencer();
-void AkaoDebugInstr();
 
 
 

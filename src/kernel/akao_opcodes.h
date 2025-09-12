@@ -8,11 +8,11 @@ void AkaoOpcode_a0_finish_channel( AkaoChannel* channel, AkaoConfig* config, u32
     {
         config->active_mask &= mask ^ 0x00ffffff;
 
-//        if( config->active_mask == 0 ) config->music_id = 0;
+        if( config->active_mask == 0 ) config->music_id = 0;
 
-//        config->noise_mask &= mask ^ 0x00ffffff;
+        config->noise_mask &= mask ^ 0x00ffffff;
         config->reverb_mask &= mask ^ 0x00ffffff;
-//        config->pitch_lfo_mask &= mask ^ 0x00ffffff;
+        config->pitch_lfo_mask &= mask ^ 0x00ffffff;
 
         if( channel->update_flags & AKAO_UPDATE_OVERLAY )
         {
@@ -24,21 +24,21 @@ void AkaoOpcode_a0_finish_channel( AkaoChannel* channel, AkaoConfig* config, u32
             config->alt_mask &= ~(1 << channel->alt_voice_id);
         }
     }
-//    else
-//    {
-//        g_channels_3_active_mask &= mask ^ 0x00ff0000;
-//        g_channels_3_noise_mask &= mask ^ 0x00ff0000;
-//        g_channels_3_reverb_mask &= mask ^ 0x00ff0000;
-//        g_channels_3_pitch_lfo_mask &= mask ^ 0x00ff0000;
-//        g_channels_1_config.on_mask &= ~mask;
-//        g_channels_1_config.keyed_mask &= ~mask;
-//        g_channels_1_config.off_mask &= ~mask;
-//        g_channels_1[channel->alt_voice_id].attr.mask |= AKAO_UPDATE_SPU_BASE;
-//    }
+    else
+    {
+        g_channels_3_config.active_mask &= mask ^ 0x00ff0000;
+        g_channels_3_config.noise_mask &= mask ^ 0x00ff0000;
+        g_channels_3_config.reverb_mask &= mask ^ 0x00ff0000;
+        g_channels_3_config.pitch_lfo_mask &= mask ^ 0x00ff0000;
+        g_channels_1_config.on_mask &= ~mask;
+        g_channels_1_config.keyed_mask &= ~mask;
+        g_channels_1_config.off_mask &= ~mask;
+        g_channels_1[channel->alt_voice_id].attr.mask |= AKAO_UPDATE_SPU_BASE;
+    }
 
     channel->update_flags = 0;
 
-//    g_channels_1_config.update_flags |= AKAO_UPDATE_NOISE_CLOCK;
+    g_channels_1_config.update_flags |= AKAO_UPDATE_NOISE_CLOCK;
 
 //    system_akao_update_noise_voices();
     AkaoUpdateReverbVoices();
@@ -64,11 +64,11 @@ void AkaoOpcode_a1_load_instrument( AkaoChannel* channel, AkaoConfig* config, u3
         channel->update_flags &= ~AKAO_UPDATE_OVERLAY;
     }
 
-    //if( ( channel->type != AKAO_MUSIC ) || ( ( mask & config->keyed_mask & g_channels_3_active_mask ) == 0 ) )
+    if( (channel->type != AKAO_MUSIC) || ((mask & config->keyed_mask & g_channels_3_config.active_mask ) == 0 ) )
     {
         channel->attr.mask |= SPU_VOICE_PITCH;
         u16 prev = channel->instr_id;
-        channel->pitch_base *= g_akao_instrument[instr_id].pitch[0] / g_akao_instrument[prev].pitch[0];
+        channel->pitch_base = (channel->pitch_base * g_akao_instrument[instr_id].pitch[0]) / g_akao_instrument[prev].pitch[0];
     }
 
     if( channel->update_flags & AKAO_UPDATE_ALTERNATIVE )
@@ -390,14 +390,15 @@ void AkaoOpcode_b4_vibrato( AkaoChannel* channel, AkaoConfig* config, u32 mask )
     {
         channel->vibrato_delay = READ_LE_U8( akao + 0x0 );
     }
-//    else
-//    {
+    else
+    {
+        ofLog( OF_LOG_NOTICE, "MISSING SOUND 0xb4" );
 //        channel->vibrato_delay = 0;
 //        if( bu[akao + 0x0] != 0 )
 //        (
 //            channel->vibrato_depth = bu[akao + 0x0] << 0x8;
 //        }
-//    }
+    }
 
     u16 rate = READ_LE_U8( akao + 1 );
     if( rate == 0 ) rate = 0x100;
@@ -469,14 +470,15 @@ void AkaoOpcode_b8_tremolo( AkaoChannel* channel, AkaoConfig* config, u32 mask )
     {
         channel->tremolo_delay = READ_LE_U8( akao + 0x0 );
     }
-//    else
-//    {
+    else
+    {
+        ofLog( OF_LOG_NOTICE, "MISSING SOUND 0xb8" );
 //        channel->tremolo_delay = 0;
 //        if( bu[akao + 0x0] != 0 )
 //        (
 //            channel->tremolo_depth = bu[akao + 0x0] << 0x8;
 //        }
-//    }
+    }
 
     u16 rate = READ_LE_U8( akao + 1 );
     if( rate == 0 ) rate = 0x100;
@@ -615,10 +617,10 @@ void AkaoOpcode_c2_reverb_on( AkaoChannel* channel, AkaoConfig* config, u32 mask
     {
         config->reverb_mask |= mask;
     }
-//    else
-//    {
-//        g_channels_3_reverb_mask |= mask;
-//    }
+    else
+    {
+        g_channels_3_config.reverb_mask |= mask;
+    }
 
     AkaoUpdateReverbVoices();
 }
@@ -632,10 +634,10 @@ void AkaoOpcode_c3_reverb_off( AkaoChannel* channel, AkaoConfig* config, u32 mas
     {
         config->reverb_mask &= ~mask;
     }
-//    else
-//    {
-//        g_channels_3_reverb_mask &= ~mask;
-//    }
+    else
+    {
+        g_channels_3_config.reverb_mask &= ~mask;
+    }
 
     AkaoUpdateReverbVoices();
 }
@@ -696,13 +698,13 @@ void AkaoOpcode_c6_frequency_modulation_on( AkaoChannel* channel, AkaoConfig* co
     {
         config->pitch_lfo_mask |= mask;
     }
-//    else
-//    {
-//        if( ( mask & 0x00555555 ) == 0 )
-//        {
-//            g_channels_3_pitch_lfo_mask |= mask;
-//        }
-//    }
+    else
+    {
+        if( ( mask & 0x00555555 ) == 0 )
+        {
+            g_channels_3_config.pitch_lfo_mask |= mask;
+        }
+    }
 
     AkaoUpdatePitchLfoVoices();
 }
@@ -715,10 +717,10 @@ void AkaoOpcode_c7_frequency_modulation_off( AkaoChannel* channel, AkaoConfig* c
     {
         config->pitch_lfo_mask &= ~mask;
     }
-//    else
-//    {
-//        g_channels_3_pitch_lfo_mask &= ~mask;
-//    }
+    else
+    {
+        g_channels_3_config.pitch_lfo_mask &= ~mask;
+    }
 
     AkaoUpdatePitchLfoVoices();
 }
@@ -1044,7 +1046,7 @@ void AkaoOpcode_e8_tempo( AkaoChannel* channel, AkaoConfig* config, u32 mask )
     channel->seq = akao + 0x2;
 
     config->tempo = READ_LE_U16( akao ) << 0x10;
-    //config->tempo_slide_steps = 0;
+    config->tempo_slide_steps = 0;
 }
 
 
@@ -1075,7 +1077,7 @@ void AkaoOpcode_ea_reverb_depth( AkaoChannel* channel, AkaoConfig* config, u32 m
 
     config->update_flags |= AKAO_UPDATE_REVERB;
     config->reverb_depth = READ_LE_U16( akao ) << 0x10;
-    //config->reverb_depth_slide_steps = 0;
+    config->reverb_depth_slide_steps = 0;
 }
 
 
@@ -1201,10 +1203,10 @@ void AkaoOpcode_f2_load_instrument( AkaoChannel* channel, AkaoConfig* config, u3
 
     u16 instr_id = READ_LE_U8( akao );
 
-    //if( (channel->type != AKAO_MUSIC) || ((mask & config->keyed_mask & g_channels_3_active_mask) == 0) )
+    if( (channel->type != AKAO_MUSIC) || ((mask & config->keyed_mask & g_channels_3_config.active_mask) == 0) )
     {
         u16 prev = channel->instr_id;
-        channel->pitch_base *= g_akao_instrument[instr_id].pitch[0] / g_akao_instrument[prev].pitch[0];
+        channel->pitch_base = (channel->pitch_base * g_akao_instrument[instr_id].pitch[0]) / g_akao_instrument[prev].pitch[0];
 
         channel->attr.mask |= SPU_VOICE_PITCH;
     }

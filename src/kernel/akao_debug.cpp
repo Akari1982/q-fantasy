@@ -28,16 +28,16 @@ std::string g_music_names_en[] =
     "Let the Battles Begin!",           "",                        "Anxiety",                              "Fight On!",
     "",                                 "",                        "Main Theme",                           "",
     "",                                 "",                        "",                                     "Who...Are You?",
-    "",                                 "",                        "",                                     "",
+    "On Our Way",                       "",                        "",                                     "Waltz de Chocobo",
     "Don of the Slums",                 "",                        "Red XIII's Theme",                     "",
     "",                                 "Lurking In the Darkness", "Shinra, Inc",                          "Infiltrating Shinra",
-    "Under the Rotting Pizza",          "",                        "",                                     "Tifa's Theme",
+    "Under the Rotting Pizza",          "Farm Boy",                "On That Day, Five Years Ago",          "Tifa's Theme",
     "",                                 "The Oppressed",           "Flowers Blooming in the Church",       "The Chase",
     "",                                 "",                        "Barret's Theme",                       "",
-    "",                                 "",                        "Turks' Theme ",                        "Fanfare",
+    "",                                 "Electric de Chocobo",     "Turks' Theme ",                        "Fanfare",
     "",                                 "",                        "",                                     "",
-    "",                                 "",                        "",                                     "Hurry!",
-    "",                                 "",                        "",                                     "",
+    "Cinco de Chocobo",                 "",                        "",                                     "Hurry!",
+    "",                                 "",                        "Good Night, Until Tomorrow",           "",
     "",                                 "",                        "",                                     "",
     "",                                 "Dear to the Heart",       "",                                     "",
     "Honeybee Inn",                     "",                        "",                                     "",
@@ -56,16 +56,16 @@ std::string g_music_names_jp[] =
     "闘う者達 lit. \"Those Who Fight\"", "",                        "不安な心 lit. \"Anxious Heart\"",       "更に闘う者達 lit. \"Those Who Fight Further\"",
     "",                                 "",                        "メインテーマ",                             "",
     "",                                 "",                        "",                                     "お前は…誰だ",
-    "",                                 "",                        "",                                     "",
+    "旅の途中で",                         "",                        "",                                     "ワルツ・デ・チョコボ",
     "スラムのドン",                         "",                        "レッドXIIIのテーマ",                       "",
     "",                                 "闇に潜む",                 "神羅カンパニー lit. \"Shinra Company\"", "神羅ビル潜入",
-    "腐ったピザの下で",                     "",                        "",                                     "ティファのテーマ",
+    "腐ったピザの下で",                     "牧場の少年",               "5年前のあの日",                         "ティファのテーマ",
     "",                                 "虐げられた民衆",            "教会に咲く花",                           "クレイジーモーターサイクル lit. \"Crazy Motorcycle\"",
     "",                                 "",                        "バレットのテーマ",                         "",
-    "",                                 "",                        "タークスのテーマ",                         "ファンファーレ",
+    "",                                 "エレキ・デ・チョコボ",       "タークスのテーマ",                         "ファンファーレ",
     "",                                 "",                        "",                                     "",
-    "",                                 "",                        "",                                     "急げ!",
-    "",                                 "",                        "",                                     "",
+    "シンコ・デ・チョコボ",                "",                        "",                                     "急げ!",
+    "",                                 "",                        "お休み,また明日",                         "",
     "",                                 "",                        "",                                     "",
     "",                                 "",                        "",                                     "",
     "蜜蜂の館",                          "",                        "",                                     "",
@@ -98,6 +98,13 @@ std::vector<MusicInfo> g_musics;
 
 
 
+void AkaoDebugSndBrowser();
+void AkaoDebugSfxBrowser();
+void AkaoDebugSequencer();
+void AkaoDebugInstr();
+
+
+
 static std::string BCDByteToString( u8 bcd_byte )
 {
     char high_nibble = (bcd_byte >> 4) & 0xf;
@@ -108,7 +115,7 @@ static std::string BCDByteToString( u8 bcd_byte )
 }
 
 
-static void AkaoDebugFillSongInfo()
+static void AkaoDebugFillMusicInfo()
 {
     std::string path = "data/FIELD";
     std::vector<std::string> add_files;
@@ -317,7 +324,7 @@ void AkaoDebug()
 
             if( ImGui::BeginTabItem( "SFX Browser" ) )
             {
-                ImGui::Text("This is content 2.");
+                AkaoDebugSfxBrowser();
                 ImGui::EndTabItem();
             }
 
@@ -347,7 +354,7 @@ void AkaoDebugSndBrowser()
         ImGui::SetColumnWidth( 0, 250 );
         first_frame = false;
 
-        AkaoDebugFillSongInfo();
+        AkaoDebugFillMusicInfo();
     }
 
     static int selected_id = 0;
@@ -370,8 +377,8 @@ void AkaoDebugSndBrowser()
 
             ImGui::PopID();
         }
-        ImGui::EndListBox();
     }
+    ImGui::EndListBox();
 
     ImGui::NextColumn();
     ImGui::BeginChild( "right_panel", ImVec2( 0, 0 ), true );
@@ -454,6 +461,38 @@ void AkaoDebugSndBrowser()
 
 
 
+void AkaoDebugSfxBrowser()
+{
+    ImGui::TextDisabled( "Sfx List" );
+    ImGui::Separator();
+
+    for( int i = 0; i < 0x400; ++i )
+    {
+        ImGui::PushID( i );
+
+        char label[256];
+        snprintf( label, sizeof( label ), "0x%03x", i );
+
+        bool enabled = ( READ_LE_U16( &g_akao_effects_all[i * 0x4] ) != 0xffff ) ? true : false;
+
+        if( (i % 0x10) != 0 ) ImGui::SameLine();
+
+        ImGui::BeginDisabled( !enabled );
+        if( ImGui::Button( label ) )
+        {
+            u32 seq_1, seq_2;
+            //system_akao_sound_channels_clear( 0x4, 0x1 );
+            AkaoSoundGetSequence( seq_1, seq_2, i );
+            AkaoSoundChannelsInit( 0x40, 0x0, seq_1, seq_2 );
+        }
+        ImGui::EndDisabled();
+
+        ImGui::PopID();
+    }
+}
+
+
+
 void AkaoDebugSequencer()
 {
     if( g_akao_sequencer == false ) return;
@@ -529,21 +568,20 @@ void AkaoDebugSequencer()
 
                 while( read && (akao < g_channels_1[i].seq_end) )
                 {
-                    if( akao < g_channels_1[ i ].seq )
+                    if (g_channels_1_config.active_mask & (0x1 << i))
                     {
-                        color = ImVec4( 0.8f, 0.8f, 0.2f, 1.0f );
-                    }
-                    else
-                    {
-                        if( g_channels_1_config.active_mask & (0x1 << i) )
+                        if( akao < g_channels_1[ i ].seq )
                         {
-                            color = ImVec4( 1.0f, 1.0f, 1.0f, 1.0f );
+                            color = ImVec4( 0.8f, 0.8f, 0.2f, 1.0f );
                         }
                         else
                         {
-                            color = ImVec4( 0.3f, 0.3f, 0.3f, 1.0f );
+                            color = ImVec4( 1.0f, 1.0f, 1.0f, 1.0f );
                         }
-
+                    }
+                    else
+                    {
+                        color = ImVec4(0.3f, 0.3f, 0.3f, 1.0f);
                     }
 
                     if( x >= width )

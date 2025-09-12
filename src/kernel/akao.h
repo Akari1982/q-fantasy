@@ -119,11 +119,11 @@ struct AkaoChannel
     s32 pitch_slide_step;
     u16 pitch_slide_steps;
     u16 pitch_slide_steps_cur;
+    u32 pitch_mul_sound;
+    s32 pitch_mul_sound_slide_step;
+    u16 pitch_mul_sound_slide_steps;
     s16 fine_tuning;
 
-//                                        // 0x36 [][]     pitch addition. summarize 0x30, 0x36 and 0xd6 it to get real pitch.
-//    u32 pitch_mul_sound;                // 0x3c
-//    s32 pitch_mul_sound_slide_step;     // 0x40
 //                                        // 0x50 [][][][] ???.
     u16 type;
 
@@ -134,7 +134,6 @@ struct AkaoChannel
 
     u16 instr_id;
 
-//    u16 pitch_mul_sound_slide_steps;    // 0x5a
 //    u16 portamento_steps;               // 0x6c
     u16 sfx_mask;
 //                                        // 0x70
@@ -182,29 +181,29 @@ struct AkaoChannel
 
 struct AkaoConfig
 {
+    u16 music_id;
     u32 stereo_mono;
     u32 active_mask;
     u32 on_mask;
     u32 keyed_mask;
     u32 off_mask;
-//    u32 active_mask_stored;         // 0x14
+    u32 active_mask_stored;
     u32 tempo;
-//    s32 tempo_slide_step;           // 0x1c
+    s32 tempo_slide_step;
+    u16 tempo_slide_steps;
     u32 tempo_update;
     u32 over_mask;
     u32 alt_mask;
-//    u32 noise_mask;                 // 0x2c
+    u32 noise_mask;
     u32 reverb_mask;
     u32 pitch_lfo_mask;
     u32 update_flags;
     s32 reverb_mode;
     s32 reverb_depth;
-//    s32 reverb_depth_slide_step;    // 0x44
-//    u16 tempo_slide_steps;          // 0x48
-//    u16 music_id;                   // 0x4a
+    s32 reverb_depth_slide_step;
+    u16 reverb_depth_slide_steps;
 //    u16 condition_stored;           // 0x4c
 //    u16 condition;                  // 0x4e
-//    u16 reverb_depth_slide_steps;   // 0x50
 //    u16 noise_clock;                // 0x52
 //    u15 mute_music;                 // 0x54
     u16 timer_upper;
@@ -235,6 +234,9 @@ void AkaoMainUpdate();
 void AkaoCopyMusic( u8* src, u32 size );
 void AkaoMusicChannelsInit();
 void AkaoMusicChannelsStop();
+void AkaoSoundGetSequence( u32& offset1, u32& offset2, u16 sound_id );
+void AkaoSoundChannelsInit( u8 vol_pan, u16 channel_id, u32 offset1, u32 offset2 );
+void AkaoSoundChannelInit( AkaoChannel* channel, u32 offset );
 void AkaoInstrInit( AkaoChannel* channel, u16 instr_id );
 
 void AkaoExecuteSequence( AkaoChannel* channel, AkaoConfig* config, u32 mask );
@@ -245,8 +247,10 @@ void AkaoUpdateReverbVoices();
 void AkaoUpdatePitchLfoVoices();
 void AkaoCollectChannelsVoicesMask( AkaoChannel* channel, u32& ret_mask, u32 channels_mask, u32 collect_mask );
 
-void AkaoMusicUpdateSlideAndDelay(AkaoChannel* channel, AkaoConfig* config, u32 channel_mask);
+void AkaoMusicUpdateSlideAndDelay(AkaoChannel* channel, AkaoConfig* config, u32 channel_mask );
+void AkaoSoundUpdateSlideAndDelay( AkaoChannel* channel, u32 channel_mask );
 void AkaoMusicUpdatePitchAndVolume( AkaoChannel* channel, u32 channel_mask, u32 channel_id );
+void AkaoSoundUpdatePitchAndVolume( AkaoChannel* channel, u32 channel_mask );
 void AkaoUpdateChannelAndOverlayParamsToSpu( AkaoChannel* channel, u32 mask, u32 over_voice_id );
 void AkaoUpdateChannelParamsToSpu( u32 voice_id, AkaoVoiceAttr& attr );
 
@@ -256,7 +260,13 @@ u8 AkaoGetNextKey( AkaoChannel* channel );
 
 extern AkaoChannel g_channels_1[0x18];
 extern AkaoConfig g_channels_1_config;
-
 extern u8* g_akao_music;
 
+extern AkaoConfig g_channels_2_config;
+
+extern AkaoChannel g_channels_3[0x8];
+extern AkaoConfig g_channels_3_config;
+extern u8 g_akao_effects_all[0xc800];
+
 extern AkaoInstrument g_akao_instrument[0x80];
+
