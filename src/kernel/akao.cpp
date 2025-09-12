@@ -426,6 +426,8 @@ void AkaoInitData()
 //        [0x8009c5a0 + i * 0xc + 0x8] = h(0);
 
         g_channels_1[i].type = AKAO_MUSIC;
+        g_channels_1[i].seq = nullptr;
+        g_channels_1[i].seq_start = nullptr;
         g_channels_1[i].update_flags = 0;
         g_channels_1[i].attr.voice_id = i;
 //        [0x80096608 + i * 0x108 + 0x50] = w(0);
@@ -437,6 +439,8 @@ void AkaoInitData()
     for( int i = 0; i < 0x8; ++i )
     {
         g_channels_3[i].type = AKAO_SOUND;
+        g_channels_3[i].seq = nullptr;
+        g_channels_3[i].seq_start = nullptr;
         g_channels_3[i].update_flags = 0;
         g_channels_3[i].pitch_mul_sound = 0;
         g_channels_3[i].pitch_mul_sound_slide_steps = 0;
@@ -780,18 +784,7 @@ void AkaoMusicChannelsInit()
         if( channels_mask & channel_mask )
         {
             channel->seq = akao + 0x2 + READ_LE_U16( akao );
-            // for debug purpose
-            {
-                channel->seq_start = channel->seq;
-                if( (channels_mask ^ channel_mask) != 0 )
-                {
-                    channel->seq_end = akao + 0x4 + READ_LE_U16( akao + 0x2 );
-                }
-                else
-                {
-                    channel->seq_end = g_akao_music + g_akao_music_size;
-                }
-            }
+            channel->seq_start = channel->seq; // for debug
 
             channel->vol_master = 0x7f;
             channel->length_start = 0x3;
@@ -969,6 +962,7 @@ void AkaoSoundChannelInit( AkaoChannel* channel, u32 offset )
     AkaoInstrInit( channel, 0x5 );
 
     channel->seq = &g_akao_effects_all[offset];
+    channel->seq_start = channel->seq;
     channel->vol_master = 0x78;
     channel->pitch_slide = 0;
     channel->update_flags = 0;

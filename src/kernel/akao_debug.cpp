@@ -80,6 +80,25 @@ std::string g_music_names_jp[] =
 
 std::string g_reverb_name[] = { "OFF", "ROOM", "STUDIO_A", "STUDIO_B", "STUDIO_C", "HALL", "SPACE", "ECHO", "DELAY", "PIPE" };
 
+u8 g_op_size[] = {
+    0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+    0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+    0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+    0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+    0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+    0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+    0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+    0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+    0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+    0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x02, 0x02, 0x02, 0x03, 0x02, 0x01, 0x01, 0x02, 0x03, 0x02, 0x03, 0x02, 0x02, 0x02, 0x02,
+    0x03, 0x02, 0x02, 0x01, 0x04, 0x02, 0x01, 0x02, 0x04, 0x02, 0x01, 0x02, 0x03, 0x02, 0x01, 0x02,
+    0x02, 0x02, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x02, 0x00, 0x01, 0x01, 0x01, 0x02, 0x02,
+    0x01, 0x01, 0x02, 0x02, 0x01, 0x01, 0x01, 0x01, 0x02, 0x02, 0x02, 0x01, 0x02, 0x03, 0x03, 0x03,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x04, 0x03, 0x04, 0x03, 0x01, 0x00, 0x04,
+    0x04, 0x04, 0x02, 0x01, 0x03, 0x01, 0x02, 0x03, 0x02, 0x01, 0x00, 0x00, 0x00, 0x03, 0x03, 0x00
+};
+
 struct MusicFileInfo
 {
     std::string path;
@@ -278,6 +297,23 @@ static void AkaoDebugFillMusicInfo()
                 return a.path < b.path;
             });
     }
+}
+
+
+
+u8* AkaoDebugGetSequenceEnd( u8* start )
+{
+    u8* akao = start;
+    u8 size;
+
+    do
+    {
+        u8 opcode = READ_LE_U8( akao );
+        size = g_op_size[opcode];
+        akao += size;
+    } while( size != 0 );
+
+    return akao + 1;
 }
 
 
@@ -484,10 +520,75 @@ void AkaoDebugSfxBrowser()
             //system_akao_sound_channels_clear( 0x4, 0x1 );
             AkaoSoundGetSequence( seq_1, seq_2, i );
             AkaoSoundChannelsInit( 0x40, 0x0, seq_1, seq_2 );
+            g_akao_sequencer = true;
         }
         ImGui::EndDisabled();
 
         ImGui::PopID();
+    }
+}
+
+
+
+void AkaoDebugSequencerSeq( u8* start, u8* cur, int base_x, float width, int& add_y, bool active )
+{
+    u8* akao = start;
+    u8* seq_end = AkaoDebugGetSequenceEnd( akao );
+    bool read = true;
+    ImVec4 color;
+    int x = base_x;
+
+    while( read && (akao < seq_end) )
+    {
+        if( active )
+        {
+            if( akao < cur )
+            {
+                color = ImVec4( 0.8f, 0.8f, 0.2f, 1.0f );
+            }
+            else
+            {
+                color = ImVec4( 1.0f, 1.0f, 1.0f, 1.0f );
+            }
+        }
+        else
+        {
+            color = ImVec4( 0.3f, 0.3f, 0.3f, 1.0f );
+        }
+
+        if( x >= width )
+        {
+            x = base_x;
+            add_y += 20;
+        }
+
+        u8 opcode = READ_LE_U8( akao );
+
+        if( opcode < 0xa0 )
+        {
+            ImGui::SetCursorPos( ImVec2( x, add_y ) );
+            if( opcode < 0x84 ) ImGui::TextColored( color, "|" ); // note
+            else if( opcode >= 0x8f ) ImGui::TextColored( color, "_" ); // stop effect and pause
+            else ImGui::TextColored( color, "-" ); // continue play same note
+            x += 8;
+        }
+        else
+        {
+            if( g_op_size[opcode] == 0 )
+            {
+                read = false;
+            }
+            else
+            {
+                akao += g_op_size[opcode] - 1;
+            }
+
+            ImGui::SetCursorPos( ImVec2( x, add_y ) );
+            ImGui::TextColored( color, "%02x", opcode );
+            x += 16;
+        }
+
+        akao += 0x1;
     }
 }
 
@@ -503,12 +604,9 @@ void AkaoDebugSequencer()
     {
         float width = ImGui::GetWindowContentRegionMax().x;
         int add_y = 20;
-        int size = 8;
         float base_x = 5;
         float line_height = ImGui::GetTextLineHeight();
         ImVec4 color = ImVec4( 1.0f, 1.0f, 1.0f, 1.0f );
-
-        u32 channels_mask = READ_LE_U32( g_akao_music );
 
         if( ImGui::Button( ICON_FA_PLAY ) )
         {
@@ -543,9 +641,9 @@ void AkaoDebugSequencer()
 
         for( size_t i = 0; i < 0x18; ++i )
         {
-            if( channels_mask & (0x1 << i) )
+            if( g_channels_1[i].seq_start != nullptr )
             {
-                std::string info = "Channel: %02x";
+                std::string info = "Music channel: %02x";
                 if( g_channels_1[i].update_flags & AKAO_UPDATE_ALTERNATIVE )
                 {
                     info += std::string( " ALT" );
@@ -563,159 +661,45 @@ void AkaoDebugSequencer()
 
                 u8* akao = g_channels_1[i].seq_start;
 
-                int x = base_x;
-                bool read = true;
+                AkaoDebugSequencerSeq( akao, g_channels_1[i].seq, base_x, width, add_y, g_channels_1_config.active_mask & (0x1 << i) );
 
-                while( read && (akao < g_channels_1[i].seq_end) )
+                if( i != 17 )
                 {
-                    if (g_channels_1_config.active_mask & (0x1 << i))
-                    {
-                        if( akao < g_channels_1[ i ].seq )
-                        {
-                            color = ImVec4( 0.8f, 0.8f, 0.2f, 1.0f );
-                        }
-                        else
-                        {
-                            color = ImVec4( 1.0f, 1.0f, 1.0f, 1.0f );
-                        }
-                    }
-                    else
-                    {
-                        color = ImVec4(0.3f, 0.3f, 0.3f, 1.0f);
-                    }
-
-                    if( x >= width )
-                    {
-                        x = base_x;
-                        add_y += 20;
-                    }
-
-                    u8 opcode = READ_LE_U8( akao );
-
-                    if( opcode  < 0xa0 )
-                    {
-                        ImGui::SetCursorPos( ImVec2( x, add_y ) );
-                        if( opcode < 0x84 ) ImGui::TextColored( color, "|" ); // note
-                        else if( opcode >= 0x8f ) ImGui::TextColored( color, "_" ); // stop effect and pause
-                        else ImGui::TextColored( color, "-" ); // continue play same note
-                        x += 1 * size;
-                    }
-                    else
-                    {
-                        switch( opcode )
-                        {
-                            case 0xa0:
-                            case 0xa6:
-                            case 0xa7:
-                            case 0xb6:
-                            case 0xba:
-                            case 0xc2:
-                            case 0xc3:
-                            case 0xc6:
-                            case 0xc7:
-                            case 0xc8:
-                            case 0xca:
-                            case 0xcc:
-                            case 0xcd:
-                            case 0xd0:
-                            case 0xd1:
-                            case 0xed:
-                            case 0xf4:
-                            case 0xf5:
-                            case 0xf9:
-                            {
-                                ImGui::SetCursorPos( ImVec2( x, add_y ) );
-                                ImGui::TextColored( color, "%02x", opcode );
-                                x += 2 * size;
-
-                                if( opcode == 0xa0 ) read = false;
-                                if( opcode == 0xca ) read = false;
-                            }
-                            break;
-
-                            case 0xa1:
-                            case 0xa2:
-                            case 0xa3:
-                            case 0xa5:
-                            case 0xa8:
-                            case 0xaa:
-                            case 0xad:
-                            case 0xae:
-                            case 0xaf:
-                            case 0xb1:
-                            case 0xb2:
-                            case 0xb5:
-                            case 0xb7:
-                            case 0xb9:
-                            case 0xbb:
-                            case 0xbd:
-                            case 0xbf:
-                            case 0xc0:
-                            case 0xc1:
-                            case 0xc9:
-                            case 0xd8:
-                            case 0xd9:
-                            case 0xf2:
-                            case 0xf6:
-                            case 0xf8:
-                            {
-                                ImGui::SetCursorPos( ImVec2( x, add_y ) );
-                                ImGui::TextColored( color, "%02x", opcode );
-                                x += 2 * size;
-                                akao += 1;
-                            }
-                            break;
-
-                            case 0xa4:
-                            case 0xa9:
-                            case 0xab:
-                            case 0xbc:
-                            case 0xdd:
-                            case 0xde:
-                            case 0xe8:
-                            case 0xea:
-                            case 0xec:
-                            case 0xee:
-                            case 0xfd:
-                            case 0xf7:
-                            case 0xfe:
-                            {
-                                ImGui::SetCursorPos( ImVec2( x, add_y ) );
-                                ImGui::TextColored( color, "%02x", opcode );
-                                x += 2 * size;
-                                akao += 2;
-
-                                if( opcode == 0xee ) read = false;
-                            }
-                            break;
-
-                            case 0xb4:
-                            case 0xb8:
-                            case 0xf0:
-                            {
-                                ImGui::SetCursorPos( ImVec2( x, add_y ) );
-                                ImGui::TextColored( color, "%02x", opcode );
-                                x += 2 * size;
-                                akao += 3;
-                            }
-                            break;
-
-                            default:
-                            {
-                                color = ImVec4( 1.0f, 0.0f, 0.0f, 1.0f );
-                                ImGui::SetCursorPos( ImVec2( x, add_y ) );
-                                ImGui::TextColored( color, "%02x", opcode );
-                                x += 2 * size;
-                            }
-                        }
-                    }
-
-                    akao += 0x1;
+                    add_y += line_height + 5;
+                    ImGui::SetCursorPos( ImVec2( base_x, add_y ) );
+                    add_y += 10;
+                    ImGui::Separator();
                 }
 
-                channels_mask ^= (0x1 << i);
+                add_y += line_height;
+            }
+        }
 
-                if( channels_mask != 0 )
+        for( size_t i = 0; i < 0x8; ++i )
+        {
+            if( g_channels_3[i].seq_start != nullptr )
+            {
+                std::string info = "Sound channel: %02x";
+                if( g_channels_3[i].update_flags & AKAO_UPDATE_ALTERNATIVE )
+                {
+                    info += std::string( " ALT" );
+                    info += ( g_channels_3[i].update_flags & AKAO_UPDATE_ALTERNATIVE_CUR ) ? std::string( "2" ) : std::string( "1" );
+                }
+                if( g_channels_3[i].update_flags & AKAO_UPDATE_DRUM_MODE ) info += std::string( " DRUM" );
+                if( g_channels_3[i].update_flags & AKAO_UPDATE_VIBRATO ) info += std::string( " VIBRATO:" ) + std::to_string( g_channels_3[i].vibrato_type );
+                if( g_channels_3[i].update_flags & AKAO_UPDATE_TREMOLO ) info += std::string( " TREMOLO:" ) + std::to_string( g_channels_3[i].tremolo_type );
+                if( g_channels_3[i].update_flags & AKAO_UPDATE_OVERLAY ) info += std::string( " OVER:" ) + std::to_string( g_channels_3[i].over_voice_id );
+                if( g_channels_3[i].pitch_slide_steps_cur != 0 ) info += std::string( " PITCH SLIDE:" ) + std::to_string( g_channels_3[i].pitch_slide_steps_cur );
+
+                ImGui::SetCursorPos( ImVec2( base_x, add_y ) );
+                ImGui::TextColored( ImVec4( 1.0f, 1.0f, 1.0f, 1.0f ), info.c_str(), i );
+                add_y += line_height;
+
+                u8* akao = g_channels_3[i].seq_start;
+
+                AkaoDebugSequencerSeq( akao, g_channels_3[i].seq, base_x, width, add_y, g_channels_3_config.active_mask & (0x10000 << i) );
+
+                if( i != 7 )
                 {
                     add_y += line_height + 5;
                     ImGui::SetCursorPos( ImVec2( base_x, add_y ) );
