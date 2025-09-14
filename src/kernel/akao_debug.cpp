@@ -320,7 +320,11 @@ u8* AkaoDebugGetSequenceEnd( u8* start )
 
 void AkaoDebugMusicPlay()
 {
+    AkaoMusicChannelsStop();
+    AkaoSoundChannelsStop();
+
     AkaoMusicChannelsInit();
+
     g_akao_playing = PLAY;
     g_akao_sequencer = true;
 }
@@ -610,7 +614,7 @@ void AkaoDebugSequencer()
 
         if( ImGui::Button( ICON_FA_PLAY ) )
         {
-            AkaoDebugMusicPlay();
+            //AkaoDebugMusicPlay();
         }
         ImGui::SameLine();
         if( ImGui::Button( ICON_FA_PAUSE ) )
@@ -621,6 +625,7 @@ void AkaoDebugSequencer()
         if( ImGui::Button( ICON_FA_STOP ) )
         {
             AkaoDebugMusicStop();
+            AkaoSoundChannelsStop();
         }
         add_y += line_height + 20;
 
@@ -654,6 +659,8 @@ void AkaoDebugSequencer()
                 if( g_channels_1[i].update_flags & AKAO_UPDATE_TREMOLO ) info += std::string( " TREMOLO:" ) + std::to_string( g_channels_1[i].tremolo_type );
                 if( g_channels_1[i].update_flags & AKAO_UPDATE_OVERLAY ) info += std::string( " OVER:" ) + std::to_string( g_channels_1[i].over_voice_id );
                 if( g_channels_1[i].pitch_slide_steps_cur != 0 ) info += std::string( " PITCH SLIDE:" ) + std::to_string( g_channels_1[i].pitch_slide_steps_cur );
+                if( g_channels_1[i].sfx_mask & AKAO_SFX_LEGATO ) info += std::string( " LEGATO" );
+                if( g_channels_1[i].sfx_mask & AKAO_SFX_FULL_LENGTH ) info += std::string( " FULL_LENGTH" );
 
                 ImGui::SetCursorPos( ImVec2( base_x, add_y ) );
                 ImGui::TextColored( ImVec4( 1.0f, 1.0f, 1.0f, 1.0f ), info.c_str(), i );
@@ -690,6 +697,8 @@ void AkaoDebugSequencer()
                 if( g_channels_3[i].update_flags & AKAO_UPDATE_TREMOLO ) info += std::string( " TREMOLO:" ) + std::to_string( g_channels_3[i].tremolo_type );
                 if( g_channels_3[i].update_flags & AKAO_UPDATE_OVERLAY ) info += std::string( " OVER:" ) + std::to_string( g_channels_3[i].over_voice_id );
                 if( g_channels_3[i].pitch_slide_steps_cur != 0 ) info += std::string( " PITCH SLIDE:" ) + std::to_string( g_channels_3[i].pitch_slide_steps_cur );
+                if( g_channels_3[i].sfx_mask & AKAO_SFX_LEGATO ) info += std::string( " LEGATO" );
+                if( g_channels_3[i].sfx_mask & AKAO_SFX_FULL_LENGTH ) info += std::string( " FULL_LENGTH" );
 
                 ImGui::SetCursorPos( ImVec2( base_x, add_y ) );
                 ImGui::TextColored( ImVec4( 1.0f, 1.0f, 1.0f, 1.0f ), info.c_str(), i );

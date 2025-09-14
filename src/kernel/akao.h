@@ -88,7 +88,16 @@ struct AkaoChannel
     u8* loop_point[0x4];
     u8* drum_offset;
 
+    u16 type;
+    u16 instr_id;
+
+    u8 length_start;
+    u8 length_stop;
+    s16 length_stored;
+    s16 length_fixed;
+
     u32 update_flags;
+    u16 sfx_mask;
 
     u32 over_voice_id;
     s16 over_vol_balance;
@@ -123,20 +132,6 @@ struct AkaoChannel
     u16 pitch_mul_sound_slide_steps;
     s16 fine_tuning;
 
-//                                        // 0x50 [][][][] ???.
-    u16 type;
-
-    u8 length_start;
-    u8 length_stop;
-    s16 length_stored;
-    s16 length_fixed;
-
-    u16 instr_id;
-
-//    u16 portamento_steps;               // 0x6c
-    u16 sfx_mask;
-//                                        // 0x70
-
     s16 vibrato_pitch;
     u16 vibrato_delay;
     u16 vibrato_delay_cur;
@@ -148,8 +143,6 @@ struct AkaoChannel
     u16 vibrato_depth;
     s16 vibrato_depth_slide_step;
     u16 vibrato_depth_slide_steps;
-
-//                                        // 0x84
 
     s16 tremolo_vol;
     u16 tremolo_delay;
@@ -171,9 +164,10 @@ struct AkaoChannel
 //    u16 pan_lfo_depth_slide_steps;      // 0xa0
 //    s16 pan_lfo_depth_slide_step;       // 0xa2
 
+    u16 portamento_steps;
+
 //    u16 noise_switch_delay;             // 0xa4
 //    u16 pitch_lfo_switch_delay;         // 0xa6
-
 
     AkaoVoiceAttr attr;
 };
@@ -203,7 +197,7 @@ struct AkaoConfig
     u16 reverb_depth_slide_steps;
 //    u16 condition_stored;           // 0x4c
 //    u16 condition;                  // 0x4e
-//    u16 noise_clock;                // 0x52
+    u16 noise_clock;
 //    u15 mute_music;                 // 0x54
     u16 timer_upper;
     u16 timer_upper_cur;
@@ -232,16 +226,18 @@ void AkaoMainUpdate();
 
 void AkaoCopyMusic( u8* src, u32 size );
 void AkaoMusicChannelsInit();
-void AkaoMusicChannelsStop();
-void AkaoSoundGetSequence( u32& offset1, u32& offset2, u16 sound_id );
 void AkaoSoundChannelsInit( u8 vol_pan, u16 channel_id, u32 offset1, u32 offset2 );
 void AkaoSoundChannelInit( AkaoChannel* channel, u32 offset );
+void AkaoMusicChannelsStop();
+void AkaoSoundChannelsStop();
+void AkaoSoundGetSequence( u32& offset1, u32& offset2, u16 sound_id );
 void AkaoInstrInit( AkaoChannel* channel, u16 instr_id );
 
 void AkaoExecuteSequence( AkaoChannel* channel, AkaoConfig* config, u32 mask );
 
 void AkaoUpdateKeysOn();
 void AkaoUpdateKeysOff();
+void AkaoUpdateNoiseVoices();
 void AkaoUpdateReverbVoices();
 void AkaoUpdatePitchLfoVoices();
 void AkaoCollectChannelsVoicesMask( AkaoChannel* channel, u32& ret_mask, u32 channels_mask, u32 collect_mask );

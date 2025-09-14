@@ -96,6 +96,8 @@ void SpuPlayer::audioOut( ofSoundBuffer & buffer )
 
 void PsyqSpuInit()
 {
+    std::lock_guard<std::mutex> lock( spuMutex );
+
     // init SPU emulator
     SPU::Initialize();
 
@@ -372,6 +374,8 @@ s32 PsyqSpuSetReverb( s32 on_off )
 
 s32 SpuReverbClearWorkarea( s32 mode )
 {
+    std::lock_guard<std::mutex> lock( spuMutex );
+
     if( mode >= SPU_REV_MODE_MAX ) return -1;
 
     u32 dst, size;
@@ -397,6 +401,8 @@ s32 SpuReverbClearWorkarea( s32 mode )
 
 void SpuSetReverbReg(SpuReverbReg* attr)
 {
+    std::lock_guard<std::mutex> lock( spuMutex );
+
     u32 mask = attr->mask;
     if( (mask == 0) || (mask & 0x00000001) ) SPU::WriteRegister( 0x1c0, attr->dAPF1 );
     if( (mask == 0) || (mask & 0x00000002) ) SPU::WriteRegister( 0x1c2, attr->dAPF2 );
@@ -642,6 +648,38 @@ void PsyqSpuSetReverbDepth( SpuReverbAttr* attr )
     {
         SPU::WriteRegister( 0x186, attr->depth.right );
         g_reverb_depth_right = attr->depth.right;
+    }
+}
+
+
+
+long PsyqSpuSetNoiseClock( long n_clock )
+{
+    std::lock_guard<std::mutex> lock( spuMutex );
+
+    n_clock = ( n_clock < 0 ) ? 0 : n_clock;
+    n_clock = ( n_clock >= 0x40 ) ? 0x3f : n_clock;
+
+    SPU::WriteRegister( 0x1aa, (SPU::ReadRegister( 0x1aa ) & 0xc0ff) | ((n_clock & 0x3f) << 0x8) );
+
+    return n_clock;
+}
+
+
+
+void PsyqSpuSetNoiseVoice( s32 on_off, u32 voice_bit )
+{
+    std::lock_guard<std::mutex> lock( spuMutex );
+
+    if( on_off == SPU_OFF )
+    {
+        SPU::WriteRegister( 0xca * 2, SPU::ReadRegister( 0xca * 2 ) & ~(voice_bit & 0xffff) );
+        SPU::WriteRegister( 0xcb * 2, SPU::ReadRegister( 0xcb * 2 ) & ~((voice_bit >> 0x10) & 0xff) );
+    }
+    else if( on_off == SPU_ON )
+    {
+        SPU::WriteRegister( 0xca * 2, SPU::ReadRegister( 0xca * 2 ) | (voice_bit & 0xffff) );
+        SPU::WriteRegister( 0xcb * 2, SPU::ReadRegister( 0xcb * 2 ) | ((voice_bit >> 0x10) & 0xff) );
     }
 }
 

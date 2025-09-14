@@ -26,10 +26,12 @@ void AkaoOpcode_a0_finish_channel( AkaoChannel* channel, AkaoConfig* config, u32
     }
     else
     {
+        // stop sound channel
         g_channels_3_config.active_mask &= mask ^ 0x00ff0000;
         g_channels_3_config.noise_mask &= mask ^ 0x00ff0000;
         g_channels_3_config.reverb_mask &= mask ^ 0x00ff0000;
         g_channels_3_config.pitch_lfo_mask &= mask ^ 0x00ff0000;
+        // free channel to use in music
         g_channels_1_config.on_mask &= ~mask;
         g_channels_1_config.keyed_mask &= ~mask;
         g_channels_1_config.off_mask &= ~mask;
@@ -40,7 +42,7 @@ void AkaoOpcode_a0_finish_channel( AkaoChannel* channel, AkaoConfig* config, u32
 
     g_channels_1_config.update_flags |= AKAO_UPDATE_NOISE_CLOCK;
 
-//    system_akao_update_noise_voices();
+    AkaoUpdateNoiseVoices();
     AkaoUpdateReverbVoices();
     AkaoUpdatePitchLfoVoices();
 }
@@ -223,13 +225,10 @@ void AkaoOpcode_ab_set_pan_slide( AkaoChannel* channel, AkaoConfig* config, u32 
 // Values greater than 0x3F adds to the current frequency, making it lower.
 void AkaoOpcode_ac_noise_clock_freq( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xac" );
-
     u8* akao = channel->seq;
     channel->seq = akao + 0x1;
 
-    /*
-    u8 clock = bu[akao];
+    u8 clock = READ_LE_U8( akao );
 
     if( channel->type == AKAO_MUSIC )
     {
@@ -246,16 +245,15 @@ void AkaoOpcode_ac_noise_clock_freq( AkaoChannel* channel, AkaoConfig* config, u
     {
         if( clock & 0xc0 )
         {
-            g_channels_3_noise_clock = (g_channels_3_noise_clock + (clock & 0x3f)) & 0x3f;
+            g_channels_3_config.noise_clock = (g_channels_3_config.noise_clock + (clock & 0x3f)) & 0x3f;
         }
         else
         {
-            g_channels_3_noise_clock = clock;
+            g_channels_3_config.noise_clock = clock;
         }
     }
 
     g_channels_1_config.update_flags |= AKAO_UPDATE_NOISE_CLOCK;
-    */
 }
 
 
@@ -392,15 +390,15 @@ void AkaoOpcode_b4_vibrato( AkaoChannel* channel, AkaoConfig* config, u32 mask )
     }
     else
     {
-        ofLog( OF_LOG_NOTICE, "MISSING SOUND 0xb4" );
-//        channel->vibrato_delay = 0;
-//        if( bu[akao + 0x0] != 0 )
-//        (
-//            channel->vibrato_depth = bu[akao + 0x0] << 0x8;
-//        }
+        channel->vibrato_delay = 0;
+        u8 vibrato_depth = READ_LE_U8( akao + 0x0 );
+        if( vibrato_depth != 0 )
+        {
+            channel->vibrato_depth = vibrato_depth << 0x8;
+        }
     }
 
-    u16 rate = READ_LE_U8( akao + 1 );
+    u16 rate = READ_LE_U8( akao + 0x1 );
     if( rate == 0 ) rate = 0x100;
     channel->vibrato_rate = rate;
     channel->vibrato_rate_cur = 1;
@@ -472,15 +470,15 @@ void AkaoOpcode_b8_tremolo( AkaoChannel* channel, AkaoConfig* config, u32 mask )
     }
     else
     {
-        ofLog( OF_LOG_NOTICE, "MISSING SOUND 0xb8" );
-//        channel->tremolo_delay = 0;
-//        if( bu[akao + 0x0] != 0 )
-//        (
-//            channel->tremolo_depth = bu[akao + 0x0] << 0x8;
-//        }
+        channel->tremolo_delay = 0;
+        u8 tremolo_depth = READ_LE_U8( akao + 0x0 );
+        if( tremolo_depth != 0 )
+        {
+            channel->tremolo_depth = tremolo_depth << 0x8;
+        }
     }
 
-    u16 rate = READ_LE_U8( akao + 1 );
+    u16 rate = READ_LE_U8( akao + 0x1 );
     if( rate == 0 ) rate = 0x100;
     channel->tremolo_rate = rate;
     channel->tremolo_rate_cur = 1;
@@ -647,22 +645,18 @@ void AkaoOpcode_c3_reverb_off( AkaoChannel* channel, AkaoConfig* config, u32 mas
 // Tells the engine to use the noise generator instead of sampled waveforms. Stays active until the C5 command is found.
 void AkaoOpcode_c4_noise_on( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xc4" );
-
-    /*
     if( channel->type == AKAO_MUSIC )
     {
         config->noise_mask |= mask;
     }
     else
     {
-        g_channels_3_noise_mask |= mask;
+        g_channels_3_config.noise_mask |= mask;
     }
 
     g_channels_1_config.update_flags |= AKAO_UPDATE_NOISE_CLOCK;
 
-    system_akao_update_noise_voices();
-    */
+    AkaoUpdateNoiseVoices();
 }
 
 
@@ -670,24 +664,20 @@ void AkaoOpcode_c4_noise_on( AkaoChannel* channel, AkaoConfig* config, u32 mask 
 // Stops the noise generator to use the waveforms instead. Waveform number is restored as it was before C4 command occured.
 void AkaoOpcode_c5_noise_off( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xc5" );
-
-    /*
     if( channel->type == AKAO_MUSIC )
     {
         config->noise_mask &= ~mask;
     }
     else
     {
-        g_channels_3_noise_mask &= ~mask;
+        g_channels_3_config.noise_mask &= ~mask;
     }
 
-    g_channels_1_config.update_flags |= AKAO_UPDATE_NOISE_CLOCK
+    g_channels_1_config.update_flags |= AKAO_UPDATE_NOISE_CLOCK;
 
-    system_akao_update_noise_voices();
+    AkaoUpdateNoiseVoices();
 
-    channel->noise_switch_delay = 0;
-    */
+//    channel->noise_switch_delay = 0;
 }
 
 
@@ -878,44 +868,28 @@ void AkaoOpcode_d3_frequency_modulation_switch( AkaoChannel* channel, AkaoConfig
 
 void AkaoOpcode_d4_side_chain_playback_on( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xd4" );
-
-    /*
     channel->update_flags |= AKAO_UPDATE_SIDE_CHAIN_PITCH;
-    */
 }
 
 
 
 void AkaoOpcode_d5_side_chain_playback_off( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xd5" );
-
-    /*
     channel->update_flags &= ~AKAO_UPDATE_SIDE_CHAIN_PITCH;
-    */
 }
 
 
 
 void AkaoOpcode_d6_side_chain_pitch_vol_on( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xd6" );
-
-    /*
     channel->update_flags |= AKAO_UPDATE_SIDE_CHAIN_VOL;
-    */
 }
 
 
 
 void AkaoOpcode_d7_side_chain_pitch_vol_off( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xd7" );
-
-    /*
     channel->update_flags &= ~AKAO_UPDATE_SIDE_CHAIN_VOL;
-    */
 }
 
 
@@ -946,14 +920,12 @@ void AkaoOpcode_d9_fine_tuning_relative( AkaoChannel* channel, AkaoConfig* confi
 
 void AkaoOpcode_da_portamento_on( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xda" );
-
     u8* akao = channel->seq;
     channel->seq = akao + 0x1;
 
-//    u16 steps = bu[akao];
-//    if( steps == 0 ) steps = 0x100;
-//    channel->portamento_steps = steps;
+    u16 steps = READ_LE_U8( akao );
+    if( steps == 0 ) steps = 0x100;
+    channel->portamento_steps = steps;
 
     channel->sfx_mask = AKAO_SFX_LEGATO;
     channel->key_stored = 0;
@@ -964,11 +936,7 @@ void AkaoOpcode_da_portamento_on( AkaoChannel* channel, AkaoConfig* config, u32 
 
 void AkaoOpcode_db_portamento_off( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xdb" );
-
-    /*
     channel->portamento_steps = 0;
-    */
 }
 
 
@@ -976,13 +944,10 @@ void AkaoOpcode_db_portamento_off( AkaoChannel* channel, AkaoConfig* config, u32
 // Set the duration for all the upcoming notes (same as A2 except it doesn't apply only to the next note)
 void AkaoOpcode_dc_fix_note_length( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xdc" );
-
     u8* akao = channel->seq;
     channel->seq = akao + 0x1;
 
-    /*
-    s16 length = b[akao];
+    s16 length = READ_LE_S8( akao );
     if( length != 0 )
     {
         length += channel->length_stored;
@@ -990,7 +955,6 @@ void AkaoOpcode_dc_fix_note_length( AkaoChannel* channel, AkaoConfig* config, u3
         length = (length >= 0x100) ? 0xff : length;
     }
     channel->length_fixed = length;
-    */
 }
 
 

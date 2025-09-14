@@ -801,7 +801,7 @@ void AkaoMusicChannelsInit()
             channel->vol_pan = 0x4000;
             channel->vol_pan_slide_steps = 0;
             channel->pitch_slide_steps_cur = 0;
-//            channel->portamento_steps = 0;
+            channel->portamento_steps = 0;
             channel->sfx_mask = 0;
             channel->vibrato_depth = 0;
             channel->vibrato_depth_slide_steps = 0;
@@ -835,56 +835,9 @@ void AkaoMusicChannelsInit()
 //        [0x8009a104 + 0x14] = w(active_mask);
 //    }
 
-//    system_akao_update_noise_voices();
+    AkaoUpdateNoiseVoices();
     AkaoUpdateReverbVoices();
     AkaoUpdatePitchLfoVoices();
-}
-
-
-
-void AkaoMusicChannelsStop()
-{
-    if( g_channels_1_config.active_mask != 0 )
-    {
-        g_channels_1_config.active_mask |= g_channels_1_config.over_mask | g_channels_1_config.alt_mask;
-        g_channels_1_config.on_mask = 0;
-        g_channels_1_config.keyed_mask = 0;
-        g_channels_1_config.over_mask = 0;
-        g_channels_1_config.alt_mask = 0;
-
-        g_channels_1_config.off_mask |= g_channels_1_config.active_mask;
-
-        u32 channel_mask = 0x1;
-        u32 channels_mask = g_channels_1_config.active_mask;
-        AkaoChannel* channel = g_channels_1;
-        while( channels_mask != 0 )
-        {
-            if( channels_mask & channel_mask )
-            {
-                channel->seq = g_akao_default_seq;
-                channel->length_start = 0x4;
-                channel->length_stop = 0x2;
-                channels_mask ^= channel_mask;
-            }
-            channel_mask <<= 1;
-            channel += 1;
-        }
-    }
-}
-
-
-
-void AkaoSoundGetSequence( u32& offset1, u32& offset2, u16 sound_id )
-{
-    u16 seq_id = (sound_id & 0x3ff) * 0x2;
-
-    u16 offset = READ_LE_U16( g_akao_effects_all + seq_id * 0x2 );
-    offset1 = ( offset != 0xffff ) ? g_akao_effects_all_seq + offset : 0;
-
-    seq_id += 0x1;
-
-    offset = READ_LE_U16( g_akao_effects_all + seq_id * 0x2 );
-    offset2 = ( offset != 0xffff ) ? g_akao_effects_all_seq + offset : 0;
 }
 
 
@@ -950,7 +903,7 @@ void AkaoSoundChannelsInit( u8 vol_pan, u16 channel_id, u32 offset1, u32 offset2
 //        g_channels_3_config.active_mask_stored |= seq_mask;
 //    }
 
-//    system_akao_update_noise_voices();
+    AkaoUpdateNoiseVoices();
     AkaoUpdateReverbVoices();
     AkaoUpdatePitchLfoVoices();
 }
@@ -970,7 +923,7 @@ void AkaoSoundChannelInit( AkaoChannel* channel, u32 offset )
     channel->vol_slide_steps = 0;
     channel->pitch_slide_steps_cur = 0;
     channel->octave = 0x2;
-//    channel->portamento_steps = 0;
+    channel->portamento_steps = 0;
     channel->sfx_mask = 0;
     channel->vibrato_depth = 0;
     channel->vibrato_depth_slide_steps = 0;
@@ -987,6 +940,82 @@ void AkaoSoundChannelInit( AkaoChannel* channel, u32 offset )
     channel->fine_tuning = 0;
     channel->key_add = 0;
     channel->pan_lfo_vol = 0;
+}
+
+
+
+void AkaoMusicChannelsStop()
+{
+    if( g_channels_1_config.active_mask != 0 )
+    {
+        g_channels_1_config.active_mask |= g_channels_1_config.over_mask | g_channels_1_config.alt_mask;
+        g_channels_1_config.on_mask = 0;
+        g_channels_1_config.keyed_mask = 0;
+        g_channels_1_config.over_mask = 0;
+        g_channels_1_config.alt_mask = 0;
+
+        g_channels_1_config.off_mask |= g_channels_1_config.active_mask;
+
+        u32 channel_mask = 0x1;
+        u32 channels_mask = g_channels_1_config.active_mask;
+        AkaoChannel* channel = g_channels_1;
+        while( channels_mask != 0 )
+        {
+            if( channels_mask & channel_mask )
+            {
+                channel->seq = g_akao_default_seq;
+                channel->length_start = 0x4;
+                channel->length_stop = 0x2;
+                channels_mask ^= channel_mask;
+            }
+            channel_mask <<= 1;
+            channel += 1;
+        }
+    }
+}
+
+
+
+// turn off all sounds except menu sound
+void AkaoSoundChannelsStop()
+{
+    for( int i = 0x0; i < 0x8; ++i )
+    {
+        if( g_channels_3[i].type != AKAO_MENU )
+        {
+            g_channels_3[i].seq = g_akao_default_seq;
+            g_channels_3[i].length_start = 0x4;
+            g_channels_3[i].length_stop = 0x2;
+        }
+    }
+
+    if( g_channels_3[0x6].type == AKAO_MENU )
+    {
+        g_channels_3_config.on_mask &= 0x00c00000;
+        g_channels_3_config.keyed_mask &= 0x00c00000;
+        g_channels_3_config.off_mask &= g_channels_3_config.active_mask & 0xff3fffff;
+    }
+    else
+    {
+        g_channels_3_config.on_mask = 0;
+        g_channels_3_config.keyed_mask = 0;
+        g_channels_3_config.off_mask = g_channels_3_config.active_mask;
+    }
+}
+
+
+
+void AkaoSoundGetSequence( u32& offset1, u32& offset2, u16 sound_id )
+{
+    u16 seq_id = (sound_id & 0x3ff) * 0x2;
+
+    u16 offset = READ_LE_U16( g_akao_effects_all + seq_id * 0x2 );
+    offset1 = ( offset != 0xffff ) ? g_akao_effects_all_seq + offset : 0;
+
+    seq_id += 0x1;
+
+    offset = READ_LE_U16( g_akao_effects_all + seq_id * 0x2 );
+    offset2 = ( offset != 0xffff ) ? g_akao_effects_all_seq + offset : 0;
 }
 
 
@@ -1031,26 +1060,42 @@ void AkaoExecuteSequence( AkaoChannel* channel, AkaoConfig* config, u32 mask )
     {
         if( channel->length_fixed != 0 )
         {
-            ofLog( OF_LOG_NOTICE, "MISSING length_fixed" );
-//            channel->length_start = channel->length_fixed;
-//            channel->length_stop = channel->length_fixed;
+            channel->length_start = channel->length_fixed;
+            channel->length_stop = channel->length_fixed;
         }
 
-        // if length was not set in settings opcode then use note to get length
-        if( channel->length_start == 0 )
-        {
-            // notes divided into 0xc semitones with 0xb presets length for each
-            u8 length_id = opcode % 0xb;
-            channel->length_start = g_akao_length_table[length_id] & 0x00ff;
-            channel->length_stop = (g_akao_length_table[length_id] & 0xff00) >> 0x8;
-        }
+        u8 next_note = AkaoGetNextKey( channel );
 
-        // by default we reduce stop length to end note before playing another
-        // in case of legato we skip this part to create smooth transition between notes
-        // full length note has same effect
-        if( ((AkaoGetNextKey( channel ) - 0x84) >= 0xb) && ((channel->sfx_mask & (AKAO_SFX_FULL_LENGTH | AKAO_SFX_LEGATO)) == 0) )
+        // if length was set by fixed length logic then check next note and stop channel if
+        // next note is pause note or normal note but without legato effect
+        if( channel->length_start != 0 )
         {
-            channel->length_stop -= 0x2;
+            if( next_note >= 0x8f ) // pause note
+            {
+                channel->length_stop -= 0x2;
+            }
+            else if( next_note < 0x84 ) // normal note
+            {
+                if( (channel->sfx_mask & (AKAO_SFX_FULL_LENGTH | AKAO_SFX_LEGATO)) == 0 )
+                {
+                    channel->length_stop -= 0x2;
+                }
+            }
+        }
+        // if length was not set in settings opcode then use note to get length and then
+        // shorten it if note is stop note and without legato effect
+        else
+        {
+            channel->length_start = g_akao_length_table[opcode % 0xb] & 0x00ff;
+            channel->length_stop = (g_akao_length_table[opcode % 0xb] & 0xff00) >> 0x8;
+
+            if( (next_note - 0x84) >= 0xb )
+            {
+                if( (channel->sfx_mask & (AKAO_SFX_FULL_LENGTH | AKAO_SFX_LEGATO)) == 0 )
+                {
+                    channel->length_stop -= 0x2;
+                }
+            }
         }
 
         channel->length_stored = channel->length_start;
@@ -1058,7 +1103,7 @@ void AkaoExecuteSequence( AkaoChannel* channel, AkaoConfig* config, u32 mask )
         // if this note is pause/stop effect note 0x8f-0x99
         if( opcode >= 0x8f )
         {
-//            channel->portamento_steps = 0;
+            channel->portamento_steps = 0;
             channel->vibrato_pitch = 0;
             channel->tremolo_vol = 0;
             channel->sfx_mask &= ~AKAO_SFX_LEGATO_ACT;
@@ -1131,14 +1176,14 @@ void AkaoExecuteSequence( AkaoChannel* channel, AkaoConfig* config, u32 mask )
                 // calculate key by note semitone and octave set in opcodes 0xa5, 0xa6 and 0xa7
                 u8 key = channel->octave * 0xc + semitone;
 
-//                if( ( channel->portamento_steps != 0 ) && ( channel->key_stored != 0 ) )
-//                {
-//                    channel->pitch_slide_steps = channel->portamento_steps;
-//                    channel->key_add = (key & 0xff) + channel->transpose - channel->key_stored - channel->transpose_stored;
-//                    channel->key = channel->key_stored - channel->transpose - channel->transpose_stored;
-//                    key = (channel->key_stored & 0xff) + (channel->transpose_stored & 0xff);
-//                }
-//                else
+                if( (channel->portamento_steps != 0) && (channel->key_stored != 0) )
+                {
+                    channel->pitch_slide_steps = channel->portamento_steps;
+                    channel->key_add = (key & 0xff) + channel->transpose - channel->key_stored - channel->transpose_stored;
+                    channel->key = channel->key_stored - channel->transpose - channel->transpose_stored;
+                    key = (channel->key_stored & 0xff) + (channel->transpose_stored & 0xff);
+                }
+                else
                 // store unmodified key and transpose key for calculations by settings from opcodes 0xc0 or 0xc1
                 {
                     channel->key = key;
@@ -1334,20 +1379,22 @@ void AkaoUpdateKeysOn()
         g_channels_1_config.update_flags ^= AKAO_UPDATE_REVERB;
     }
 
-//    // update noise clock frequency
-//    if( g_channels_1_config.update_flags & AKAO_UPDATE_NOISE_CLOCK )
-//    {
-//        if( g_channels_3_active_mask != 0 )
-//        {
-//            system_psyq_spu_set_noise_clock( g_channels_3_noise_clock );
-//        }
-//        else
-//        {
-//            system_psyq_spu_set_noise_clock( g_channels_1_config.noise_clock );
-//        }
-//
-//        g_channels_1_config.update_flags ^= AKAO_UPDATE_NOISE_CLOCK;
-//    }
+    // update noise clock frequency
+    // update flag stored only in config1 because it's global setting for all SPU
+    // but exact value of clock stored in separate configs
+    if( g_channels_1_config.update_flags & AKAO_UPDATE_NOISE_CLOCK )
+    {
+        if( g_channels_3_config.active_mask != 0 )
+        {
+            PsyqSpuSetNoiseClock( g_channels_3_config.noise_clock );
+        }
+        else
+        {
+            PsyqSpuSetNoiseClock( g_channels_1_config.noise_clock );
+        }
+
+        g_channels_1_config.update_flags ^= AKAO_UPDATE_NOISE_CLOCK;
+    }
 
 //    if( g_channels_2_config.active_mask != 0 )
 //    {
@@ -1563,6 +1610,34 @@ void AkaoUpdateKeysOff()
 }
 
 
+void AkaoUpdateNoiseVoices()
+{
+    u32 updated_mask = 0x0;
+
+//    collect_mask = ~(g_channels_3_active_mask | g_akao_stream_mask);
+//    channels_mask = collect_mask & g_channels_2_config.noise_mask & w[0x80062f68];
+
+//    if( channels_mask != 0 )
+//    {
+//        AkaoCollectChannelsVoicesMask( &g_channels_2, updated_mask, channels_mask, collect_mask );
+//    }
+
+    u32 collect_mask = ~(/*w[0x80062f68] |*/ g_channels_3_config.active_mask | g_akao_stream_mask);
+    u32 channels_mask = collect_mask & g_channels_1_config.noise_mask;
+
+    if( channels_mask != 0 )
+    {
+        AkaoCollectChannelsVoicesMask( g_channels_1, updated_mask, channels_mask, collect_mask );
+    }
+
+    updated_mask |= g_channels_3_config.noise_mask;
+    PsyqSpuSetNoiseVoice( SPU_ON, updated_mask );
+
+    updated_mask ^= 0x00ffffff;
+    PsyqSpuSetNoiseVoice( SPU_OFF, updated_mask );
+}
+
+
 
 void AkaoUpdateReverbVoices()
 {
@@ -1573,7 +1648,7 @@ void AkaoUpdateReverbVoices()
 
 //    if( channels_mask != 0 )
 //    {
-//        system_akao_collect_channels_voices_mask( g_channels_2, updated_mask, channels_mask, exclude_mask );
+//        AkaoCollectChannelsVoicesMask( g_channels_2, updated_mask, channels_mask, exclude_mask );
 //    }
 
 //    if( g_akao_control_flags & 0x00000010 )
@@ -1610,7 +1685,7 @@ void AkaoUpdatePitchLfoVoices()
 
 //    if( channels_mask != 0 )
 //    {
-//        system_akao_collect_channels_voices_mask( &g_channels_2, updated_mask, channels_mask, exclude_mask );
+//        AkaoCollectChannelsVoicesMask( &g_channels_2, updated_mask, channels_mask, exclude_mask );
 //    }
 
     u32 exclude_mask = ~(/*w[0x80062f68] |*/ g_channels_3_config.active_mask | g_akao_stream_mask);
@@ -1733,7 +1808,7 @@ void AkaoMusicUpdateSlideAndDelay( AkaoChannel* channel, AkaoConfig* config, u32
 //        {
 //            config->noise_mask ^= channel_mask;
 //            g_channels_1_config.update_flags |= AKAO_UPDATE_NOISE_CLOCK;
-//            system_akao_update_noise_voices();
+//            AkaoUpdateNoiseVoices();
 //        }
 //    }
 
@@ -1844,17 +1919,18 @@ void AkaoMusicUpdateSlideAndDelay( AkaoChannel* channel, AkaoConfig* config, u32
 
 void AkaoSoundUpdateSlideAndDelay( AkaoChannel* channel, u32 channel_mask )
 {
-//    if( channel->vol_slide_steps != 0 )
-//    {
-//        channel->vol_slide_steps -= 0x1;
-//
-//        s32 vol_new = channel->volume + channel->vol_slide_step;
-//        if( (vol_new & 0xffe00000) != (channel->volume & 0xffe00000) )
-//        {
-//            channel->attr.mask |= AKAO_UPDATE_SPU_VOICE;
-//        }
-//        channel->volume = vol_new;
-//    }
+    // same as for music
+    if( channel->vol_slide_steps != 0 )
+    {
+        channel->vol_slide_steps -= 0x1;
+
+        s32 vol_new = channel->volume + channel->vol_slide_step;
+        if( (vol_new & 0xffe00000) != (channel->volume & 0xffe00000) )
+        {
+            channel->attr.mask |= AKAO_UPDATE_SPU_VOICE;
+        }
+        channel->volume = vol_new;
+    }
 
 //    if( channel->noise_switch_delay != 0 )
 //    {
@@ -1865,7 +1941,7 @@ void AkaoSoundUpdateSlideAndDelay( AkaoChannel* channel, u32 channel_mask )
 //            g_channels_3_noise_mask ^= channel_mask;
 //            g_channels_1_config.update_flags |= AKAO_UPDATE_NOISE_CLOCK;
 //
-//            system_akao_update_noise_voices();
+//            AkaoUpdateNoiseVoices();
 //        }
 //    }
 
@@ -1881,62 +1957,57 @@ void AkaoSoundUpdateSlideAndDelay( AkaoChannel* channel, u32 channel_mask )
 //        }
 //    }
 
-//    if( channel->vibrato_depth_slide_steps != 0 )
-//    {
-//        channel->vibrato_depth_slide_steps -= 1;
-//        channel->vibrato_depth += channel->vibrato_depth_slide_step;
-//
-//        A0 = ((channel->vibrato_depth & 0x7f00) >> 0x8) * channel->pitch_base;
-//        if( (channel->vibrato_depth & 0x8000) == 0 ) A0 *= 0xf / 0x100;
-//        channel->vibrato_base = A0 >> 0x7;
-//
-//        if( channel->vibrato_rate_cur != 1 )
-//        {
-//            A0 = channel->vibrato_wave;
-//
-//            if( (h[A0 + 0x0] == 0) && (h[A0 + 0x2] == 0) )
-//            {
-//                A0 += h[A0 + 0x4] * 2;
-//            }
-//
-//            A1 = (channel->vibrato_base * h[A0 + 0x0]) >> 10;
-//
-//            if( A1 != channel->vibrato_pitch )
-//            {
-//                channel->vibrato_pitch = A1;
-//                channel->attr.mask |= SPU_VOICE_PITCH;
-//
-//                if( A1 >= 0 )
-//                {
-//                    channel->vibrato_pitch = A1 * 2;
-//                }
-//            }
-//        }
-//    }
+    // sound don't use vibrato_delay_cur
+    // all other logic same as in music
+    if( channel->vibrato_depth_slide_steps != 0 )
+    {
+        channel->vibrato_depth_slide_steps -= 1;
+        channel->vibrato_depth += channel->vibrato_depth_slide_step;
 
-//    if( channel->tremolo_depth_slide_steps != 0 )
-//    {
-//        channel->tremolo_depth_slide_steps -= 1;
-//
-//        channel->tremolo_depth += channel->tremolo_depth_slide_step;
-//
-//        if( channel->tremolo_rate_cur != 1 )
-//        {
-//            A0 = channel->tremolo_wave;
-//            if( (h[A0 + 0x0] == 0) && (h[A0 + 0x2] == 0) )
-//            {
-//                A0 += h[A0 + 0x4] * 2;
-//            }
-//
-//            A1 = (((((((channel->volume >> 0x10) * channel->vol_master) >> 0x7) * (channel->tremolo_depth >> 0x8)) << 0x9) >> 0x10) * h[A0 + 0x0]) >> 0xf;
-//
-//            if( A1 != channel->tremolo_vol )
-//            {
-//                channel->tremolo_vol = A1;
-//                channel->attr.mask |= AKAO_UPDATE_SPU_VOICE;
-//            }
-//        }
-//    }
+        u32 vibrato_base = ((channel->vibrato_depth & 0x7f00) >> 0x8) * channel->pitch_base;
+        if( (channel->vibrato_depth & 0x8000) == 0 ) vibrato_base = (vibrato_base * 0xf) / 0x100;
+        channel->vibrato_base = vibrato_base >> 0x7;
+
+        if( channel->vibrato_rate_cur != 1 )
+        {
+            if( (g_akao_wave_table[channel->vibrato_wave_id + 0x0] == 0) && (g_akao_wave_table[channel->vibrato_wave_id + 0x1] == 0) )
+            {
+                channel->vibrato_wave_id += g_akao_wave_table[channel->vibrato_wave_id + 0x2];
+            }
+
+            s16 vibrato_pitch = (channel->vibrato_base * g_akao_wave_table[channel->vibrato_wave_id]) >> 0x10;
+            if( vibrato_pitch != channel->vibrato_pitch )
+            {
+                channel->vibrato_pitch = vibrato_pitch;
+                channel->attr.mask |= SPU_VOICE_PITCH;
+
+                if( vibrato_pitch >= 0 ) channel->vibrato_pitch *= 0x2;
+            }
+        }
+    }
+
+    // sound don't use tremolo_delay_cur
+    // all other logic same as in music
+    if( channel->tremolo_depth_slide_steps != 0 )
+    {
+        channel->tremolo_depth_slide_steps -= 1;
+        channel->tremolo_depth += channel->tremolo_depth_slide_step;
+
+        if( channel->tremolo_rate_cur != 1 )
+        {
+            if( (g_akao_wave_table[channel->tremolo_wave_id + 0x0] == 0) && (g_akao_wave_table[channel->tremolo_wave_id + 0x1] == 0) )
+            {
+                channel->tremolo_wave_id += g_akao_wave_table[channel->tremolo_wave_id + 0x2];
+            }
+
+            s16 tremolo_vol = (((((((channel->volume >> 0x10) * channel->vol_master) >> 0x7) * (channel->tremolo_depth >> 0x8)) << 0x9) >> 0x10) * g_akao_wave_table[channel->tremolo_wave_id]) >> 0xf;
+            if( tremolo_vol != channel->tremolo_vol )
+            {
+                channel->tremolo_vol = tremolo_vol;
+                channel->attr.mask |= AKAO_UPDATE_SPU_VOICE;
+            }
+        }
+    }
 
 //    if( channel->pan_lfo_depth_slide_steps != 0 )
 //    {
@@ -1962,17 +2033,18 @@ void AkaoSoundUpdateSlideAndDelay( AkaoChannel* channel, u32 channel_mask )
 //        }
 //    }
 
-//    if( channel->pitch_slide_steps_cur != 0 )
-//    {
-//        channel->pitch_slide_steps_cur -= 1;
-//
-//        u32 A1 = channel->pitch_slide + channel->pitch_slide_step;
-//        if( (A1 & 0xffff0000) != (channel->pitch_slide & 0xffff0000) )
-//        {
-//            channel->attr.mask |= SPU_VOICE_PITCH;
-//        }
-//        channel->pitch_slide = A1;
-//    }
+    // same as for music
+    if( channel->pitch_slide_steps_cur != 0 )
+    {
+        channel->pitch_slide_steps_cur -= 1;
+
+        s32 pitch_slide = channel->pitch_slide + channel->pitch_slide_step;
+        if( (pitch_slide & 0xffff0000) != (channel->pitch_slide & 0xffff0000) )
+        {
+            channel->attr.mask |= SPU_VOICE_PITCH;
+        }
+        channel->pitch_slide = pitch_slide;
+    }
 }
 
 
@@ -2056,11 +2128,11 @@ void AkaoMusicUpdatePitchAndVolume( AkaoChannel* channel, u32 channel_mask, u32 
         }
     }
 
-//    if( channel->update_flags & AKAO_UPDATE_SIDE_CHAIN_VOL )
-//    {
-//        channel->attr.mask |= AKAO_UPDATE_SPU_VOICE;
-//        volume_level = ((((channel - 1)->attr.pitch << 0x11) >> 0x10) * channel->vol_master) >> 0x7;
-//    }
+    if( channel->update_flags & AKAO_UPDATE_SIDE_CHAIN_VOL )
+    {
+        channel->attr.mask |= AKAO_UPDATE_SPU_VOICE;
+        volume_level = ((((channel - 1)->attr.pitch << 0x11) >> 0x10) * channel->vol_master) >> 0x7;
+    }
 
     if( channel->attr.mask & AKAO_UPDATE_SPU_VOICE )
     {
@@ -2099,9 +2171,10 @@ void AkaoMusicUpdatePitchAndVolume( AkaoChannel* channel, u32 channel_mask, u32 
         }
     }
 
-//    if( channel->update_flags & AKAO_UPDATE_SIDE_CHAIN_PITCH )
-//    {
-//        V1 = channel->vibrato_pitch + (channel->pitch_slide >> 0x10) + (channel - 1)->attr.pitch;
+    if( channel->update_flags & AKAO_UPDATE_SIDE_CHAIN_PITCH )
+    {
+        u32 pitch_base = (channel - 1)->attr.pitch + channel->vibrato_pitch + (channel->pitch_slide >> 0x10);
+
 //        u8 pitch_mul_music = (g_akao_pitch_mul_music >> 0x10) & 0xff;
 //        if( pitch_mul_music != 0 )
 //        {
@@ -2114,10 +2187,11 @@ void AkaoMusicUpdatePitchAndVolume( AkaoChannel* channel, u32 channel_mask, u32 
 //                V1 = (V1 * pitch_mul_music) >> 0x8;
 //            }
 //        }
-//        channel->attr.mask |= SPU_VOICE_PITCH;
-//        channel->attr.pitch = V1 & 0x3fff;
-//    }
-/*else*/if( channel->attr.mask & SPU_VOICE_PITCH )
+
+        channel->attr.mask |= SPU_VOICE_PITCH;
+        channel->attr.pitch = pitch_base & 0x3fff;
+    }
+    else if( channel->attr.mask & SPU_VOICE_PITCH )
     {
         u32 pitch_base = channel->pitch_base + channel->vibrato_pitch + (channel->pitch_slide >> 0x10);
 
@@ -2143,91 +2217,91 @@ void AkaoSoundUpdatePitchAndVolume( AkaoChannel* channel, u32 channel_mask )
 {
     s32 volume_level = ((channel->volume >> 0x10) * channel->vol_master) >> 0x7;
 
-//    if( channel->update_flags & AKAO_UPDATE_VIBRATO )
-//    {
-//        channel->vibrato_rate_cur -= 1;
-//
-//        if( channel->vibrato_rate_cur == 0 )
-//        {
-//            channel->vibrato_rate_cur = channel->vibrato_rate;
-//
-//            V1 = channel->vibrato_wave;
-//
-//            if( (h[V1 + 0x0] == 0) && (h[V1 + 0x2] == 0) )
-//            {
-//                channel->vibrato_wave = V1 + h[V1 + 0x4] * 0x2;
-//            }
-//
-//            V1 = channel->vibrato_wave;
-//            channel->vibrato_wave = V1 + 0x2;
-//
-//            A0 = (channel->vibrato_base * h[V1 + 0x0]) >> 0x10;
-//            if( A0 != channel->vibrato_pitch )
-//            {
-//                channel->vibrato_pitch = A0;
-//                if( A0 >= 0 ) channel->vibrato_pitch = A0 * 0x2;
-//                channel->attr.mask |= SPU_VOICE_PITCH;
-//            }
-//        }
-//    }
+    // sound don't use vibrato_delay_cur
+    // all other logic same as in music
+    if( channel->update_flags & AKAO_UPDATE_VIBRATO )
+    {
+        channel->vibrato_rate_cur -= 1;
 
-//    if( channel->update_flags & AKAO_UPDATE_TREMOLO )
-//    {
-//        channel->tremolo_rate_cur -= 1;
-//
-//        if( channel->tremolo_rate_cur == 0 )
-//        {
-//            channel->tremolo_rate_cur = channel->tremolo_rate;
-//
-//            V1 = channel->tremolo_wave;
-//            if( (h[V1 + 0x0] == 0) && (h[V1 + 0x2] == 0) )
-//            {
-//                channel->tremolo_wave = V1 + h[V1 + 0x4] * 0x2;
-//            }
-//
-//            V1 = channel->tremolo_wave;
-//            channel->tremolo_wave = V1 + 0x2;
-//
-//            A0 = ((((volume_level * (channel->tremolo_depth >> 0x8)) << 0x9) >> 0x10) * h[V1 + 0x0]) >> 0xf;
-//            if( A0 != channel->tremolo_vol )
-//            {
-//                channel->attr.mask |= AKAO_UPDATE_SPU_VOICE;
-//                channel->tremolo_vol = A0;
-//            }
-//        }
-//    }
+        if( channel->vibrato_rate_cur == 0 )
+        {
+            channel->vibrato_rate_cur = channel->vibrato_rate;
 
-//    if( channel->update_flags & AKAO_UPDATE_PAN_LFO )
-//    {
-//        channel->pan_lfo_rate_cur -= 1;
-//
-//        if( channel->pan_lfo_rate_cur == 0 )
-//        {
-//            channel->pan_lfo_rate_cur = channel->pan_lfo_rate;
-//
-//            V1 = channel->pan_lfo_wave;
-//            if( (h[V1 + 0x0] == 0) && (h[V1 + 0x2] == 0) )
-//            {
-//                channel->pan_lfo_wave = V1 + h[V1 + 0x4] * 0x2;
-//            }
-//
-//            V1 = channel->pan_lfo_wave;
-//            channel->pan_lfo_wave = V1 + 0x2;
-//
-//            A0 = ((channel->pan_lfo_depth >> 0x8) * h[V1 + 0x0]) >> 0xf;
-//            if( A0 != channel->pan_lfo_vol )
-//            {
-//                channel->pan_lfo_vol = A0;
-//                channel->attr.mask |= AKAO_UPDATE_SPU_VOICE;
-//            }
-//        }
-//    }
+            if( (g_akao_wave_table[channel->vibrato_wave_id + 0x0] == 0) && (g_akao_wave_table[channel->vibrato_wave_id + 0x1] == 0) )
+            {
+                channel->vibrato_wave_id += g_akao_wave_table[channel->vibrato_wave_id + 0x2];
+            }
 
-//    if( channel->update_flags & AKAO_UPDATE_SIDE_CHAIN_VOL )
-//    {
-//        channel->attr.mask |= AKAO_UPDATE_SPU_VOICE;
-//        volume_level = ((((channel - 1)->attr.pitch << 0x11) >> 0x10) * channel->vol_master) >> 0x7;
-//    }
+            s16 vibrato_pitch = (channel->vibrato_base * g_akao_wave_table[channel->vibrato_wave_id]) >> 0x10;
+            if( vibrato_pitch != channel->vibrato_pitch )
+            {
+                channel->vibrato_pitch = vibrato_pitch;
+                channel->attr.mask |= SPU_VOICE_PITCH;
+
+                if( vibrato_pitch >= 0 ) channel->vibrato_pitch *= 0x2;
+            }
+
+            channel->vibrato_wave_id += 0x1;
+        }
+    }
+
+    // sound don't use tremolo_delay_cur
+    // all other logic same as in music
+    if( channel->update_flags & AKAO_UPDATE_TREMOLO )
+    {
+        channel->tremolo_rate_cur -= 1;
+
+        if( channel->tremolo_rate_cur == 0 )
+        {
+            channel->tremolo_rate_cur = channel->tremolo_rate;
+
+            if( (g_akao_wave_table[channel->tremolo_wave_id + 0x0] == 0) && (g_akao_wave_table[channel->tremolo_wave_id + 0x1] == 0) )
+            {
+                channel->tremolo_wave_id += g_akao_wave_table[channel->tremolo_wave_id + 0x2];
+            }
+
+            s16 tremolo_vol = ((((volume_level * (channel->tremolo_depth >> 0x8)) << 0x9) >> 0x10) * g_akao_wave_table[channel->tremolo_wave_id]) >> 0xf;
+            if( tremolo_vol != channel->tremolo_vol )
+            {
+                channel->tremolo_vol = tremolo_vol;
+                channel->attr.mask |= AKAO_UPDATE_SPU_VOICE;
+            }
+
+            channel->tremolo_wave_id += 0x1;
+        }
+    }
+
+    // same as in music
+    if( channel->update_flags & AKAO_UPDATE_PAN_LFO )
+    {
+        channel->pan_lfo_rate_cur -= 1;
+
+        if( channel->pan_lfo_rate_cur == 0 )
+        {
+            channel->pan_lfo_rate_cur = channel->pan_lfo_rate;
+
+            if( (g_akao_wave_table[channel->pan_lfo_wave_id + 0x0] == 0) && (g_akao_wave_table[channel->pan_lfo_wave_id + 0x1] == 0) )
+            {
+                channel->pan_lfo_wave_id += g_akao_wave_table[channel->pan_lfo_wave_id + 0x2];
+            }
+
+            s16 pan_lfo_vol = ((channel->pan_lfo_depth >> 0x8) * g_akao_wave_table[channel->pan_lfo_wave_id]) >> 0xf;
+            if( pan_lfo_vol != channel->pan_lfo_vol )
+            {
+                channel->pan_lfo_vol = pan_lfo_vol;
+                channel->attr.mask |= AKAO_UPDATE_SPU_VOICE;
+            }
+
+            channel->pan_lfo_wave_id += 0x1;
+
+        }
+    }
+
+    if( channel->update_flags & AKAO_UPDATE_SIDE_CHAIN_VOL )
+    {
+        channel->attr.mask |= AKAO_UPDATE_SPU_VOICE;
+        volume_level = ((((channel - 1)->attr.pitch << 0x11) >> 0x10) * channel->vol_master) >> 0x7;
+    }
 
     if( channel->attr.mask & AKAO_UPDATE_SPU_VOICE )
     {
@@ -2269,16 +2343,17 @@ void AkaoSoundUpdatePitchAndVolume( AkaoChannel* channel, u32 channel_mask )
 
     u32 pitch_base;
 
-//    if( channel->update_flags & AKAO_UPDATE_SIDE_CHAIN_PITCH )
-//    {
-//        pitch_base = channel->vibrato_pitch + (channel->pitch_slide >> 0x10) + (channel - 1)->attr.pitch;
-//    }
-/*    else*/ if( channel->attr.mask & SPU_VOICE_PITCH )
+    // use pitch from prev channel (used in sounds by second channel)
+    if( channel->update_flags & AKAO_UPDATE_SIDE_CHAIN_PITCH )
+    {
+        pitch_base = channel->vibrato_pitch + (channel->pitch_slide >> 0x10) + (channel - 1)->attr.pitch;
+    }
+    else if( channel->attr.mask & SPU_VOICE_PITCH )
     {
         pitch_base = channel->vibrato_pitch + (channel->pitch_slide >> 0x10) + channel->pitch_base;
     }
 
-    if( /*(channel->update_flags & AKAO_UPDATE_SIDE_CHAIN_PITCH) ||*/ (channel->attr.mask & SPU_VOICE_PITCH) )
+    if( (channel->update_flags & AKAO_UPDATE_SIDE_CHAIN_PITCH) || (channel->attr.mask & SPU_VOICE_PITCH) )
     {
 //        u8 pitch_mul_sound = (channel->pitch_mul_sound & 0x0000ff00) >> 0x8;
 //        if( (channel->type != AKAO_MENU) && (pitch_mul_sound != 0) )
@@ -2390,13 +2465,15 @@ u8 AkaoGetNextKey( AkaoChannel* channel )
         {
             if( opcode >= 0x8f )
             {
-//                channel->portamento_steps = 0;
+                channel->portamento_steps = 0;
+
+                // remove effects legato or full length if next note is pause
                 channel->sfx_mask &= ~(AKAO_SFX_FULL_LENGTH | AKAO_SFX_LEGATO);
             }
             return READ_LE_U8( akao );
         }
-//
-        // unimplemented
+
+        // unimplemented opcode
         if( opcode < 0xa0 ) return 0xa0;
 
         u8 op_size[] = { 0x00, 0x02, 0x02, 0x02, 0x03, 0x02, 0x01, 0x01, 0x02, 0x03, 0x02, 0x03, 0x02, 0x02, 0x02, 0x02,
@@ -2419,9 +2496,9 @@ u8 AkaoGetNextKey( AkaoChannel* channel )
                 {
                     akao += 0x1;
 
-                    if( (READ_LE_U8( akao ) + 0x1) != channel->loop_times[loop_nest] )
+                    if( READ_LE_U8( akao ) != (channel->loop_times[loop_nest] + 1) )
                     {
-                        akao = channel->loop_point[loop_nest] ;
+                        akao = channel->loop_point[loop_nest];
                     }
                     else
                     {
@@ -2443,7 +2520,8 @@ u8 AkaoGetNextKey( AkaoChannel* channel )
                 case 0xdb: // portamento_off
                 {
                     akao += 0x1;
-//                    channel->portamento_steps = 0;
+                    channel->portamento_steps = 0;
+
                     channel->sfx_mask &= ~(AKAO_SFX_FULL_LENGTH | AKAO_SFX_LEGATO);
                 }
                 break;
@@ -2490,7 +2568,10 @@ u8 AkaoGetNextKey( AkaoChannel* channel )
 
                 default:
                 {
-//                    channel->portamento_steps = 0;
+                    channel->portamento_steps = 0;
+
+                    // remove effects legato or full length if next note will stop channel to
+                    // make sound finished and stop it on SPU before executing last opcode
                     channel->sfx_mask &= ~(AKAO_SFX_FULL_LENGTH | AKAO_SFX_LEGATO);
                     return 0xa0;
                 }
