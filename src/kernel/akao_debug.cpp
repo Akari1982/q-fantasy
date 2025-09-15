@@ -23,59 +23,65 @@ u32 g_akao_playing_file = 0;
 // music id from 0x1 - 0x60
 std::string g_music_names_en[] =
 {
-    "",                                 "(empty)",                 "Opening - Bombing Mission",            "Bombing Mission",
-    "",                                 "",                        "",                                     "Mako Reactor",
-    "Let the Battles Begin!",           "",                        "Anxiety",                              "Fight On!",
-    "",                                 "",                        "Main Theme",                           "",
-    "",                                 "",                        "",                                     "Who...Are You?",
-    "On Our Way",                       "",                        "",                                     "Waltz de Chocobo",
-    "Don of the Slums",                 "",                        "Red XIII's Theme",                     "",
-    "",                                 "Lurking In the Darkness", "Shinra, Inc",                          "Infiltrating Shinra",
-    "Under the Rotting Pizza",          "Farm Boy",                "On That Day, Five Years Ago",          "Tifa's Theme",
-    "",                                 "The Oppressed",           "Flowers Blooming in the Church",       "The Chase",
-    "",                                 "",                        "Barret's Theme",                       "",
-    "",                                 "Electric de Chocobo",     "Turks' Theme ",                        "Fanfare",
-    "",                                 "",                        "",                                     "",
-    "Cinco de Chocobo",                 "",                        "",                                     "Hurry!",
-    "",                                 "",                        "Good Night, Until Tomorrow",           "",
-    "",                                 "",                        "",                                     "",
-    "",                                 "Dear to the Heart",       "",                                     "",
-    "Honeybee Inn",                     "",                        "",                                     "",
-    "",                                 "",                        "",                                     "",
-    "",                                 "",                        "",                                     "",
-    "",                                 "",                        "",                                     "",
-    "",                                 "",                        "",                                     "",
-    "",                                 "",                        "",                                     "",
-    "",                                 "",                        "",                                     "",
-    "The Prelude"
+    "",                                 "(empty)",                          "Opening - Bombing Mission",            "Bombing Mission",
+    "In Search of the Man in Black",    "",                                 "",                                     "Mako Reactor",
+    "Let the Battles Begin!",           "",                                 "Anxiety",                              "Fight On!",
+    "",                                 "",                                 "Main Theme",                           "",
+    "",                                 "Rufus's Welcoming Ceremony",       "",                                     "Who...Are You?",
+    "On Our Way",                       "It's Hard to Stand on Both Feet!", "",                                     "Waltz de Chocobo",
+    "Don of the Slums",                 "Trail of Blood",                   "Red XIII's Theme",                     "",
+    "",                                 "Lurking In the Darkness",          "Shinra, Inc",                          "Infiltrating Shinra",
+    "Under the Rotting Pizza",          "Farm Boy",                         "On That Day, Five Years Ago",          "Tifa's Theme",
+    "",                                 "The Oppressed",                    "Flowers Blooming in the Church",       "The Chase",
+    "",                                 "",                                 "Barret's Theme",                       "",
+    "",                                 "Electric de Chocobo",              "Turks' Theme ",                        "Fanfare",
+    "",                                 "",                                 "",                                     "",
+    "Cinco de Chocobo",                 "JENOVA",                           "",                                     "Hurry!",
+    "",                                 "",                                 "Good Night, Until Tomorrow",           "",
+    "",                                 "",                                 "",                                     "",
+    "",                                 "Dear to the Heart",                "",                                     "",
+    "Honeybee Inn",                     "",                                 "",                                     "",
+    "",                                 "",                                 "",                                     "",
+    "",                                 "",                                 "",                                     "",
+    "",                                 "Fort Condor",                      "",                                     "",
+    "",                                 "",                                 "",                                     "",
+    "",                                 "",                                 "",                                     "",
+    "",                                 "",                                 "",                                     "",
+    "The Prelude",                      "",                                 "",                                     "",
+    "",                                 "",                                 "",                                     "",
+    "",                                 "",                                 "",                                     "",
+    "",                                 "",                                 "",                                     ""
 };
 std::string g_music_names_jp[] =
 {
-    "",                                 "",                        "オープニング~爆破ミッション",                 "爆破ミッション",
-    "",                                 "",                        "",                                     "魔晄炉",
-    "闘う者達 lit. \"Those Who Fight\"", "",                        "不安な心 lit. \"Anxious Heart\"",       "更に闘う者達 lit. \"Those Who Fight Further\"",
-    "",                                 "",                        "メインテーマ",                             "",
-    "",                                 "",                        "",                                     "お前は…誰だ",
-    "旅の途中で",                         "",                        "",                                     "ワルツ・デ・チョコボ",
-    "スラムのドン",                         "",                        "レッドXIIIのテーマ",                       "",
-    "",                                 "闇に潜む",                 "神羅カンパニー lit. \"Shinra Company\"", "神羅ビル潜入",
-    "腐ったピザの下で",                     "牧場の少年",               "5年前のあの日",                         "ティファのテーマ",
-    "",                                 "虐げられた民衆",            "教会に咲く花",                           "クレイジーモーターサイクル lit. \"Crazy Motorcycle\"",
-    "",                                 "",                        "バレットのテーマ",                         "",
-    "",                                 "エレキ・デ・チョコボ",       "タークスのテーマ",                         "ファンファーレ",
-    "",                                 "",                        "",                                     "",
-    "シンコ・デ・チョコボ",                "",                        "",                                     "急げ!",
-    "",                                 "",                        "お休み,また明日",                         "",
-    "",                                 "",                        "",                                     "",
-    "",                                 "",                        "",                                     "",
-    "蜜蜂の館",                          "",                        "",                                     "",
-    "",                                 "",                        "",                                     "",
-    "",                                 "",                        "",                                     "",
-    "",                                 "",                        "",                                     "",
-    "",                                 "",                        "",                                     "",
-    "",                                 "",                        "",                                     "",
-    "",                                 "",                        "",                                     "",
-    "プレリュード"
+    "",                                 "",                                 "オープニング~爆破ミッション",                 "爆破ミッション",
+    "黒マントの男を追え",                  "",                               "",                                     "魔晄炉",
+    "闘う者達 lit. \"Those Who Fight\"", "",                                "不安な心 lit. \"Anxious Heart\"",       "更に闘う者達 lit. \"Those Who Fight Further\"",
+    "",                                 "",                                 "メインテーマ",                             "",
+    "",                                 "ルーファウス歓迎式典",               "",                                     "お前は…誰だ",
+    "旅の途中で",                         "二本足で立つのも難しいものだな",     "",                                     "ワルツ・デ・チョコボ",
+    "スラムのドン",                         "血の跡",                          "レッドXIIIのテーマ",                       "",
+    "",                                 "闇に潜む",                         "神羅カンパニー lit. \"Shinra Company\"", "神羅ビル潜入",
+    "腐ったピザの下で",                     "牧場の少年",                     "5年前のあの日",                         "ティファのテーマ",
+    "",                                 "虐げられた民衆",                  "教会に咲く花",                           "クレイジーモーターサイクル lit. \"Crazy Motorcycle\"",
+    "",                                 "",                                 "バレットのテーマ",                         "",
+    "",                                 "エレキ・デ・チョコボ",               "タークスのテーマ",                         "ファンファーレ",
+    "",                                 "",                                 "",                                     "",
+    "シンコ・デ・チョコボ",                "J-E-N-O-V-A",                      "",                                     "急げ!",
+    "",                                 "",                                 "お休み,また明日",                         "",
+    "",                                 "",                                 "",                                     "",
+    "",                                 "",                                 "",                                     "",
+    "蜜蜂の館",                          "",                                "",                                     "",
+    "",                                 "",                                 "",                                     "",
+    "",                                 "",                                 "",                                     "",
+    "",                                 "鷺の砦",                          "",                                     "",
+    "",                                 "",                                 "",                                     "",
+    "",                                 "",                                 "",                                     "",
+    "",                                 "",                                 "",                                     "",
+    "プレリュード",                       "",                                 "",                                     "",
+    "",                                 "",                                 "",                                     "",
+    "",                                 "",                                 "",                                     "",
+    "",                                 "",                                 "",                                     ""
 };
 
 std::string g_reverb_name[] = { "OFF", "ROOM", "STUDIO_A", "STUDIO_B", "STUDIO_C", "HALL", "SPACE", "ECHO", "DELAY", "PIPE" };
@@ -99,11 +105,19 @@ u8 g_op_size[] = {
     0x04, 0x04, 0x02, 0x01, 0x03, 0x01, 0x02, 0x03, 0x02, 0x01, 0x00, 0x00, 0x00, 0x03, 0x03, 0x00
 };
 
+enum AkaoFileType
+{
+    FIELD,
+    SND,
+    LZS,
+    DAT
+};
+
 struct MusicFileInfo
 {
     std::string path;
     u16 id;
-    bool is_dat;
+    AkaoFileType type;
 };
 
 struct MusicInfo
@@ -137,14 +151,7 @@ static std::string BCDByteToString( u8 bcd_byte )
 static void AkaoDebugFillMusicInfo()
 {
     std::string path = "data/FIELD";
-    std::vector<std::string> add_files;
-    add_files.push_back( "ENEMY6/FAN2.SND" );
-    add_files.push_back( "ENEMY6/OVER2.SND" );
-    add_files.push_back( "MINI/ASERI2.SND" );
-    add_files.push_back( "MINI/SENSUI.SND" );
-    add_files.push_back( "MOVIE/OVER2.SND" );
-
-    for( const auto& entry : std::filesystem::directory_iterator( path ) )
+    for( const auto& entry : std::filesystem::directory_iterator( "data/FIELD" ) )
     {
         if( entry.is_regular_file() )
         {
@@ -198,7 +205,7 @@ static void AkaoDebugFillMusicInfo()
                         MusicFileInfo file_info;
                         file_info.path = filepath;
                         file_info.id = i;
-                        file_info.is_dat = true;
+                        file_info.type = FIELD;
 
                         u16 id_to_find = READ_LE_U16( &field_dat[music_offset + 0x4] );
 
@@ -234,6 +241,13 @@ static void AkaoDebugFillMusicInfo()
         }
     }
 
+    std::vector<std::string> add_files;
+    add_files.push_back( "ENEMY6/FAN2.SND" );
+    add_files.push_back( "ENEMY6/OVER2.SND" );
+    add_files.push_back( "MINI/ASERI2.SND" );
+    add_files.push_back( "MINI/SENSUI.SND" );
+    add_files.push_back( "MOVIE/OVER2.SND" );
+
     for( int i = 0; i < add_files.size(); ++i )
     {
         std::vector<u8> snd;
@@ -244,13 +258,13 @@ static void AkaoDebugFillMusicInfo()
         u8 check2 = READ_LE_U8( &snd[0x2] );
         u8 check3 = READ_LE_U8( &snd[0x3] );
 
-        // if this is AKAO file (in ffvii tutorial files and misuc are together)
+        // if this is AKAO file (in ffvii tutorial files and music are together)
         if( (check0 == 'A') && (check1 == 'K') && (check2 == 'A') && (check3 == 'O') )
         {
             MusicFileInfo file_info;
             file_info.path = add_files[i];
             file_info.id = 0;
-            file_info.is_dat = false;
+            file_info.type = SND;
 
             u16 id_to_find = READ_LE_U16( &snd[0x4] );
 
@@ -279,6 +293,106 @@ static void AkaoDebugFillMusicInfo()
                           + ":" + BCDByteToString( READ_LE_U16( &snd[0xf] ) );
                 music.files.push_back( file_info );
                 g_musics.push_back( music );
+            }
+        }
+    }
+
+    std::vector<std::pair<std::string, bool>> add_files2;
+    add_files2.push_back( std::make_pair( "MINI/BGM.LZS", true ) );
+    add_files2.push_back( std::make_pair( "MINI/BGM2.LZS", true ) );
+    add_files2.push_back( std::make_pair( "MINI/CONDOR3.LZS", true ) );
+//    add_files2.push_back( std::make_pair( "MINI/CHOCOBO.DAT", false ) );
+    add_files2.push_back( std::make_pair( "MINI/H_XBIN.BIN", false ) );
+    add_files2.push_back( std::make_pair( "MINI/XBIN2.BIN", false ) );
+    add_files2.push_back( std::make_pair( "MOVIE/OPENING.BIN", false ) );
+    add_files2.push_back( std::make_pair( "MOVIE/STAFF.BIN", false ) );
+    add_files2.push_back( std::make_pair( "MOVIE/STAFF2.BIN", false ) );
+    add_files2.push_back( std::make_pair( "WORLD/WM0.TXZ", true ) );
+    add_files2.push_back( std::make_pair( "WORLD/WM0S.TXZ", true ) );
+    add_files2.push_back( std::make_pair( "WORLD/WM1.TXZ", true ) );
+    add_files2.push_back( std::make_pair( "WORLD/WM1S.TXZ", true ) );
+    add_files2.push_back( std::make_pair( "WORLD/WM2.TXZ", true ) );
+    add_files2.push_back( std::make_pair( "WORLD/WM2S.TXZ", true ) );
+    add_files2.push_back( std::make_pair( "WORLD/WM3.TXZ", true ) );
+    add_files2.push_back( std::make_pair( "WORLD/WM3S.TXZ", true ) );
+    add_files2.push_back( std::make_pair( "WORLD/WM4.TXZ", true ) );
+    add_files2.push_back( std::make_pair( "WORLD/WM4S.TXZ", true ) );
+    add_files2.push_back( std::make_pair( "WORLD/WM5.TXZ", true ) );
+    add_files2.push_back( std::make_pair( "WORLD/WM5S.TXZ", true ) );
+    add_files2.push_back( std::make_pair( "WORLD/WM6.TXZ", true ) );
+    add_files2.push_back( std::make_pair( "WORLD/WM6S.TXZ", true ) );
+    add_files2.push_back( std::make_pair( "WORLD/WM7.TXZ", true ) );
+    add_files2.push_back( std::make_pair( "WORLD/WM7S.TXZ", true ) );
+    add_files2.push_back( std::make_pair( "WORLD/WM8.TXZ", true ) );
+    add_files2.push_back( std::make_pair( "WORLD/WM8S.TXZ", true ) );
+    add_files2.push_back( std::make_pair( "WORLD/WM9.TXZ", true ) );
+    add_files2.push_back( std::make_pair( "WORLD/WM9S.TXZ", true ) );
+    add_files2.push_back( std::make_pair( "WORLD/WMA.TXZ", true ) );
+    add_files2.push_back( std::make_pair( "WORLD/WMAS.TXZ", true ) );
+    add_files2.push_back( std::make_pair( "WORLD/WMB.TXZ", true ) );
+    add_files2.push_back( std::make_pair( "WORLD/WMC.TXZ", true ) );
+
+    for( size_t i = 0; i < add_files2.size(); ++i )
+    {
+        std::vector<u8> snd;
+        AkaoFileType type;
+        if( add_files2[i].second == true )
+        {
+            FileLZS( add_files2[i].first, snd );
+            type = LZS;
+        }
+        else
+        {
+            FileRead( add_files2[i].first, snd );
+            type = DAT;
+        }
+
+        u8 akao_found = 0;
+        // search for AKAO magic until until header size
+        for( size_t j = 0; j < (snd.size() - 0x10); ++j )
+        {
+            u8 check0 = READ_LE_U8( &snd[j + 0x0] );
+            u8 check1 = READ_LE_U8( &snd[j + 0x1] );
+            u8 check2 = READ_LE_U8( &snd[j + 0x2] );
+            u8 check3 = READ_LE_U8( &snd[j + 0x3] );
+
+            // check for AKAO magic in random place of file
+            if( (check0 == 'A') && (check1 == 'K') && (check2 == 'A') && (check3 == 'O') )
+            {
+                MusicFileInfo file_info;
+                file_info.path = add_files2[i].first;
+                file_info.id = akao_found;
+                file_info.type = type;
+                ++akao_found;
+
+                u16 id_to_find = READ_LE_U16( &snd[j + 0x4] );
+
+                auto it = std::find_if( g_musics.begin(), g_musics.end(),
+                    [id_to_find](const MusicInfo& m)
+                    {
+                        return m.id == id_to_find;
+                    });
+
+                if( it != g_musics.end() )
+                {
+                    MusicInfo& found_music = *it;
+                    found_music.files.push_back( file_info );
+                }
+                else
+                {
+                    MusicInfo music;
+                    music.id = READ_LE_U16( &snd[j + 0x4] );
+                    music.reverb_type = READ_LE_U16( &snd[j + 0x8] );
+                    music.timestamp =
+                               "19" + BCDByteToString( READ_LE_U16( &snd[j + 0xa] ) )
+                              + "-" + BCDByteToString( READ_LE_U16( &snd[j + 0xb] ) )
+                              + "-" + BCDByteToString( READ_LE_U16( &snd[j + 0xc] ) )
+                              + " " + BCDByteToString( READ_LE_U16( &snd[j + 0xd] ) )
+                              + ":" + BCDByteToString( READ_LE_U16( &snd[j + 0xe] ) )
+                              + ":" + BCDByteToString( READ_LE_U16( &snd[j + 0xf] ) );
+                    music.files.push_back( file_info );
+                    g_musics.push_back( music );
+                }
             }
         }
     }
@@ -436,7 +550,10 @@ void AkaoDebugSndBrowser()
         }
         ImGui::Separator();
         ImGui::Text( "Music Info:" );
-        ImGui::Text( "    Reverb type: 0x%02x (%s)", g_musics[selected_id].reverb_type, g_reverb_name[g_musics[selected_id].reverb_type].c_str() );
+        if( g_musics[selected_id].reverb_type < 0xa )
+        {
+            ImGui::Text( "    Reverb type: 0x%02x (%s)", g_musics[selected_id].reverb_type, g_reverb_name[g_musics[selected_id].reverb_type].c_str() );
+        }
         ImGui::Text( "    Timestamp: %s", g_musics[selected_id].timestamp.c_str() );
         ImGui::Separator();
         ImGui::Text( "Used in files:" );
@@ -450,7 +567,7 @@ void AkaoDebugSndBrowser()
             ImGui::SameLine();
             if( ImGui::Button( ICON_FA_PLAY ) )
             {
-                if( g_musics[selected_id].files[i].is_dat )
+                if( g_musics[selected_id].files[i].type == FIELD )
                 {
                     std::vector<u8> field_dat;
                     FileLZS( g_musics[selected_id].files[i].path, field_dat );
@@ -460,12 +577,47 @@ void AkaoDebugSndBrowser()
                     u16 music_size = READ_LE_U16( &field_dat[music_offset + 0x6] );
                     AkaoCopyMusic( &field_dat[music_offset + 0x10], music_size );
                 }
-                else
+                else if( g_musics[selected_id].files[i].type == SND )
                 {
                     std::vector<u8> snd;
                     FileRead( g_musics[selected_id].files[i].path, snd );
                     u16 music_size = READ_LE_U16( &snd[0x6] );
                     AkaoCopyMusic( &snd[0x10], music_size );
+                }
+                else
+                {
+                    std::vector<u8> snd;
+
+                    if( g_musics[selected_id].files[i].type == DAT )
+                    {
+                        FileRead( g_musics[selected_id].files[i].path, snd );
+                    }
+                    else
+                    {
+                        FileLZS( g_musics[selected_id].files[i].path, snd );
+                    }
+
+                    u8 akao_found = 0;
+                    // search for AKAO magic until until header size
+                    for( size_t j = 0; j < (snd.size() - 0x10); ++j )
+                    {
+                        u8 check0 = READ_LE_U8( &snd[j + 0x0] );
+                        u8 check1 = READ_LE_U8( &snd[j + 0x1] );
+                        u8 check2 = READ_LE_U8( &snd[j + 0x2] );
+                        u8 check3 = READ_LE_U8( &snd[j + 0x3] );
+
+                        // check for AKAO magic in random place of file
+                        if( (check0 == 'A') && (check1 == 'K') && (check2 == 'A') && (check3 == 'O') )
+                        {
+                            if( akao_found == g_musics[selected_id].files[i].id )
+                            {
+                                u16 music_size = READ_LE_U16( &snd[j + 0x6] );
+                                AkaoCopyMusic( &snd[j + 0x10], music_size );
+                                break;
+                            }
+                            ++akao_found;
+                        }
+                    }
                 }
 
                 AkaoSetReverbMode( g_musics[selected_id].reverb_type );

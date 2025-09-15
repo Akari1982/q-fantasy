@@ -374,7 +374,7 @@ s32 PsyqSpuSetReverb( s32 on_off )
 
 s32 SpuReverbClearWorkarea( s32 mode )
 {
-    std::lock_guard<std::mutex> lock( spuMutex );
+    // no need for mutex couse this already called from mutex func
 
     if( mode >= SPU_REV_MODE_MAX ) return -1;
 
@@ -401,7 +401,7 @@ s32 SpuReverbClearWorkarea( s32 mode )
 
 void SpuSetReverbReg(SpuReverbReg* attr)
 {
-    std::lock_guard<std::mutex> lock( spuMutex );
+    // no need for mutex couse this already called from mutex func
 
     u32 mask = attr->mask;
     if( (mask == 0) || (mask & 0x00000001) ) SPU::WriteRegister( 0x1c0, attr->dAPF1 );
