@@ -79,8 +79,8 @@ bool GZIPExtract( std::vector<u8>& input, std::vector<u8>& output )
 {
     // Setup z_stream for gzip unpack
     z_stream strm{};
-    strm.next_in   = input.data();
-    strm.avail_in  = (u32)input.size();
+    strm.next_in = input.data();
+    strm.avail_in = (u32)input.size();
 
     // 16+MAX_WBITS - gzip support
     if( inflateInit2( &strm, 16 + MAX_WBITS ) != Z_OK )
