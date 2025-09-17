@@ -82,9 +82,6 @@ field_main_loop()
     base_draw_offset.x = 0xa0;
     base_draw_offset.y = 0x78;
 
-std::vector<u8> output;
-FileBINGZIP( "", output );
-
     //V0 = w[8009a044];
     //A0 = w[V0] + 4;
     //[800e4274] = w(A0); // offset to walkmesh block

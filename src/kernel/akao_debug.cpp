@@ -110,7 +110,8 @@ enum AkaoFileType
     FIELD,
     SND,
     LZS,
-    DAT
+    DAT,
+    LZSDAT
 };
 
 struct MusicFileInfo
@@ -301,7 +302,6 @@ static void AkaoDebugFillMusicInfo()
     add_files2.push_back( std::make_pair( "MINI/BGM.LZS", true ) );
     add_files2.push_back( std::make_pair( "MINI/BGM2.LZS", true ) );
     add_files2.push_back( std::make_pair( "MINI/CONDOR3.LZS", true ) );
-//    add_files2.push_back( std::make_pair( "MINI/CHOCOBO.DAT", false ) );
     add_files2.push_back( std::make_pair( "MINI/H_XBIN.BIN", false ) );
     add_files2.push_back( std::make_pair( "MINI/XBIN2.BIN", false ) );
     add_files2.push_back( std::make_pair( "MOVIE/OPENING.BIN", false ) );
@@ -390,6 +390,62 @@ static void AkaoDebugFillMusicInfo()
                               + " " + BCDByteToString( READ_LE_U16( &snd[j + 0xd] ) )
                               + ":" + BCDByteToString( READ_LE_U16( &snd[j + 0xe] ) )
                               + ":" + BCDByteToString( READ_LE_U16( &snd[j + 0xf] ) );
+                    music.files.push_back( file_info );
+                    g_musics.push_back( music );
+                }
+            }
+        }
+    }
+
+    {
+        std::vector<u8> temp;
+        FileRead( "MINI/CHOCOBO.DAT", temp );
+        for( size_t i = 0; i < 0x4; ++i )
+        {
+            std::vector<u8> snd;
+
+            u32 ofst = 0x11a000 + i * 0x800;
+            std::vector<u8> part(temp.begin() + ofst, temp.begin() + ofst + 0x800);
+            LZSExtract( part, snd );
+
+            u8 check0 = READ_LE_U8( &snd[0x0] );
+            u8 check1 = READ_LE_U8( &snd[0x1] );
+            u8 check2 = READ_LE_U8( &snd[0x2] );
+            u8 check3 = READ_LE_U8( &snd[0x3] );
+
+            // check for AKAO magic in random place of file
+            if( (check0 == 'A') && (check1 == 'K') && (check2 == 'A') && (check3 == 'O') )
+            {
+                MusicFileInfo file_info;
+                file_info.path = "MINI/CHOCOBO.DAT";
+                file_info.id = i;
+                file_info.type = LZSDAT;
+
+                u16 id_to_find = READ_LE_U16( &snd[0x4] );
+
+                auto it = std::find_if( g_musics.begin(), g_musics.end(),
+                    [id_to_find](const MusicInfo& m)
+                    {
+                        return m.id == id_to_find;
+                    });
+
+                if( it != g_musics.end() )
+                {
+                    MusicInfo& found_music = *it;
+                    found_music.files.push_back( file_info );
+                }
+                else
+                {
+                    MusicInfo music;
+                    music.id = READ_LE_U16( &snd[0x4] );
+                    music.reverb_type = READ_LE_U16( &snd[0x8] );
+                    music.timestamp =
+                               "19" + BCDByteToString( READ_LE_U16( &snd[0xa] ) )
+                              + "-" + BCDByteToString( READ_LE_U16( &snd[0xb] ) )
+                              + "-" + BCDByteToString( READ_LE_U16( &snd[0xc] ) )
+                              + " " + BCDByteToString( READ_LE_U16( &snd[0xd] ) )
+                              + ":" + BCDByteToString( READ_LE_U16( &snd[0xe] ) )
+                              + ":" + BCDByteToString( READ_LE_U16( &snd[0xf] ) );
                     music.files.push_back( file_info );
                     g_musics.push_back( music );
                 }
@@ -583,6 +639,20 @@ void AkaoDebugSndBrowser()
                     FileRead( g_musics[selected_id].files[i].path, snd );
                     u16 music_size = READ_LE_U16( &snd[0x6] );
                     AkaoCopyMusic( &snd[0x10], music_size );
+                }
+                else if( g_musics[selected_id].files[i].type == LZSDAT )
+                {
+                    std::vector<u8> temp;
+                    FileRead( g_musics[selected_id].files[i].path, temp );
+                    std::vector<u8> snd;
+                    u32 ofst = 0x11a000 + g_musics[selected_id].files[i].id * 0x800;
+                    std::vector<u8> part(temp.begin() + ofst, temp.begin() + ofst + 0x800);
+                    FileWrite( "chokobo_comp" + ofToHex(g_musics[selected_id].files[i].id), part );
+                    LZSExtract( part, snd );
+                    u16 music_size = READ_LE_U16( &snd[0x6] );
+                    AkaoCopyMusic( &snd[0x10], music_size );
+
+                    FileWrite( "chokobo" + ofToHex(g_musics[selected_id].files[i].id), snd );
                 }
                 else
                 {
