@@ -14,6 +14,8 @@ To Do
 - Unify music debug with sequence, sfx, instruments, SPU manipulation and so on.
 - Add support for sfx.
 - Comment all AKAO music code.
+- Сделать корректное проигрывание трека сефирота.
+- Добавить дебаг доп инструментов параллельно с основными инструментами.
 
 2025-09-08
 ----------

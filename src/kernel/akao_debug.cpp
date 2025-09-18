@@ -17,8 +17,10 @@ enum PlayingState
     STOP,
 };
 PlayingState g_akao_playing = STOP;
-u32 g_akao_playing_music = 0;
-u32 g_akao_playing_file = 0;
+int g_akao_playing_music = -1;
+int g_akao_playing_file = 0;
+int g_akao_playing_sound = -1;
+int g_akao_playing_instrument = -1;
 
 // music id from 0x1 - 0x60
 std::string g_music_names_en[] =
@@ -488,30 +490,128 @@ u8* AkaoDebugGetSequenceEnd( u8* start )
 
 
 
-void AkaoDebugMusicPlay()
+void AkaoDebugStop()
 {
     AkaoMusicChannelsStop();
     AkaoSoundChannelsStop();
+    g_akao_playing = STOP;
+}
+
+
+
+// play music file by id and inner file id
+void AkaoDebugMusicPlay( u32 id, u32 file_id )
+{
+    // stop sound music and reset
+    AkaoDebugStop();
+    AkaoInitData();
+    g_akao_playing_music = -1;
+    g_akao_playing_sound = -1;
+    g_akao_playing_instrument = -1;
+
+    // load new music
+    if( g_musics[id].files[file_id].type == FIELD )
+    {
+        std::vector<u8> field_dat;
+        FileLZS( g_musics[id].files[file_id].path, field_dat );
+        u32 events_addr = READ_LE_U32( &field_dat[0x0] ) - g_field_dat_base_addr;
+        u8 entity_n = READ_LE_U8( &field_dat[events_addr + 0x2] );
+        u32 music_offset = events_addr + READ_LE_U32( &field_dat[events_addr + 0x20 + entity_n * 0x8 + g_musics[id].files[file_id].id * 0x4] );
+        u16 music_size = READ_LE_U16( &field_dat[music_offset + 0x6] );
+        AkaoCopyMusic( &field_dat[music_offset + 0x10], music_size );
+    }
+    else if( g_musics[id].files[file_id].type == SND )
+    {
+        std::vector<u8> snd;
+        FileRead( g_musics[id].files[file_id].path, snd );
+        u16 music_size = READ_LE_U16( &snd[0x6] );
+        AkaoCopyMusic( &snd[0x10], music_size );
+    }
+    else if( g_musics[id].files[file_id].type == LZSDAT )
+    {
+        std::vector<u8> temp;
+        FileRead( g_musics[id].files[file_id].path, temp );
+        std::vector<u8> snd;
+        u32 ofst = 0x11a000 + g_musics[id].files[file_id].id * 0x800;
+        std::vector<u8> part(temp.begin() + ofst, temp.begin() + ofst + 0x800);
+        LZSExtract( part, snd );
+        u16 music_size = READ_LE_U16( &snd[0x6] );
+        AkaoCopyMusic( &snd[0x10], music_size );
+    }
+    else
+    {
+        std::vector<u8> snd;
+
+        if( g_musics[id].files[file_id].type == DAT )
+        {
+            FileRead( g_musics[id].files[file_id].path, snd );
+        }
+        else
+        {
+            FileLZS( g_musics[id].files[file_id].path, snd );
+        }
+
+        u8 akao_found = 0;
+        // search for AKAO magic until until header size
+        for( size_t j = 0; j < (snd.size() - 0x10); ++j )
+        {
+            u8 check0 = READ_LE_U8( &snd[j + 0x0] );
+            u8 check1 = READ_LE_U8( &snd[j + 0x1] );
+            u8 check2 = READ_LE_U8( &snd[j + 0x2] );
+            u8 check3 = READ_LE_U8( &snd[j + 0x3] );
+
+            // check for AKAO magic in random place of file
+            if( (check0 == 'A') && (check1 == 'K') && (check2 == 'A') && (check3 == 'O') )
+            {
+                if( akao_found == g_musics[id].files[file_id].id )
+                {
+                    u16 music_size = READ_LE_U16( &snd[j + 0x6] );
+                    AkaoCopyMusic( &snd[j + 0x10], music_size );
+                    break;
+                }
+                ++akao_found;
+            }
+        }
+    }
+
+    AkaoSetReverbMode( g_musics[id].reverb_type );
 
     AkaoMusicChannelsInit();
 
+    // enable sequencer
     g_akao_playing = PLAY;
     g_akao_sequencer = true;
+    g_akao_playing_music = id;
+    g_akao_playing_file = file_id;
 }
 
 
 
-void AkaoDebugMusicPause()
+void AkaoDebugSoundPlay( u32 id )
+{
+    // stop sound music and reset
+    AkaoDebugStop();
+    AkaoInitData();
+    g_akao_playing_music = -1;
+    g_akao_playing_sound = -1;
+    g_akao_playing_instrument = -1;
+
+    u32 seq_1, seq_2;
+    //system_akao_sound_channels_clear( 0x4, 0x1 );
+    AkaoSoundGetSequence( seq_1, seq_2, id );
+    AkaoSoundChannelsInit( 0x40, 0x0, seq_1, seq_2 );
+
+    // enable sequencer
+    g_akao_playing = PLAY;
+    g_akao_sequencer = true;
+    g_akao_playing_sound = id;
+}
+
+
+
+void AkaoDebugPause()
 {
     g_akao_playing = PAUSE;
-}
-
-
-
-void AkaoDebugMusicStop()
-{
-    AkaoMusicChannelsStop();
-    g_akao_playing = STOP;
 }
 
 
@@ -623,92 +723,21 @@ void AkaoDebugSndBrowser()
             ImGui::SameLine();
             if( ImGui::Button( ICON_FA_PLAY ) )
             {
-                if( g_musics[selected_id].files[i].type == FIELD )
-                {
-                    std::vector<u8> field_dat;
-                    FileLZS( g_musics[selected_id].files[i].path, field_dat );
-                    u32 events_addr = READ_LE_U32( &field_dat[0x0] ) - g_field_dat_base_addr;
-                    u8 entity_n = READ_LE_U8( &field_dat[events_addr + 0x2] );
-                    u32 music_offset = events_addr + READ_LE_U32( &field_dat[events_addr + 0x20 + entity_n * 0x8 + g_musics[selected_id].files[i].id * 0x4] );
-                    u16 music_size = READ_LE_U16( &field_dat[music_offset + 0x6] );
-                    AkaoCopyMusic( &field_dat[music_offset + 0x10], music_size );
-                }
-                else if( g_musics[selected_id].files[i].type == SND )
-                {
-                    std::vector<u8> snd;
-                    FileRead( g_musics[selected_id].files[i].path, snd );
-                    u16 music_size = READ_LE_U16( &snd[0x6] );
-                    AkaoCopyMusic( &snd[0x10], music_size );
-                }
-                else if( g_musics[selected_id].files[i].type == LZSDAT )
-                {
-                    std::vector<u8> temp;
-                    FileRead( g_musics[selected_id].files[i].path, temp );
-                    std::vector<u8> snd;
-                    u32 ofst = 0x11a000 + g_musics[selected_id].files[i].id * 0x800;
-                    std::vector<u8> part(temp.begin() + ofst, temp.begin() + ofst + 0x800);
-                    FileWrite( "chokobo_comp" + ofToHex(g_musics[selected_id].files[i].id), part );
-                    LZSExtract( part, snd );
-                    u16 music_size = READ_LE_U16( &snd[0x6] );
-                    AkaoCopyMusic( &snd[0x10], music_size );
-
-                    FileWrite( "chokobo" + ofToHex(g_musics[selected_id].files[i].id), snd );
-                }
-                else
-                {
-                    std::vector<u8> snd;
-
-                    if( g_musics[selected_id].files[i].type == DAT )
-                    {
-                        FileRead( g_musics[selected_id].files[i].path, snd );
-                    }
-                    else
-                    {
-                        FileLZS( g_musics[selected_id].files[i].path, snd );
-                    }
-
-                    u8 akao_found = 0;
-                    // search for AKAO magic until until header size
-                    for( size_t j = 0; j < (snd.size() - 0x10); ++j )
-                    {
-                        u8 check0 = READ_LE_U8( &snd[j + 0x0] );
-                        u8 check1 = READ_LE_U8( &snd[j + 0x1] );
-                        u8 check2 = READ_LE_U8( &snd[j + 0x2] );
-                        u8 check3 = READ_LE_U8( &snd[j + 0x3] );
-
-                        // check for AKAO magic in random place of file
-                        if( (check0 == 'A') && (check1 == 'K') && (check2 == 'A') && (check3 == 'O') )
-                        {
-                            if( akao_found == g_musics[selected_id].files[i].id )
-                            {
-                                u16 music_size = READ_LE_U16( &snd[j + 0x6] );
-                                AkaoCopyMusic( &snd[j + 0x10], music_size );
-                                break;
-                            }
-                            ++akao_found;
-                        }
-                    }
-                }
-
-                AkaoSetReverbMode( g_musics[selected_id].reverb_type );
-
-                g_akao_playing_music = g_musics[selected_id].id;
-                g_akao_playing_file = i;
-                AkaoDebugMusicPlay();
+                AkaoDebugMusicPlay( selected_id, i );
             }
 
-            if( (g_akao_playing != STOP) && (g_akao_playing_music == g_musics[selected_id].id) && (g_akao_playing_file == i) )
+            if( (g_akao_playing_music == selected_id) && (g_akao_playing_file == i) )
             {
                 ImGui::SameLine();
                 if( ImGui::Button( ICON_FA_PAUSE ) )
                 {
-                    AkaoDebugMusicPause();
+                    AkaoDebugPause();
                 }
 
                 ImGui::SameLine();
                 if( ImGui::Button( ICON_FA_STOP ) )
                 {
-                    AkaoDebugMusicStop();
+                    AkaoDebugStop();
                 }
             }
 
@@ -739,15 +768,25 @@ void AkaoDebugSfxBrowser()
 
         if( (i % 0x10) != 0 ) ImGui::SameLine();
 
-        ImGui::BeginDisabled( !enabled );
+        bool push = false;
+        if( g_akao_playing_sound == i )
+        {
+            ImGui::BeginDisabled( true );
+            ImGui::PushStyleColor( ImGuiCol_Button, ImVec4( 1.0f, 1.0f, 0.0f, 1.0f ) );
+            push = true;
+        }
+        else
+        {
+            ImGui::BeginDisabled( !enabled );
+        }
+
         if( ImGui::Button( label ) )
         {
-            u32 seq_1, seq_2;
-            //system_akao_sound_channels_clear( 0x4, 0x1 );
-            AkaoSoundGetSequence( seq_1, seq_2, i );
-            AkaoSoundChannelsInit( 0x40, 0x0, seq_1, seq_2 );
-            g_akao_sequencer = true;
+            AkaoDebugSoundPlay( i );
         }
+
+        if( push ) ImGui::PopStyleColor( 1 );
+
         ImGui::EndDisabled();
 
         ImGui::PopID();
@@ -836,35 +875,66 @@ void AkaoDebugSequencer()
 
         if( ImGui::Button( ICON_FA_PLAY ) )
         {
-            //AkaoDebugMusicPlay();
+            if( g_akao_playing_music != -1 )
+            {
+                AkaoDebugMusicPlay( g_akao_playing_music, g_akao_playing_file );
+            }
+            else if( g_akao_playing_sound != -1 )
+            {
+                AkaoDebugSoundPlay( g_akao_playing_sound );
+            }
         }
         ImGui::SameLine();
         if( ImGui::Button( ICON_FA_PAUSE ) )
         {
-            AkaoDebugMusicPause();
+            AkaoDebugPause();
         }
         ImGui::SameLine();
         if( ImGui::Button( ICON_FA_STOP ) )
         {
-            AkaoDebugMusicStop();
-            AkaoSoundChannelsStop();
+            AkaoDebugStop();
         }
-        add_y += line_height + 20;
+
+        // info what is playing now
+        if( g_akao_playing_music != -1 )
+        {
+            ImGui::SameLine();
+            ImGui::Text( "Music:0x%02x", g_musics[g_akao_playing_music].id );
+            ImGui::SameLine();
+            ImGui::Text( " %s (%d)", g_musics[g_akao_playing_music].files[g_akao_playing_file].path.c_str(), g_musics[g_akao_playing_music].files[g_akao_playing_file].id );
+            add_y += line_height + 20;
+            if( g_music_names_jp[g_musics[g_akao_playing_music].id] != "" )
+            {
+                ImGui::Text( "Name: %s (jp. %s)", g_music_names_en[g_musics[g_akao_playing_music].id].c_str(), g_music_names_jp[g_musics[g_akao_playing_music].id].c_str() );
+            }
+            else
+            {
+                ImGui::Text( "Name: %s", g_music_names_en[g_musics[g_akao_playing_music].id].c_str() );
+            }
+            add_y += line_height;
+        }
+        else if( g_akao_playing_sound != -1 )
+        {
+            ImGui::SameLine();
+            ImGui::Text( "Sound:0x%03x", g_akao_playing_sound );
+            add_y += line_height + 20;
+        }
 
         ImGui::SetCursorPos( ImVec2( base_x, add_y ) );
-        ImGui::TextColored( ImVec4( 1.0f, 1.0f, 1.0f, 1.0f ), "PLAY MASK:%02x", g_channels_1_config.keyed_mask );
+        ImGui::TextColored( ImVec4( 1.0f, 1.0f, 1.0f, 1.0f ), "PLAY MASK: 0x%02x", g_channels_1_config.keyed_mask );
         add_y += line_height;
+
         if( g_channels_1_config.timer_lower != 0 )
         {
             ImGui::SetCursorPos( ImVec2( base_x, add_y ) );
-            ImGui::TextColored( ImVec4( 1.0f, 1.0f, 1.0f, 1.0f ), "%02x:%02x:%02x", g_channels_1_config.timer_top_cur, g_channels_1_config.timer_upper_cur, g_channels_1_config.timer_lower_cur );
+            ImGui::TextColored( ImVec4( 1.0f, 1.0f, 1.0f, 1.0f ), "Timer: %02d:%02d:%02d", g_channels_1_config.timer_top_cur, g_channels_1_config.timer_upper_cur, g_channels_1_config.timer_lower_cur );
             add_y += line_height;
         }
 
-        add_y += line_height + 5;
+        add_y += 5;
         ImGui::SetCursorPos( ImVec2( base_x, add_y ) );
-        add_y += 10;
         ImGui::Separator();
+        add_y += 5;
 
         for( size_t i = 0; i < 0x18; ++i )
         {
@@ -891,16 +961,15 @@ void AkaoDebugSequencer()
                 u8* akao = g_channels_1[i].seq_start;
 
                 AkaoDebugSequencerSeq( akao, g_channels_1[i].seq, base_x, width, add_y, g_channels_1_config.active_mask & (0x1 << i) );
+                add_y += line_height;
 
                 if( i != 17 )
                 {
-                    add_y += line_height + 5;
+                    add_y += 5;
                     ImGui::SetCursorPos( ImVec2( base_x, add_y ) );
-                    add_y += 10;
                     ImGui::Separator();
+                    add_y += 5;
                 }
-
-                add_y += line_height;
             }
         }
 
@@ -923,22 +992,21 @@ void AkaoDebugSequencer()
                 if( g_channels_3[i].sfx_mask & AKAO_SFX_FULL_LENGTH ) info += std::string( " FULL_LENGTH" );
 
                 ImGui::SetCursorPos( ImVec2( base_x, add_y ) );
-                ImGui::TextColored( ImVec4( 1.0f, 1.0f, 1.0f, 1.0f ), info.c_str(), i );
+                ImGui::TextColored( ImVec4( 1.0f, 1.0f, 1.0f, 1.0f ), info.c_str(), i + 0x10 );
                 add_y += line_height;
 
                 u8* akao = g_channels_3[i].seq_start;
 
                 AkaoDebugSequencerSeq( akao, g_channels_3[i].seq, base_x, width, add_y, g_channels_3_config.active_mask & (0x10000 << i) );
+                add_y += line_height;
 
                 if( i != 7 )
                 {
-                    add_y += line_height + 5;
+                    add_y += 5;
                     ImGui::SetCursorPos( ImVec2( base_x, add_y ) );
-                    add_y += 10;
                     ImGui::Separator();
+                    add_y += 5;
                 }
-
-                add_y += line_height;
             }
         }
     }
@@ -947,7 +1015,13 @@ void AkaoDebugSequencer()
 
     if( g_akao_sequencer != g_akao_sequencer_prev )
     {
-        if( !g_akao_sequencer ) AkaoDebugMusicStop();
+        if( !g_akao_sequencer )
+        {
+            // stop sound music and reset
+            AkaoDebugStop();
+            g_akao_playing_sound = -1;
+            g_akao_playing_music = -1;
+        }
 
         g_akao_sequencer_prev = g_akao_sequencer;
     }
@@ -957,47 +1031,49 @@ void AkaoDebugSequencer()
 
 void AkaoDebugInstr()
 {
-    ImGui::SetNextWindowSize( ImVec2( 600, 500 ), ImGuiCond_Once );
-    ImGui::Begin( "AKAO Instruments" );
+    ImGui::Columns( 2, nullptr, true ); // 2 колонки, ресайз между ними
+    // do not reset column width every frame
+    static bool first_frame = true;
+    if( first_frame )
+    {
+        ImGui::SetColumnWidth( 0, 250 );
+        first_frame = false;
+    }
 
     static int instr_id = 0;
 
-    ImGui::BeginChild( "LeftPane", ImVec2( 100, 0 ), true );
-    for( int i = 0; i < 0x80; ++i )
+    if( ImGui::BeginListBox( "##InstrList", ImVec2( -FLT_MIN, -FLT_MIN ) ) )
     {
-        // Элемент списка (например, кнопка или selectable)
-        if( ImGui::Selectable( ("0x" + std::format( "{:0x}", i )).c_str(), (i == instr_id) ) )
+        ImGui::TextDisabled( "Instruments List" );
+        ImGui::Separator();
+
+        for( int i = 0; i < 0x80; ++i )
         {
-            instr_id = i;
+            ImGui::PushID( i );
+
+            if( ImGui::Selectable( ("0x" + std::format( "{:0x}", i )).c_str(), (i == instr_id) ) )
+            {
+                instr_id = i;
+            }
+
+            ImGui::PopID();
         }
     }
-    ImGui::EndChild();
+    ImGui::EndListBox();
 
-    // Правая часть (занимает всё оставшееся место)
-    ImGui::SameLine();
-    ImGui::BeginChild( "RightPane", ImVec2( 0, 0 ), true ); // 0,0 = вся оставшаяся область
+    ImGui::NextColumn();
+    ImGui::BeginChild( "right_panel", ImVec2( 0, 0 ), true );
 
-    ImGui::Text( "Instrument:    0x%02x", instr_id );
-    ImGui::Text( "Start address: 0x%02x", g_akao_instrument[instr_id].addr );
-    ImGui::Text( "Loop address:  0x%02x", g_akao_instrument[instr_id].loop_addr );
-    ImGui::Text( "Attack mode:   0x%02x", g_akao_instrument[instr_id].a_mode );
-    ImGui::Text( "Sustain mode:  0x%02x", g_akao_instrument[instr_id].s_mode );
-    ImGui::Text( "Release mode:  0x%02x", g_akao_instrument[instr_id].r_mode );
-    ImGui::Text( "Attack rate:   0x%02x", g_akao_instrument[instr_id].ar );
-    ImGui::Text( "Decay rate:    0x%02x", g_akao_instrument[instr_id].dr );
-    ImGui::Text( "Sustain level: 0x%02x", g_akao_instrument[instr_id].sl );
-    ImGui::Text( "Sustain rate:  0x%02x", g_akao_instrument[instr_id].sr );
-    ImGui::Text( "Release rate:  0x%02x", g_akao_instrument[instr_id].rr );
+    ImGui::Text( "Instrument: 0x%02x", instr_id );
 
-    float button_w = 100.0f;
-    float button_h = 50.0f;
-    float panel_w = ImGui::GetContentRegionAvail().x;
-    float panel_h = ImGui::GetContentRegionAvail().y;
-    ImGui::SetCursorPosX( ImGui::GetCursorPosX() + panel_w - button_w );
-    ImGui::SetCursorPosY( ImGui::GetCursorPosY() + panel_h - button_h );
-
-    if( ImGui::Button( "PLAY" ) )
+    if( ImGui::Button( ICON_FA_PLAY ) )
     {
+        // stop sound music and reset
+        AkaoDebugStop();
+        g_akao_playing_sound = -1;
+        g_akao_playing_music = -1;
+        g_akao_sequencer = false;
+
         s32 voice_id = 0;
         PsyqSpuSetVoicePitch( voice_id, g_akao_instrument[instr_id].pitch[0] );
         PsyqSpuSetVoiceVolume( voice_id, (s16)0x3f80, (s16)0x4080 );
@@ -1010,9 +1086,65 @@ void AkaoDebugInstr()
         PsyqSpuSetVoiceSL( voice_id, g_akao_instrument[instr_id].sl );
 
         PsyqSpuSetKey( SPU_ON, 0x1 << voice_id );
+        g_akao_playing_instrument = instr_id;
+    }
+    if( g_akao_playing_instrument == instr_id )
+    {
+        ImGui::SameLine();
+        if( ImGui::Button( ICON_FA_STOP ) )
+        {
+            s32 voice_id = 0;
+            PsyqSpuSetKey( SPU_OFF, 0x1 << voice_id );
+        }
+    }
+
+    if( ImGui::BeginTable( "InstrumentTable", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg ) )
+    {
+        ImGui::TableSetupColumn( "Parameter" );
+        ImGui::TableSetupColumn( "Value" );
+
+        auto &inst = g_akao_instrument[instr_id];
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn(); ImGui::Text( "Start address" );
+        ImGui::TableNextColumn(); ImGui::Text( "0x%02x", inst.addr );
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn(); ImGui::Text( "Loop address" );
+        ImGui::TableNextColumn(); ImGui::Text( "0x%02x", inst.loop_addr );
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn(); ImGui::Text( "Attack mode" );
+        ImGui::TableNextColumn(); ImGui::Text( "0x%02x", inst.a_mode );
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn(); ImGui::Text( "Sustain mode" );
+        ImGui::TableNextColumn(); ImGui::Text( "0x%02x", inst.s_mode );
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn(); ImGui::Text( "Release mode" );
+        ImGui::TableNextColumn(); ImGui::Text( "0x%02x", inst.r_mode );
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn(); ImGui::Text( "Attack rate" );
+        ImGui::TableNextColumn(); ImGui::Text( "0x%02x", inst.ar );
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn(); ImGui::Text( "Decay rate" );
+        ImGui::TableNextColumn(); ImGui::Text( "0x%02x", inst.dr );
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn(); ImGui::Text( "Sustain level" );
+        ImGui::TableNextColumn(); ImGui::Text( "0x%02x", inst.sl );
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn(); ImGui::Text( "Sustain rate" );
+        ImGui::TableNextColumn(); ImGui::Text( "0x%02x", inst.sr );
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn(); ImGui::Text( "Release rate" );
+        ImGui::TableNextColumn(); ImGui::Text( "0x%02x", inst.rr );
+        for( int i = 0; i < 0xc; ++i )
+        {
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn(); ImGui::Text( "Pitch 0x%x", i );
+            ImGui::TableNextColumn(); ImGui::Text( "0x%02x", inst.pitch[i] );
+        }
+        ImGui::EndTable();
     }
 
     ImGui::EndChild();
 
-    ImGui::End();
+    ImGui::Columns( 1 );
 }

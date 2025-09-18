@@ -426,8 +426,8 @@ void AkaoInitData()
 //        [0x8009c5a0 + i * 0xc + 0x8] = h(0);
 
         g_channels_1[i].type = AKAO_MUSIC;
-        g_channels_1[i].seq = nullptr;
-        g_channels_1[i].seq_start = nullptr;
+        g_channels_1[i].seq = nullptr; // real code doesn't clear this
+        g_channels_1[i].seq_start = nullptr; // real code doesn't clear this
         g_channels_1[i].update_flags = 0;
         g_channels_1[i].attr.voice_id = i;
 //        [0x80096608 + i * 0x108 + 0x50] = w(0);
@@ -439,8 +439,8 @@ void AkaoInitData()
     for( int i = 0; i < 0x8; ++i )
     {
         g_channels_3[i].type = AKAO_SOUND;
-        g_channels_3[i].seq = nullptr;
-        g_channels_3[i].seq_start = nullptr;
+        g_channels_3[i].seq = nullptr; // real code doesn't clear this
+        g_channels_3[i].seq_start = nullptr; // real code doesn't clear this
         g_channels_3[i].update_flags = 0;
         g_channels_3[i].pitch_mul_sound = 0;
         g_channels_3[i].pitch_mul_sound_slide_steps = 0;

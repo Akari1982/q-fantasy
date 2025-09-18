@@ -17,17 +17,26 @@ void LZSExtract( std::vector<u8>& input, std::vector<u8>& output )
     u8 control_byte = 0;
     u8 control_bit = 0;
 
-    while( input_offset < input_length )
+    while( input_length != 0 )
     {
         if( control_bit == 0 )
         {
-            control_byte = input[ input_offset++ ];
+            control_byte = input[ input_offset ];
             control_bit = 8;
+
+            input_offset += 0x1;
+            input_length -= 0x1;
+            if( input_length == 0 ) break;
         }
 
         if( control_byte & 1 )
         {
-            output[ output_offset++ ] = input[ input_offset++ ];
+            output[ output_offset ] = input[ input_offset ];
+
+            output_offset += 0x1;
+            input_offset += 0x1;
+            input_length -= 0x1;
+            if( input_length == 0 ) break;
 
             if( output_offset == extract_size )
             {
@@ -37,8 +46,12 @@ void LZSExtract( std::vector<u8>& input, std::vector<u8>& output )
         }
         else
         {
-            u8 reference1 = input[ input_offset++ ];
-            u8 reference2 = input[ input_offset++ ];
+            u8 reference1 = input[ input_offset ];
+            input_offset += 0x1;
+            u8 reference2 = input[ input_offset ];
+            input_offset += 0x1;
+
+            input_length -= 0x2;
 
             u16 reference_offset = reference1 | ((reference2 & 0xf0) << 4);
             u8 reference_length = (reference2 & 0x0f) + 3;
@@ -49,11 +62,13 @@ void LZSExtract( std::vector<u8>& input, std::vector<u8>& output )
             {
                 if( real_offset < 0 )
                 {
-                    output[ output_offset++ ] = 0;
+                    output[ output_offset ] = 0;
+                    output_offset += 0x1;
                 }
                 else
                 {
-                    output[ output_offset++ ] = output[ real_offset ];
+                    output[ output_offset ] = output[ real_offset ];
+                    output_offset += 0x1;
                 }
 
                 if( output_offset == extract_size )
@@ -62,12 +77,14 @@ void LZSExtract( std::vector<u8>& input, std::vector<u8>& output )
                     output.resize( extract_size );
                 }
 
-                ++real_offset;
+                real_offset += 0x1;;
             }
+
+            if( input_length == 0 ) break;
         }
 
         control_byte >>= 1;
-        control_bit--;
+        control_bit -= 0x1;
     }
 
     output.resize( output_offset );
@@ -173,7 +190,7 @@ void FileWrite( const std::string& name, std::vector<u8>& input )
 {
     printf( "Write file: %s\n", name.c_str() );
 
-    FILE* file = fopen( name.c_str(), "ab" );
+    FILE* file = fopen( name.c_str(), "wb" );
 
     if( file == NULL )
     {
