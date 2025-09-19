@@ -22,68 +22,64 @@ int g_akao_playing_file = 0;
 int g_akao_playing_sound = -1;
 int g_akao_playing_instrument = -1;
 
-// music id from 0x1 - 0x60
+
+
+// music id from 0x1 - 0x63
 std::string g_music_names_en[] =
 {
-    "",                                 "(empty)",                          "Opening - Bombing Mission",            "Bombing Mission",
-    "In Search of the Man in Black",    "",                                 "",                                     "Mako Reactor",
-    "Let the Battles Begin!",           "",                                 "Anxiety",                              "Fight On!",
-    "",                                 "",                                 "Main Theme",                           "",
-    "",                                 "Rufus's Welcoming Ceremony",       "",                                     "Who...Are You?",
-    "On Our Way",                       "It's Hard to Stand on Both Feet!", "",                                     "Waltz de Chocobo",
-    "Don of the Slums",                 "Trail of Blood",                   "Red XIII's Theme",                     "",
-    "",                                 "Lurking In the Darkness",          "Shinra, Inc",                          "Infiltrating Shinra",
-    "Under the Rotting Pizza",          "Farm Boy",                         "On That Day, Five Years Ago",          "Tifa's Theme",
-    "",                                 "The Oppressed",                    "Flowers Blooming in the Church",       "The Chase",
-    "",                                 "",                                 "Barret's Theme",                       "",
-    "",                                 "Electric de Chocobo",              "Turks' Theme ",                        "Fanfare",
-    "",                                 "",                                 "",                                     "",
-    "Cinco de Chocobo",                 "JENOVA",                           "",                                     "Hurry!",
-    "",                                 "",                                 "Good Night, Until Tomorrow",           "",
-    "",                                 "",                                 "",                                     "",
-    "",                                 "Dear to the Heart",                "",                                     "",
-    "Honeybee Inn",                     "",                                 "",                                     "",
-    "",                                 "",                                 "",                                     "",
-    "",                                 "",                                 "",                                     "",
-    "",                                 "Fort Condor",                      "",                                     "",
-    "",                                 "",                                 "",                                     "",
-    "",                                 "",                                 "",                                     "",
-    "",                                 "",                                 "",                                     "",
-    "The Prelude",                      "",                                 "",                                     "",
-    "",                                 "",                                 "",                                     "",
-    "",                                 "",                                 "",                                     "",
-    "",                                 "",                                 "",                                     ""
+    "",                                 "(empty)",                                 "Opening - Bombing Mission",            "Bombing Mission",
+    "In Search of the Man in Black",    "Other Side of the Mountain",              "",                                     "Mako Reactor",
+    "Let the Battles Begin!",           "Fiddle de Chocobo",                       "Anxiety",                              "Fight On!",
+    "Cait Sith's Theme",                "Aerith's Theme",                          "Main Theme",                           "",
+    "",                                 "Rufus's Welcoming Ceremony",              "",                                     "Who...Are You?",
+    "On Our Way",                       "It's Hard to Stand on Both Feet!",        "Open Your Heart",                      "Waltz de Chocobo",
+    "Don of the Slums",                 "Trail of Blood",                          "Red XIII's Theme",                     "Cosmo Canyon",
+    "The Great Warrior",                "Lurking In the Darkness",                 "Shinra, Inc",                          "Infiltrating Shinra",
+    "Under the Rotting Pizza",          "Farm Boy",                                "On That Day, Five Years Ago",          "Tifa's Theme",
+    "Costa del Sol",                    "The Oppressed",                           "Flowers Blooming in the Church",       "The Chase",
+    "Desert Wasteland",                 "Those Chosen by the Planet",              "Barret's Theme",                       "Mining Town",
+    "Lifestream",                       "Electric de Chocobo",                     "Turks' Theme ",                        "Fanfare",
+    "The Highwind Takes to the Skies",  "Mako Cannon 1",                           "Words Drowned by Fireworks",           "",
+    "Cinco de Chocobo",                 "JENOVA",                                  "Descendant of Shinobi",                "Hurry!",
+    "Gold Saucer",                      "Provincial Town",                         "Good Night, Until Tomorrow",           "Continue",
+    "Jackpot!",                         "Tango of Tears",                          "Win / Place / Show Chocobo!",          "Debut",
+    "From the Edge of Despair",         "Dear to the Heart",                       "",                                     "The Nightmare Begins",
+    "Honeybee Inn",                     "Forested Temple",                         "Mark of a Traitor",                    "Hurry Up!",
+    "The North Cave",                   "Cid's Theme",                             "Launching a Dream Into Space",         "Listen to the Cries of the Planet",
+    "Who...Am I?",                      "Wutai",                                   "Buried in Snow",                       "Stolen Materia",
+    "Reunion",                          "Fort Condor",                             "One-Winged Angel",                     "Shinra's Full-Scale Assault",
+    "Attack of the Weapon",             "JENOVA COMPLETE",                         "Secret of the Deep Sea",               "Judgment Day",
+    "Birth of a God",                   "",                                        "Countdown",                            "Steal the Tiny Bronco!",
+    "",                                 "Mako Cannon 2",                           "The Destruction of Shinra",            "",
+    "The Prelude",                      "The Planet's Crisis",                     "",                                     "Ending Credits"
 };
 std::string g_music_names_jp[] =
 {
-    "",                                 "",                                 "オープニング~爆破ミッション",                 "爆破ミッション",
-    "黒マントの男を追え",                  "",                               "",                                     "魔晄炉",
-    "闘う者達 lit. \"Those Who Fight\"", "",                                "不安な心 lit. \"Anxious Heart\"",       "更に闘う者達 lit. \"Those Who Fight Further\"",
-    "",                                 "",                                 "メインテーマ",                             "",
-    "",                                 "ルーファウス歓迎式典",               "",                                     "お前は…誰だ",
-    "旅の途中で",                         "二本足で立つのも難しいものだな",     "",                                     "ワルツ・デ・チョコボ",
-    "スラムのドン",                         "血の跡",                          "レッドXIIIのテーマ",                       "",
-    "",                                 "闇に潜む",                         "神羅カンパニー lit. \"Shinra Company\"", "神羅ビル潜入",
-    "腐ったピザの下で",                     "牧場の少年",                     "5年前のあの日",                         "ティファのテーマ",
-    "",                                 "虐げられた民衆",                  "教会に咲く花",                           "クレイジーモーターサイクル lit. \"Crazy Motorcycle\"",
-    "",                                 "",                                 "バレットのテーマ",                         "",
-    "",                                 "エレキ・デ・チョコボ",               "タークスのテーマ",                         "ファンファーレ",
-    "",                                 "",                                 "",                                     "",
-    "シンコ・デ・チョコボ",                "J-E-N-O-V-A",                      "",                                     "急げ!",
-    "",                                 "",                                 "お休み,また明日",                         "",
-    "",                                 "",                                 "",                                     "",
-    "",                                 "",                                 "",                                     "",
-    "蜜蜂の館",                          "",                                "",                                     "",
-    "",                                 "",                                 "",                                     "",
-    "",                                 "",                                 "",                                     "",
-    "",                                 "鷺の砦",                          "",                                     "",
-    "",                                 "",                                 "",                                     "",
-    "",                                 "",                                 "",                                     "",
-    "",                                 "",                                 "",                                     "",
-    "プレリュード",                       "",                                 "",                                     "",
-    "",                                 "",                                 "",                                     "",
-    "",                                 "",                                 "",                                     "",
-    "",                                 "",                                 "",                                     ""
+    "",                                 "",                                        "オープニング~爆破ミッション",                 "爆破ミッション",
+    "黒マントの男を追え",                  "山の向こうに",                             "",                                     "魔晄炉",
+    "闘う者達 lit. \"Those Who Fight\"", "フィドル・デ・チョコボ",                    "不安な心 lit. \"Anxious Heart\"",       "更に闘う者達 lit. \"Those Who Fight Further\"",
+    "ケット・シーのテーマ",                "エアリスのテーマ",                         "メインテーマ",                             "",
+    "",                                 "ルーファウス歓迎式典",                      "",                                     "お前は…誰だ",
+    "旅の途中で",                         "二本足で立つのも難しいものだな",            "心開けば",                                "ワルツ・デ・チョコボ",
+    "スラムのドン",                         "血の跡",                                 "レッドXIIIのテーマ",                       "星降る峡谷 lit. \"Valley of the Falling Stars\"",
+    "偉大なる戦士",                       "闇に潜む",                                "神羅カンパニー lit. \"Shinra Company\"", "神羅ビル潜入",
+    "腐ったピザの下で",                     "牧場の少年",                            "5年前のあの日",                         "ティファのテーマ",
+    "太陽の海岸  lit. \"Sun Coast\"",     "虐げられた民衆",                         "教会に咲く花",                           "クレイジーモーターサイクル lit. \"Crazy Motorcycle\"",
+    "砂の流刑地",                         "星に選ばれし者",                           "バレットのテーマ",                         "炭坑の街",
+    "生命の流れ lit. \"Stream of Life\"", "エレキ・デ・チョコボ",                      "タークスのテーマ",                         "ファンファーレ",
+    "空駆けるハイウィンド",                "魔晄キャノン発射 1",                        "花火に消された言葉",                      "",
+    "シンコ・デ・チョコボ",                "J-E-N-O-V-A",                             "忍びの末裔",                             "急げ!",
+    "ゴールドソーサー",                    "偏狭の村",                                "お休み,また明日",                         "つづきから",
+    "大当たりぃ",                         "涙のタンゴ",                              "本命穴チョコボ lit. \"Place Chocobo\"",   "初舞台",
+    "絶望の淵から",                       "想いを胸に",                               "",                                     "悪夢の始まり",
+    "蜜蜂の館",                          "樹海の神殿",                               "裏切り者の烙印",                          "もっと急げ!",
+    "北の大空洞",                         "シドのテーマ",                             "宇宙への夢",                             "星の声が聞こえる",
+    "俺は…誰だ",                         "ウータイ",                                 "雪に閉ざされて",                        "マテリアいただき",
+    "リユニオン",                        "鷺の砦",                                   "片翼の天使",                            "神羅軍総攻撃",
+    "ウェポン襲来",                       "完全なるジェノヴァ",                        "深海に眠る秘密",                         "最期の日",
+    "神の誕生",                          "",                                        "秒読み開始",                            "タイニーブロンコを奪え!",
+    "",                                 "魔晄キャノン発射 2",                         "神羅爆発",                              "",
+    "プレリュード",                       "星の危機",                                  "",                                     "スタッフロール"
 };
 
 std::string g_reverb_name[] = { "OFF", "ROOM", "STUDIO_A", "STUDIO_B", "STUDIO_C", "HALL", "SPACE", "ECHO", "DELAY", "PIPE" };
@@ -508,6 +504,24 @@ void AkaoDebugMusicPlay( u32 id, u32 file_id )
     g_akao_playing_music = -1;
     g_akao_playing_sound = -1;
     g_akao_playing_instrument = -1;
+
+    // load instruments for music
+    if( g_musics[id].id == 0x52 ) // Sephiroth
+    {
+        std::vector<u8> instr2_all;
+        FileRead( "SOUND/INSTR2.ALL", instr2_all );
+        std::vector<u8> instr2_dat;
+        FileRead( "SOUND/INSTR2.DAT", instr2_dat );
+        AkaoLoadInstr2( &instr2_all[0], &instr2_dat[0] );
+    }
+    else
+    {
+        std::vector<u8> instr_all;
+        FileRead( "SOUND/INSTR.ALL", instr_all );
+        std::vector<u8> instr_dat;
+        FileRead( "SOUND/INSTR.DAT", instr_dat );
+        AkaoLoadInstr( &instr_all[0], &instr_dat[0] );
+    }
 
     // load new music
     if( g_musics[id].files[file_id].type == FIELD )
