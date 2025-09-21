@@ -1,6 +1,8 @@
 #include "application.h"
 #include "icons_font.h"
-#include "kernel/akao_debug.h"
+#include "browser_akao.h"
+#include "browser_field.h"
+#include "browser_field_opcodes.h"
 
 
 
@@ -124,6 +126,8 @@ void Application::setup()
     g_GameVram.begin();
     ofClear( 255, 0, 255, 255 );
     g_GameVram.end();
+
+    FieldBrowserInitOpcode();
 }
 
 
@@ -142,14 +146,20 @@ void Application::draw()
     //g_GameVram.draw( 0, 0, ofGetWidth(), ofGetHeight() );
     g_GameVram.draw( 0, 0, 640, 480 );
 
-    AkaoDebug();
+    BrowserField();
+    BrowserAkao();
 
-    std::string popup_to_open = "";
     if( ImGui::BeginMainMenuBar() )
     {
-        if( ImGui::BeginMenu( "AkaoDebug" ) )
+        if( ImGui::BeginMenu( "Field" ) )
         {
-            g_akao_debug = true;
+            g_browser_field = true;
+            ImGui::EndMenu();
+        }
+
+        if( ImGui::BeginMenu( "Akao" ) )
+        {
+            g_browser_akao = true;
             ImGui::EndMenu();
         }
 

@@ -12,11 +12,15 @@ To Do
 - Finalize screen rendering borders.
 - Implement start credits.
 - Unify music debug with sequence, sfx, instruments, SPU manipulation and so on.
-- Add support for sfx.
 - Comment all AKAO music code.
 - Сделать корректное проигрывание трека сефирота.
 - Добавить дебаг доп инструментов параллельно с основными инструментами.
-- Починить непонятное потрескивание на рабочем компе.
+- Починить непонятное потрескивание.
+- Засунуть SFX в таблицу для выравнивания.
+
+2025-09-12
+----------
+- Add sfx browser.
 
 2025-09-08
 ----------

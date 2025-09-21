@@ -100,9 +100,6 @@
     <ClCompile Include="src\kernel\akao.cpp">
       <Filter>src\kernel</Filter>
     </ClCompile>
-    <ClCompile Include="src\kernel\akao_debug.cpp">
-      <Filter>src\kernel</Filter>
-    </ClCompile>
     <ClCompile Include="src\kernel\system.cpp">
       <Filter>src\kernel</Filter>
     </ClCompile>
@@ -110,6 +107,15 @@
       <Filter>src\system</Filter>
     </ClCompile>
     <ClCompile Include="src\system\game.cpp">
+      <Filter>src\system</Filter>
+    </ClCompile>
+    <ClCompile Include="src\system\browser_akao.cpp">
+      <Filter>src\system</Filter>
+    </ClCompile>
+    <ClCompile Include="src\system\browser_field.cpp">
+      <Filter>src\system</Filter>
+    </ClCompile>
+    <ClCompile Include="src\system\browser_field_opcodes.cpp">
       <Filter>src\system</Filter>
     </ClCompile>
   </ItemGroup>
@@ -255,9 +261,6 @@
     <ClInclude Include="src\kernel\akao_commands.h">
       <Filter>src\kernel</Filter>
     </ClInclude>
-    <ClInclude Include="src\kernel\akao_debug.h">
-      <Filter>src\kernel</Filter>
-    </ClInclude>
     <ClInclude Include="src\kernel\akao_opcodes.h">
       <Filter>src\kernel</Filter>
     </ClInclude>
@@ -271,6 +274,18 @@
       <Filter>src\system</Filter>
     </ClInclude>
     <ClInclude Include="src\system\icons_font.h">
+      <Filter>src\system</Filter>
+    </ClInclude>
+    <ClInclude Include="src\system\browser_akao.h">
+      <Filter>src\system</Filter>
+    </ClInclude>
+    <ClInclude Include="src\system\browser_field.h">
+      <Filter>src\system</Filter>
+    </ClInclude>
+    <ClInclude Include="src\field\field_list.h">
+      <Filter>src\field</Filter>
+    </ClInclude>
+    <ClInclude Include="src\system\browser_field_opcodes.h">
       <Filter>src\system</Filter>
     </ClInclude>
   </ItemGroup>
