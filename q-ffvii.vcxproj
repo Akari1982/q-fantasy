@@ -104,6 +104,7 @@
     <PostBuildEvent />
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\ending\ending.cpp" />
     <ClCompile Include="src\field\field.cpp" />
     <ClCompile Include="src\kernel\akao.cpp" />
     <ClCompile Include="src\kernel\system.cpp" />
@@ -145,6 +146,7 @@
     <ClCompile Include="third_party\ofxImGui\src\ofxImGuiLoggerChannel.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\ending\ending.h" />
     <ClInclude Include="src\field\field.h" />
     <ClInclude Include="src\field\field_list.h" />
     <ClInclude Include="src\kernel\akao.h" />

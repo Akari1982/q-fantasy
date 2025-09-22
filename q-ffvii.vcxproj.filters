@@ -118,6 +118,9 @@
     <ClCompile Include="src\system\browser_field_opcodes.cpp">
       <Filter>src\system</Filter>
     </ClCompile>
+    <ClCompile Include="src\ending\ending.cpp">
+      <Filter>src\ending</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="third_party\ofxImGui\src\BaseEngine.h">
@@ -288,6 +291,9 @@
     <ClInclude Include="src\system\browser_field_opcodes.h">
       <Filter>src\system</Filter>
     </ClInclude>
+    <ClInclude Include="src\ending\ending.h">
+      <Filter>src\ending</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="third_party">
@@ -331,6 +337,9 @@
     </Filter>
     <Filter Include="src\kernel">
       <UniqueIdentifier>{4c9b4ade-c377-499e-921d-48f73d803bc8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\ending">
+      <UniqueIdentifier>{cf3c939c-0a0d-47dd-8173-bca09f65c4a9}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

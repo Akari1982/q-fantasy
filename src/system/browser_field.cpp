@@ -265,6 +265,59 @@ void ArgGetMemory16( u8 mem_block, u32 op_ofs, u32 arg_ofs )
 
 
 
+void ArgSetMemory16( u8 mem_block, u32 op_ofs, u32 arg_ofs )
+{
+    u8 bank = 0;
+    switch( mem_block )
+    {
+        case 0x1: bank = READ_LE_U8( &l_dat_file[op_ofs + 0x1] ) >> 0x4; break;
+        case 0x2: bank = READ_LE_U8( &l_dat_file[op_ofs + 0x1] ) & 0xf; break;
+        case 0x3: bank = READ_LE_U8( &l_dat_file[op_ofs + 0x2] ) >> 0x4; break;
+        case 0x4: bank = READ_LE_U8( &l_dat_file[op_ofs + 0x2] ) & 0xf; break;
+        case 0x5: bank = READ_LE_U8( &l_dat_file[op_ofs + 0x3] ) >> 0x4; break;
+        case 0x6: bank = READ_LE_U8( &l_dat_file[op_ofs + 0x3] ) & 0xf; break;
+    }
+
+    if( (bank == 0x1) || (bank == 0x2) )
+    {
+        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 1, 0, 1 ) );
+        ImGui::Text( "M0_2[0x%02x]", READ_LE_U8( &l_dat_file[arg_ofs] ) );
+        ImGui::PopStyleColor();
+    }
+    else if( (bank == 0x3) || (bank == 0x3) )
+    {
+        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 1, 0, 1 ) );
+        ImGui::Text( "M1_2[0x%02x]", READ_LE_U8( &l_dat_file[arg_ofs] ) );
+        ImGui::PopStyleColor();
+    }
+    else if( (bank == 0xb) || (bank == 0xc) )
+    {
+        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 1, 0, 1 ) );
+        ImGui::Text( "M2_2[0x%02x]", READ_LE_U8( &l_dat_file[arg_ofs] ) );
+        ImGui::PopStyleColor();
+    }
+    else if( (bank == 0xd) || (bank == 0xe) )
+    {
+        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 1, 0, 1 ) );
+        ImGui::Text( "M3_2[0x%02x]", READ_LE_U8( &l_dat_file[arg_ofs] ) );
+        ImGui::PopStyleColor();
+    }
+    else if( (bank == 0x7) || (bank == 0xf) )
+    {
+        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 1, 0, 1 ) );
+        ImGui::Text( "M4_2[0x%02x]", READ_LE_U8( &l_dat_file[arg_ofs] ) );
+        ImGui::PopStyleColor();
+    }
+    else if( (bank == 0x5) || (bank == 0x6) )
+    {
+        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 1, 0, 1 ) );
+        ImGui::Text( "L_2[0x%02x]", READ_LE_U8( &l_dat_file[arg_ofs] ) );
+        ImGui::PopStyleColor();
+    }
+}
+
+
+
 void ParseEvents( u8 actor_id )
 {
     u32 ate_addr = READ_LE_U32( &l_dat_file[0x0] ) - g_field_dat_base_addr;
@@ -314,14 +367,15 @@ void ParseEvents( u8 actor_id )
                     switch( argument.type )
                     {
                         case OpcodeArg::U8: ArgGetU8( arg_ofs ); break;
-                        case OpcodeArg::MEMORY8: ArgGetMemory8( argument.mem_block, ate_addr + event_ofs, arg_ofs ); break;
-                        case OpcodeArg::MEMORY16: ArgGetMemory16( argument.mem_block, ate_addr + event_ofs, arg_ofs ); break;
+                        case OpcodeArg::READ_MEMORY8: ArgGetMemory8( argument.mem_block, ate_addr + event_ofs, arg_ofs ); break;
+                        case OpcodeArg::READ_MEMORY16: ArgGetMemory16( argument.mem_block, ate_addr + event_ofs, arg_ofs ); break;
+                        case OpcodeArg::WRITE_MEMORY16: ArgSetMemory16( argument.mem_block, ate_addr + event_ofs, arg_ofs ); break;
 
                         case OpcodeArg::JUMP8:
                         {
                             ArgGetJump8( arg_ofs );
 
-                            u32 temp_end = event_ofs + READ_LE_U8( &l_dat_file[arg_ofs] ) - 1;
+                            u32 temp_end = event_ofs + READ_LE_U8( &l_dat_file[arg_ofs] ) + g_field_opcodes[opcode].size - 1;
                             end_ofs = (temp_end > end_ofs) ? temp_end : end_ofs;
                         }
                         break;
@@ -572,19 +626,6 @@ void ParseEvents( u8 actor_id )
 
                 end = (temp_end > end) ? temp_end : end;
                 script += 7;
-            }
-            else if (opcode == 0x16) // IFSW
-            {
-                u32 temp_end = script + GetU8(script + 7) + 7;
-
-                export_script->Log(
-                    "if ( " +
-                    ParseRelation(GetU8(script + 6), ParseGetVariable(GetU8(script + 1) >> 4, (s16)GetU16LE(script + 2)), ParseGetVariable(GetU8(script + 1) & 0x0F, (s16)GetU16LE(script + 4))) +
-                    " ) then continue else jumpto(" + OffsetString(temp_end) + ");\n"
-                );
-
-                end = (temp_end > end) ? temp_end : end;
-                script += 8;
             }
             else if (opcode == 0x17) // IFSWL
             {
@@ -1060,38 +1101,6 @@ void ParseEvents( u8 actor_id )
 
                 AdvanceScript(7, script, end);
             }
-            else if (opcode == 0x6B) // FADE
-            {
-                u8 type  = GetU8(script + 7);
-
-                if (type == 4)
-                {
-                    export_script->Log("fade:black();\n");
-                }
-                else
-                {
-                    u8 speed = GetU8(script + 6);
-                    u8 start = GetU8(script + 8);
-
-                    export_script->Log(
-                        "[NEEDS TO CHECK FADE] fade:fade( " +
-                        ParseGetVariable(GetU8(script + 1) >> 4, GetU16LE(script + 3)) +
-                        ", " +
-                        ParseGetVariable(GetU8(script + 1) & 0x0F, GetU16LE(script + 4)) +
-                        ", " +
-                        ParseGetVariable(GetU8(script + 2) & 0x0F, GetU16LE(script + 5)) +
-                        ", " +
-                        ((type == 1 || type == 2 || type == 7 || type == 8) ? "Fade.SUBTRACT" : "Fade.ADD") +
-                        ", " +
-                        IntToString(speed) +
-                        ", " +
-                        IntToString(start) +
-                        " );\n"
-                    );
-                }
-
-                AdvanceScript(9, script, end);
-            }
             else if (opcode == 0x6C) // FADEW
             {
                 export_script->Log("fade:wait();\n");
@@ -1125,26 +1134,6 @@ void ParseEvents( u8 actor_id )
                 );
 
                 AdvanceScript(4, script, end);
-            }
-            else if (opcode == 0x71) // BTLON
-            {
-                export_script->Log(
-                    "field:random_encounter_on( " +
-                    BoolToString(!(bool)(GetU8(script + 1))) +
-                    " );\n"
-                );
-
-                AdvanceScript(2, script, end);
-            }
-            else if (opcode == 0x72) // BTLMD
-            {
-                export_script->Log(
-                    "[UNREVERSED] BTLMD(" +
-                    ArgumentString(script + 1, 2) +
-                    ");\n"
-                );
-
-                AdvanceScript(3, script, end);
             }
             else if (opcode == 0x76) // PLUS!
             {
@@ -1194,11 +1183,6 @@ void ParseEvents( u8 actor_id )
                     SetVariable( GetU8( script + 1 ) >> 4, GetU8( script + 2 ), ParseGetVariable( GetU8( script + 1 ) & 0x0F, GetU8( script + 3 ) ) )
                 );
                 AdvanceScript( 4, script, end );
-            }
-            else if( opcode == 0x81 ) // SETWORD
-            {
-                export_script->Log( SetVariable( GetU8( script + 1 ) >> 4, GetU8( script + 2 ), ParseGetVariable( GetU8( script + 1 ) & 0x0F, GetU16LE( script + 3 ) ) ) );
-                AdvanceScript( 5, script, end );
             }
             else if (opcode == 0x82) // BITON
             {
@@ -1874,19 +1858,6 @@ void ParseEvents( u8 actor_id )
                 export_script->Log( "[UNREVERSED] ADPAL2( " + ArgumentString( script + 1, 10 ) + ");\n" );
                 AdvanceScript( 11, script, end );
             }
-            else if (opcode == 0xF0) // MUSIC
-            {
-                Ogre::String sound = "music:execute_akao( " +
-                    HexToString(0x10, 2, '0') +
-                    ", pointer_to_field_AKAO_" +
-                    IntToString(GetU8(script + 1)) +
-                    " ); -- play field music\n";
-
-                m_SoundOpcodes.push_back(sound);
-                export_script->Log(sound);
-
-                AdvanceScript(2, script, end);
-            }
             else if (opcode == 0xF1) // SOUND
             {
                 Ogre::String sound = "music:execute_akao( " +
@@ -1901,31 +1872,6 @@ void ParseEvents( u8 actor_id )
                 export_script->Log(sound);
 
                 AdvanceScript(5, script, end);
-            }
-            else if (opcode == 0xF2) // AKAO
-            {
-                u8 sub_opcode = GetU8(script + 4);
-
-                Ogre::String sound = "music:execute_akao( " +
-                    HexToString(sub_opcode, 2, '0') +
-                    ", " +
-                    ParseGetVariable(GetU8(script + 1) >> 4, GetU8(script + 5), true) +
-                    ", " +
-                    ParseGetVariable(GetU8(script + 1) & 0x0F, GetU16LE(script + 7), true) +
-                    ", " +
-                    ParseGetVariable(GetU8(script + 2) >> 4, GetU16LE(script + 9), true) +
-                    ", " +
-                    ParseGetVariable(GetU8(script + 2) & 0x0F, GetU16LE(script + 11), true) +
-                    ", " +
-                    ParseGetVariable(GetU8(script + 3) >> 4, GetU16LE(script + 13), true) +
-                    ", " +
-                    ParseGetVariable(GetU8(script + 3) & 0x0F, GetU16LE(script + 15), true) +
-                    " );\n";
-                m_SoundOpcodes.push_back(sound);
-
-                export_script->Log(sound);
-
-                AdvanceScript(14, script, end);
             }
             else if (opcode == 0xF5) // MULCK
             {
@@ -1975,16 +1921,6 @@ void ParseEvents( u8 actor_id )
                     "field:movie_camera_enable( " +
                     BoolToString(!(bool)(GetU8(script + 1))) +
                     " );\n"
-                );
-
-                AdvanceScript(2, script, end);
-            }
-            else if (opcode == 0xFC) // FMUSC
-            {
-                export_script->Log(
-                    "[UNREVERSED] FMUSC(" +
-                    ArgumentString(script + 1, 1) +
-                    ");\n"
                 );
 
                 AdvanceScript(2, script, end);

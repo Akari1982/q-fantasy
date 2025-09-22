@@ -1,5 +1,6 @@
 #include "akao.h"
 #include "system.h"
+#include "ending/ending.h"
 #include "field/field.h"
 #include "psyq/filesystem.h"
 #include "psyq/libgte.h"
@@ -20,6 +21,7 @@ void system_main()
 
     system_init_dispenv_drawenv();
 
+    ending_main();
     field_main();
 
     AkaoQuit();
