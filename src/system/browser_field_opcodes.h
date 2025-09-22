@@ -11,7 +11,10 @@ struct OpcodeArg
     enum type
     {
         UNKNOWN,
-        MEMORY2
+        U8,
+        MEMORY8,
+        MEMORY16,
+        JUMP8
     } type = UNKNOWN;
     std::string name;
     u8 mem_block;
@@ -63,17 +66,45 @@ struct OpcodeInfo
         return *this;
     }
 
+    OpcodeInfo& add_argument_u8( const char* arg_name, u8 offset )
+    {
+        args.push_back( OpcodeArg() );
+        OpcodeArg& new_arg = args[args.size() - 1];
+        new_arg.name = arg_name;
+        new_arg.type = OpcodeArg::U8;
+        new_arg.offset = offset;
+        return *this;
+    }
+
+    OpcodeInfo& add_argument_memory1( const char* arg_name, u8 block, u8 offset )
+    {
+        args.push_back( OpcodeArg() );
+        OpcodeArg& new_arg = args[args.size() - 1];
+        new_arg.name = arg_name;
+        new_arg.type = OpcodeArg::MEMORY8;
+        new_arg.mem_block = block;
+        new_arg.offset = offset;
+        return *this;
+    }
+
     OpcodeInfo& add_argument_memory2( const char* arg_name, u8 block, u8 offset )
     {
         args.push_back( OpcodeArg() );
-
         OpcodeArg& new_arg = args[args.size() - 1];
-
         new_arg.name = arg_name;
-        new_arg.type = OpcodeArg::MEMORY2;
+        new_arg.type = OpcodeArg::MEMORY16;
         new_arg.mem_block = block;
         new_arg.offset = offset;
+        return *this;
+    }
 
+    OpcodeInfo& add_argument_jump8( const char* arg_name, u8 offset )
+    {
+        args.push_back( OpcodeArg() );
+        OpcodeArg& new_arg = args[args.size() - 1];
+        new_arg.name = arg_name;
+        new_arg.type = OpcodeArg::JUMP8;
+        new_arg.offset = offset;
         return *this;
     }
 };

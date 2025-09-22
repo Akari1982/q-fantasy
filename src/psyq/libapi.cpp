@@ -40,7 +40,7 @@ enum event_flag
     EVENT_FLAG_PENDING  = 0x4000,
 };
 
-struct sEventState
+struct EventState
 {
     u32 m_class = 0;
     u32 m_flags = EVENT_FLAG_FREE;
@@ -49,16 +49,16 @@ struct sEventState
     eventFunc m_function = nullptr;
 };
 
-std::vector<sEventState> g_Events( 10 );
-std::mutex g_EventMutex;
+std::vector<EventState> l_events( 10 );
+std::mutex l_event_mutex;
 
 
 
-sEventState* getEventForDesc( u32 desc )
+EventState* getEventForDesc( u32 desc )
 {
-    std::lock_guard<std::mutex> lock( g_EventMutex );
+    std::lock_guard<std::mutex> lock( l_event_mutex );
 
-    for( auto& e : g_Events )
+    for( auto& e : l_events )
     {
         if( e.m_class == desc )
         {
@@ -70,11 +70,11 @@ sEventState* getEventForDesc( u32 desc )
 
 int getFreeEvCBSlot()
 {
-    std::lock_guard<std::mutex> lock( g_EventMutex );
+    std::lock_guard<std::mutex> lock( l_event_mutex );
 
-    for( int i = 0; i < (int)g_Events.size(); ++i )
+    for( int i = 0; i < (int)l_events.size(); ++i )
     {
-        if( g_Events[i].m_flags == EVENT_FLAG_FREE )
+        if( l_events[i].m_flags == EVENT_FLAG_FREE )
         {
             return i;
         }
@@ -88,14 +88,14 @@ s32 PsyqOpenEvent( u32 desc, u32 spec, u32 mode, eventFunc func )
     int eventSlot = getFreeEvCBSlot();
     if( eventSlot == -1 ) return -1;
 
-    std::lock_guard<std::mutex> lock( g_EventMutex );
+    std::lock_guard<std::mutex> lock( l_event_mutex );
 
-    sEventState* pEventState = &g_Events[eventSlot];
-    pEventState->m_class = desc;
-    pEventState->m_spec = spec;
-    pEventState->m_mode = mode;
-    pEventState->m_flags = EVENT_FLAG_DISABLED;
-    pEventState->m_function = func;
+    EventState* event_state = &l_events[eventSlot];
+    event_state->m_class = desc;
+    event_state->m_spec = spec;
+    event_state->m_mode = mode;
+    event_state->m_flags = EVENT_FLAG_DISABLED;
+    event_state->m_function = func;
     return 0xf1000000 | eventSlot;
 }
 
@@ -105,25 +105,26 @@ s32 PsyqCloseEvent( u32 event )
 {
     if( (event & 0xffff0000) != 0xf1000000 ) return 0;
 
-    std::lock_guard<std::mutex> lock( g_EventMutex );
+    std::lock_guard<std::mutex> lock( l_event_mutex );
 
-    sEventState* pEventState = &g_Events[event & 0xffff];
-    pEventState->m_flags = EVENT_FLAG_FREE;
+    EventState* event_state = &l_events[event & 0xffff];
+    event_state->m_flags = EVENT_FLAG_FREE;
     return 1;
 }
 
 s32 PsyqEnableEvent(u32 event)
 {
-    sEventState* pEventState = &g_Events[event & 0xffff];
-    if( pEventState->m_flags != EVENT_FLAG_FREE )
+    EventState* event_state = &l_events[event & 0xffff];
+    if( event_state->m_flags != EVENT_FLAG_FREE )
     {
-        pEventState->m_flags = EVENT_FLAG_ENABLED;
+        event_state->m_flags = EVENT_FLAG_ENABLED;
     }
 
     return 1;
 }
 
-struct TMR_DOTCLOCK {
+struct TMR_DOTCLOCK
+{
     u32 m0_val;
     u32 m4_mode;
     u32 m8_max;
@@ -200,7 +201,7 @@ void rootCounterThread( u32 spec )
         {
             counter_value -= (double)Counters[counterIndex].m8_max;
 
-            sEventState* event_state = getEventForDesc( spec );
+            EventState* event_state = getEventForDesc( spec );
             if( event_state && event_state->m_function )
             {
                 event_state->m_function();

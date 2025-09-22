@@ -129,6 +129,142 @@ void BrowserField()
 
 
 
+void ArgGetU8( u32 arg_ofs )
+{
+    ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 0.5, 0, 1 ) );
+    ImGui::Text( "0x%02x", READ_LE_U8( &l_dat_file[arg_ofs] ) );
+    ImGui::PopStyleColor();
+}
+
+
+
+void ArgGetJump8( u32 arg_ofs )
+{
+    ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 0, 1, 1 ) );
+    ImGui::Text( "0x%02x", READ_LE_U8( &l_dat_file[arg_ofs] ) );
+    ImGui::PopStyleColor();
+}
+
+
+
+void ArgGetMemory8( u8 mem_block, u32 op_ofs, u32 arg_ofs )
+{
+    u8 bank = 0;
+    switch( mem_block )
+    {
+        case 0x1: bank = READ_LE_U8( &l_dat_file[op_ofs + 0x1] ) >> 0x4; break;
+        case 0x2: bank = READ_LE_U8( &l_dat_file[op_ofs + 0x1] ) & 0xf; break;
+        case 0x3: bank = READ_LE_U8( &l_dat_file[op_ofs + 0x2] ) >> 0x4; break;
+        case 0x4: bank = READ_LE_U8( &l_dat_file[op_ofs + 0x2] ) & 0xf; break;
+        case 0x5: bank = READ_LE_U8( &l_dat_file[op_ofs + 0x3] ) >> 0x4; break;
+        case 0x6: bank = READ_LE_U8( &l_dat_file[op_ofs + 0x3] ) & 0xf; break;
+    }
+
+    if( bank == 0x0 )
+    {
+        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 0.5, 0, 1 ) );
+        ImGui::Text( "0x%02x", READ_LE_U8( &l_dat_file[arg_ofs] ) );
+        ImGui::PopStyleColor();
+    }
+    else if( (bank == 0x1) || (bank == 0x2) )
+    {
+        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 1, 0, 1 ) );
+        ImGui::Text( "M0_1[0x%02x]", READ_LE_U8( &l_dat_file[arg_ofs] ) );
+        ImGui::PopStyleColor();
+    }
+    else if( (bank == 0x3) || (bank == 0x3) )
+    {
+        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 1, 0, 1 ) );
+        ImGui::Text( "M1_1[0x%02x]", READ_LE_U8( &l_dat_file[arg_ofs] ) );
+        ImGui::PopStyleColor();
+    }
+    else if( (bank == 0xb) || (bank == 0xc) )
+    {
+        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 1, 0, 1 ) );
+        ImGui::Text( "M2_1[0x%02x]", READ_LE_U8( &l_dat_file[arg_ofs] ) );
+        ImGui::PopStyleColor();
+    }
+    else if( (bank == 0xd) || (bank == 0xe) )
+    {
+        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 1, 0, 1 ) );
+        ImGui::Text( "M3_1[0x%02x]", READ_LE_U8( &l_dat_file[arg_ofs] ) );
+        ImGui::PopStyleColor();
+    }
+    else if( (bank == 0x7) || (bank == 0xf) )
+    {
+        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 1, 0, 1 ) );
+        ImGui::Text( "M4_1[0x%02x]", READ_LE_U8( &l_dat_file[arg_ofs] ) );
+        ImGui::PopStyleColor();
+    }
+    else if( (bank == 0x5) || (bank == 0x6) )
+    {
+        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 1, 0, 1 ) );
+        ImGui::Text( "L_1[0x%02x]", READ_LE_U8( &l_dat_file[arg_ofs] ) );
+        ImGui::PopStyleColor();
+    }
+}
+
+
+
+void ArgGetMemory16( u8 mem_block, u32 op_ofs, u32 arg_ofs )
+{
+    u8 bank = 0;
+    switch( mem_block )
+    {
+        case 0x1: bank = READ_LE_U8( &l_dat_file[op_ofs + 0x1] ) >> 0x4; break;
+        case 0x2: bank = READ_LE_U8( &l_dat_file[op_ofs + 0x1] ) & 0xf; break;
+        case 0x3: bank = READ_LE_U8( &l_dat_file[op_ofs + 0x2] ) >> 0x4; break;
+        case 0x4: bank = READ_LE_U8( &l_dat_file[op_ofs + 0x2] ) & 0xf; break;
+        case 0x5: bank = READ_LE_U8( &l_dat_file[op_ofs + 0x3] ) >> 0x4; break;
+        case 0x6: bank = READ_LE_U8( &l_dat_file[op_ofs + 0x3] ) & 0xf; break;
+    }
+
+    if( bank == 0x0 )
+    {
+        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 0.5, 0, 1 ) );
+        ImGui::Text( "0x%04x", READ_LE_U16( &l_dat_file[arg_ofs] ) );
+        ImGui::PopStyleColor();
+    }
+    else if( (bank == 0x1) || (bank == 0x2) )
+    {
+        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 1, 0, 1 ) );
+        ImGui::Text( "M0_2[0x%02x]", READ_LE_U8( &l_dat_file[arg_ofs] ) );
+        ImGui::PopStyleColor();
+    }
+    else if( (bank == 0x3) || (bank == 0x3) )
+    {
+        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 1, 0, 1 ) );
+        ImGui::Text( "M1_2[0x%02x]", READ_LE_U8( &l_dat_file[arg_ofs] ) );
+        ImGui::PopStyleColor();
+    }
+    else if( (bank == 0xb) || (bank == 0xc) )
+    {
+        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 1, 0, 1 ) );
+        ImGui::Text( "M2_2[0x%02x]", READ_LE_U8( &l_dat_file[arg_ofs] ) );
+        ImGui::PopStyleColor();
+    }
+    else if( (bank == 0xd) || (bank == 0xe) )
+    {
+        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 1, 0, 1 ) );
+        ImGui::Text( "M3_2[0x%02x]", READ_LE_U8( &l_dat_file[arg_ofs] ) );
+        ImGui::PopStyleColor();
+    }
+    else if( (bank == 0x7) || (bank == 0xf) )
+    {
+        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 1, 0, 1 ) );
+        ImGui::Text( "M4_2[0x%02x]", READ_LE_U8( &l_dat_file[arg_ofs] ) );
+        ImGui::PopStyleColor();
+    }
+    else if( (bank == 0x5) || (bank == 0x6) )
+    {
+        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 1, 0, 1 ) );
+        ImGui::Text( "L_2[0x%02x]", READ_LE_U8( &l_dat_file[arg_ofs] ) );
+        ImGui::PopStyleColor();
+    }
+}
+
+
+
 void ParseEvents( u8 actor_id )
 {
     u32 ate_addr = READ_LE_U32( &l_dat_file[0x0] ) - g_field_dat_base_addr;
@@ -157,18 +293,40 @@ void ParseEvents( u8 actor_id )
         {
             u8 opcode = READ_LE_U8( &l_dat_file[ate_addr + event_ofs] );
 
-            ImGui::Text( "  0x%04X    ", event_ofs );
+            ImGui::Text( "  0x%04x    ", event_ofs );
             ImGui::SameLine( 0, 0 );
 
             if( g_field_opcodes[opcode].init )
             {
-                ImGui::Text( "%s(", g_field_opcodes[opcode].full_name.c_str() );
-                ImGui::SameLine( 0, 0 );
+                ImGui::Text( "%s(", g_field_opcodes[opcode].full_name.c_str() ); ImGui::SameLine( 0, 0 );
+
                 for( int arg_id = 0; arg_id < g_field_opcodes[opcode].args.size(); ++arg_id )
                 {
+                    const OpcodeArg& argument = g_field_opcodes[opcode].args[arg_id];
+                    const u32 arg_ofs = ate_addr + event_ofs + argument.offset;
+
                     if( arg_id != 0 ) ImGui::Text( "," ); ImGui::SameLine( 0, 0 );
 
-                    ImGui::Text( " %s", g_field_opcodes[opcode].args[arg_id].name.c_str() );
+                    ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0.5, 0.5, 0.5, 1 ) );
+                    ImGui::Text(" %s:", argument.name.c_str()); ImGui::SameLine(0, 0);
+                    ImGui::PopStyleColor();
+
+                    switch( argument.type )
+                    {
+                        case OpcodeArg::U8: ArgGetU8( arg_ofs ); break;
+                        case OpcodeArg::MEMORY8: ArgGetMemory8( argument.mem_block, ate_addr + event_ofs, arg_ofs ); break;
+                        case OpcodeArg::MEMORY16: ArgGetMemory16( argument.mem_block, ate_addr + event_ofs, arg_ofs ); break;
+
+                        case OpcodeArg::JUMP8:
+                        {
+                            ArgGetJump8( arg_ofs );
+
+                            u32 temp_end = event_ofs + READ_LE_U8( &l_dat_file[arg_ofs] ) - 1;
+                            end_ofs = (temp_end > end_ofs) ? temp_end : end_ofs;
+                        }
+                        break;
+                    }
+
                     ImGui::SameLine( 0, 0 );
 
                     if( (arg_id + 1) >= g_field_opcodes[opcode].args.size() ) ImGui::Text( " " ); ImGui::SameLine( 0, 0 );
@@ -176,7 +334,10 @@ void ParseEvents( u8 actor_id )
                 ImGui::Text( ")" );
 
                 event_ofs += g_field_opcodes[opcode].size;
-                end_ofs = event_ofs;
+                end_ofs = (event_ofs > end_ofs) ? event_ofs : end_ofs;
+
+                ImGui::SameLine( 0, 0 );
+                ImGui::Text( " // end:0x%04x", end_ofs );
             }
             else
             {

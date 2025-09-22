@@ -6,7 +6,7 @@
 
 #include <mutex>
 
-std::mutex spuMutex;
+std::mutex l_spu_mutex;
 
 u32 g_reverb_on;
 u32 g_reverb_workarea_cur;
@@ -76,7 +76,7 @@ void SpuPlayer::quit()
 
 void SpuPlayer::audioOut( ofSoundBuffer & buffer )
 {
-    std::lock_guard<std::mutex> lock( spuMutex );
+    std::lock_guard<std::mutex> lock( l_spu_mutex );
 
     s16 temp[44100][2];
 
@@ -96,7 +96,7 @@ void SpuPlayer::audioOut( ofSoundBuffer & buffer )
 
 void PsyqSpuInit()
 {
-    std::lock_guard<std::mutex> lock( spuMutex );
+    std::lock_guard<std::mutex> lock( l_spu_mutex );
 
     // init SPU emulator
     SPU::Initialize();
@@ -174,7 +174,7 @@ void PsyqSpuSetTransferStartAddr( u32 addr )
 
 void PsyqSpuWrite( u8* addr, u32 size )
 {
-    std::lock_guard<std::mutex> lock( spuMutex );
+    std::lock_guard<std::mutex> lock( l_spu_mutex );
 
     auto& s_ram = SPU::GetWritableRAM();
     std::memcpy( &s_ram[g_transfer_start_addr], addr, size );
@@ -189,7 +189,7 @@ void PsyqSpuWrite( u8* addr, u32 size )
 
 void PsyqSpuSetVoicePitch( s32 voiceNum, u16 pitch )
 {
-    std::lock_guard<std::mutex> lock( spuMutex );
+    std::lock_guard<std::mutex> lock( l_spu_mutex );
 
     SPU::WriteRegister( voiceNum * 0x10 + 0x4, pitch );
 }
@@ -198,7 +198,7 @@ void PsyqSpuSetVoicePitch( s32 voiceNum, u16 pitch )
 
 void PsyqSpuSetVoiceVolume( s32 voiceNum, s16 volumeL, s16 volumeR )
 {
-    std::lock_guard<std::mutex> lock( spuMutex );
+    std::lock_guard<std::mutex> lock( l_spu_mutex );
 
     SPU::WriteRegister( voiceNum * 0x10 + 0x0, volumeL & 0x7fff );
     SPU::WriteRegister( voiceNum * 0x10 + 0x2, volumeR & 0x7fff );
@@ -208,7 +208,7 @@ void PsyqSpuSetVoiceVolume( s32 voiceNum, s16 volumeL, s16 volumeR )
 
 void PsyqSpuSetVoiceStartAddr( s32 voiceNum, u32 startAddr )
 {
-    std::lock_guard<std::mutex> lock( spuMutex );
+    std::lock_guard<std::mutex> lock( l_spu_mutex );
 
     SPU::WriteRegister( voiceNum * 0x10 + 0x6, startAddr >> g_spu_shift );
 }
@@ -217,7 +217,7 @@ void PsyqSpuSetVoiceStartAddr( s32 voiceNum, u32 startAddr )
 
 void PsyqSpuSetVoiceLoopStartAddr( s32 voiceNum, u32 loopStartAddr )
 {
-    std::lock_guard<std::mutex> lock( spuMutex );
+    std::lock_guard<std::mutex> lock( l_spu_mutex );
 
     SPU::WriteRegister( voiceNum * 0x10 + 0xe, loopStartAddr >> g_spu_shift );
 }
@@ -226,7 +226,7 @@ void PsyqSpuSetVoiceLoopStartAddr( s32 voiceNum, u32 loopStartAddr )
 
 void PsyqSpuSetVoiceSRAttr( s32 voiceNum, u16 SR, s32 SRmode )
 {
-    std::lock_guard<std::mutex> lock( spuMutex );
+    std::lock_guard<std::mutex> lock( l_spu_mutex );
 
     u16 mode_f = 0x100;
          if( SRmode == 0x1 ) mode_f = 0x0;
@@ -243,7 +243,7 @@ void PsyqSpuSetVoiceSRAttr( s32 voiceNum, u16 SR, s32 SRmode )
 
 void PsyqSpuSetVoiceRRAttr( s32 voiceNum, u16 RR, s32 RRmode )
 {
-    std::lock_guard<std::mutex> lock( spuMutex );
+    std::lock_guard<std::mutex> lock( l_spu_mutex );
 
     u16 value = SPU::ReadRegister( voiceNum * 0x10 + 0xa );
     value &= 0xffc0;
@@ -256,7 +256,7 @@ void PsyqSpuSetVoiceRRAttr( s32 voiceNum, u16 RR, s32 RRmode )
 
 void PsyqSpuSetVoiceARAttr( s32 voiceNum, u16 AR, s32 Armode )
 {
-    std::lock_guard<std::mutex> lock( spuMutex );
+    std::lock_guard<std::mutex> lock( l_spu_mutex );
 
     u16 value = SPU::ReadRegister( voiceNum * 0x10 + 0x8 );
     value &= 0x00ff;
@@ -268,7 +268,7 @@ void PsyqSpuSetVoiceARAttr( s32 voiceNum, u16 AR, s32 Armode )
 
 void PsyqSpuSetVoiceDR( s32 voiceNum, u16 DR )
 {
-    std::lock_guard<std::mutex> lock( spuMutex );
+    std::lock_guard<std::mutex> lock( l_spu_mutex );
 
     u16 value = SPU::ReadRegister( voiceNum * 0x10 + 0x8 );
     value &= 0xff0f;
@@ -280,7 +280,7 @@ void PsyqSpuSetVoiceDR( s32 voiceNum, u16 DR )
 
 void PsyqSpuSetVoiceSL( s32 voiceNum, u16 SL )
 {
-    std::lock_guard<std::mutex> lock( spuMutex );
+    std::lock_guard<std::mutex> lock( l_spu_mutex );
 
     u16 value = SPU::ReadRegister( voiceNum * 0x10 + 0x8 );
     value &= 0xfff0;
@@ -292,7 +292,7 @@ void PsyqSpuSetVoiceSL( s32 voiceNum, u16 SL )
 
 void PsyqSpuSetVoiceVolumeAttr( s32 voiceNum, s16 volumeL, s16 volumeR, s16 volModeL, s16 volModeR )
 {
-    std::lock_guard<std::mutex> lock( spuMutex );
+    std::lock_guard<std::mutex> lock( l_spu_mutex );
 
     u16 mode = 0;
     switch( volModeL )
@@ -325,7 +325,7 @@ void PsyqSpuSetVoiceVolumeAttr( s32 voiceNum, s16 volumeL, s16 volumeR, s16 volM
 
 void PsyqSpuSetKey( s32 on_off, u32 voice_bit )
 {
-    std::lock_guard<std::mutex> lock( spuMutex );
+    std::lock_guard<std::mutex> lock( l_spu_mutex );
 
     if( on_off == SPU_OFF )
     {
@@ -343,7 +343,7 @@ void PsyqSpuSetKey( s32 on_off, u32 voice_bit )
 
 s32 PsyqSpuSetReverb( s32 on_off )
 {
-    std::lock_guard<std::mutex> lock( spuMutex );
+    std::lock_guard<std::mutex> lock( l_spu_mutex );
 
     if( on_off == SPU_OFF )
     {
@@ -442,7 +442,7 @@ void SpuSetReverbReg(SpuReverbReg* attr)
 
 s32 PsyqSpuSetReverbModeParam( SpuReverbAttr* attr )
 {
-    std::lock_guard<std::mutex> lock( spuMutex );
+    std::lock_guard<std::mutex> lock( l_spu_mutex );
 
     u32 mask = attr->mask;
 
@@ -636,7 +636,7 @@ void PsyqSpuGetReverbModeParam( SpuReverbAttr* attr )
 
 void PsyqSpuSetReverbDepth( SpuReverbAttr* attr )
 {
-    std::lock_guard<std::mutex> lock( spuMutex );
+    std::lock_guard<std::mutex> lock( l_spu_mutex );
 
     if( (attr->mask < 1) || (attr->mask & SPU_REV_DEPTHL) )
     {
@@ -655,7 +655,7 @@ void PsyqSpuSetReverbDepth( SpuReverbAttr* attr )
 
 long PsyqSpuSetNoiseClock( long n_clock )
 {
-    std::lock_guard<std::mutex> lock( spuMutex );
+    std::lock_guard<std::mutex> lock( l_spu_mutex );
 
     n_clock = ( n_clock < 0 ) ? 0 : n_clock;
     n_clock = ( n_clock >= 0x40 ) ? 0x3f : n_clock;
@@ -669,7 +669,7 @@ long PsyqSpuSetNoiseClock( long n_clock )
 
 void PsyqSpuSetNoiseVoice( s32 on_off, u32 voice_bit )
 {
-    std::lock_guard<std::mutex> lock( spuMutex );
+    std::lock_guard<std::mutex> lock( l_spu_mutex );
 
     if( on_off == SPU_OFF )
     {
@@ -687,7 +687,7 @@ void PsyqSpuSetNoiseVoice( s32 on_off, u32 voice_bit )
 
 void PsyqSpuSetReverbVoice( s32 on_off, u32 voice_bit )
 {
-    std::lock_guard<std::mutex> lock( spuMutex );
+    std::lock_guard<std::mutex> lock( l_spu_mutex );
 
     if( on_off == SPU_OFF )
     {
@@ -705,7 +705,7 @@ void PsyqSpuSetReverbVoice( s32 on_off, u32 voice_bit )
 
 void PsyqSpuSetPitchLfoVoice( s32 on_off, u32 voice_bit )
 {
-    std::lock_guard<std::mutex> lock( spuMutex );
+    std::lock_guard<std::mutex> lock( l_spu_mutex );
 
     if( on_off == SPU_OFF )
     {
@@ -723,7 +723,7 @@ void PsyqSpuSetPitchLfoVoice( s32 on_off, u32 voice_bit )
 
 void PsyqSpuSetCommonAttr( SpuCommonAttr* attr )
 {
-    std::lock_guard<std::mutex> lock( spuMutex );
+    std::lock_guard<std::mutex> lock( l_spu_mutex );
 
     u32 mask = attr->mask;
 
