@@ -8,37 +8,36 @@
 
 
 
-DISPENV global_dispenv;
-DRAWENV global_drawenv;
+DISPENV g_global_dispenv;
+DRAWENV g_global_drawenv;
 
 
 
-void system_main()
+void SystemMain()
 {
-    system_init_base();
+    SystemInitBase();
 
-    system_init_akao_engine();
+    SystemInitAkaoEngine();
 
-    system_init_dispenv_drawenv();
+    SystemInitDispEnvDrawEnv();
 
-    ending_main();
-    field_main();
-
-    AkaoQuit();
-    PsyqSpuQuit();
+    EndingMain();
+    FieldMain();
 }
 
 
 
-void system_init_base()
+void SystemInitBase()
 {
     PsyqSpuInit();
+    atexit( PsyqSpuQuit );
+
     PsyqInitGeom();
 }
 
 
 
-void system_init_akao_engine()
+void SystemInitAkaoEngine()
 {
     std::vector<u8> instr_all;
     FileRead( "SOUND/INSTR.ALL", instr_all );
@@ -50,18 +49,20 @@ void system_init_akao_engine()
     FileRead( "SOUND/EFFECT.ALL", effect_all );
 
     AkaoInit( &instr_all[0], &instr_dat[0] );
+    atexit( AkaoQuit );
+
     AkaoLoadEffect( &effect_all[0] );
 }
 
 
 
-void system_init_dispenv_drawenv()
+void SystemInitDispEnvDrawEnv()
 {
-    PsyqSetDefDispEnv( &global_dispenv, 0x0, 0x0, 0x140, 0xe0 );
-    PsyqSetDefDrawEnv( &global_drawenv, 0x0, 0x8, 0x140, 0xe0 );
-    global_drawenv.dtd = 1;
-    global_drawenv.isbg = 0;
+    PsyqSetDefDispEnv( &g_global_dispenv, 0x0, 0x0, 0x140, 0xe0 );
+    PsyqSetDefDrawEnv( &g_global_drawenv, 0x0, 0x8, 0x140, 0xe0 );
+    g_global_drawenv.dtd = 1;
+    g_global_drawenv.isbg = 0;
 
-    PsyqPutDispEnv( &global_dispenv );
-    PsyqPutDrawEnv( &global_drawenv );
+    PsyqPutDispEnv( &g_global_dispenv );
+    PsyqPutDrawEnv( &g_global_drawenv );
 }

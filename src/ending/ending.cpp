@@ -7,7 +7,8 @@
 #include <vector>
 
 
-void ending_main()
+
+void EndingMain()
 {
 //    funca2504( 0x280, 0x1e0, 0x200, 0, 0, 0 );
 //

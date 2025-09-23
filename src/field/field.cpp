@@ -1,5 +1,4 @@
 #include "field.h"
-#include "system/game.h"
 #include "kernel/system.h"
 #include "kernel/akao.h"
 #include "psyq/filesystem.h"
@@ -62,22 +61,20 @@ std::vector<u8> field_random =
 
 
 
-void
-field_main()
+void FieldMain()
 {
     PsyqSetDefDrawEnv( &field_draw_env, 0x0, 0x8, 0x140, 0xe0 );
     field_draw_env.dtd = 1;
     field_draw_env.isbg = 0;
 
-    field_load_mim_dat_files();
+    FieldLoadMimDatFiles();
 
-    field_main_loop();
+    FieldMainLoop();
 }
 
 
 
-void
-field_main_loop()
+void FieldMainLoop()
 {
     base_draw_offset.x = 0xa0;
     base_draw_offset.y = 0x78;
@@ -111,14 +108,14 @@ field_main_loop()
         field_walkmesh_access[ i ].p3 = READ_LE_U16( &field_dat[ walkmesh_access_addr + i * 0x6 + 0x4 ] );
     }
 
-    field_rain_init( &field_rain_prim[ 0 ] );
-    field_rain_init( &field_rain_prim[ 1 ] );
+    FieldRainInit( &field_rain_prim[ 0 ] );
+    FieldRainInit( &field_rain_prim[ 1 ] );
 
     while( true )
     {
         PsyqClearOTagR( &field_rain_prim[ 0 ].poly[ 0 ], 0 );
 
-        field_rain_update();
+        FieldRainUpdate();
 
         MATRIX m;
 
@@ -156,7 +153,7 @@ field_main_loop()
 
         // A1 = ot + 1749c; // rain packets
         // A3 = ot + 17490; // draw_mode_packet
-        field_rain_add_to_render( &field_rain_prim[ 0 ].poly[ 0 ], &m );
+        FieldRainAddToRender( &field_rain_prim[ 0 ].poly[ 0 ], &m );
 
         PsyqPushMatrix();
         PsyqSetRotMatrix( &m );
@@ -200,32 +197,31 @@ field_main_loop()
         }
         PsyqPopMatrix();
 
-        PsyqPutDispEnv( &global_dispenv );
+        PsyqVSync( 0x2 );
+
+        PsyqPutDispEnv( &g_global_dispenv );
         PsyqPutDrawEnv( &field_draw_env );
 
         PsyqDrawOTag( &field_rain_prim[ 0 ].poly[ 0 ] );
-
-        GameRender();
-        if( g_AppRunning == false ) return;
     }
 }
 
 
 
-void field_update_drawenv()
+void FieldUpdateDrawEnv()
 {
 }
 
 
 
-void field_load_mim_dat_files()
+void FieldLoadMimDatFiles()
 {
     FileLZS( "FIELD/MD1STIN.DAT", field_dat );
 }
 
 
 
-void field_rain_init( sFieldRainPrim* prim )
+void FieldRainInit( sFieldRainPrim* prim )
 {
     for( int i = 0; i < 0x40; ++i )
     {
@@ -261,7 +257,7 @@ void field_rain_init( sFieldRainPrim* prim )
 
 
 
-void field_rain_update()
+void FieldRainUpdate()
 {
     static int wait = 0;
     ++wait;
@@ -330,7 +326,7 @@ void field_rain_update()
 
 
 
-void field_rain_add_to_render( sTag* ot, MATRIX* m )
+void FieldRainAddToRender( sTag* ot, MATRIX* m )
 {
     //S1 = A1;
     //packet = A3;

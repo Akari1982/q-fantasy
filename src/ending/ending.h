@@ -2,4 +2,4 @@
 
 
 
-void ending_main();
+void EndingMain();

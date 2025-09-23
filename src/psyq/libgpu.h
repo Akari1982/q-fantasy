@@ -80,6 +80,8 @@ struct DRAWENV
 
 
 
+s32 PsyqVSync( s32 mode );
+
 DISPENV* PsyqSetDefDispEnv( DISPENV* env, s32 x, s32 y, s32 w, s32 h );
 DRAWENV* PsyqSetDefDrawEnv( DRAWENV* env, s32 x, s32 y, s32 w, s32 h );
 void PsyqSetDrawEnv( DR_ENV *dr_env, DRAWENV *env );

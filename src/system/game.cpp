@@ -5,14 +5,17 @@
 
 void GameRun()
 {
-    system_main();
+    SystemMain();
 }
 
 
 
 void GameRender()
 {
-    if( g_AppWindow->getWindowShouldClose() ) g_AppRunning = false;
+    if( g_AppWindow->getWindowShouldClose() )
+    {
+        std::exit( EXIT_SUCCESS );
+    }
 
     ofGetMainLoop()->loopOnce();
     ofGetMainLoop()->pollEvents();

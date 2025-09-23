@@ -1,9 +1,9 @@
 #pragma once
 
-#include <array>
-
 #include "psyq/typedef.h"
 #include "psyq/libgpu.h"
+
+#include <array>
 
 
 
@@ -24,16 +24,16 @@ struct sFieldRainPrim
 
 
 
-void field_main();
-void field_main_loop();
+void FieldMain();
+void FieldMainLoop();
 
-void field_update_drawenv();
+void FieldUpdateDrawEnv();
 
-void field_load_mim_dat_files();
+void FieldLoadMimDatFiles();
 
-void field_rain_init( sFieldRainPrim* prim );
-void field_rain_update();
-void field_rain_add_to_render( sTag* ot, MATRIX* m );
+void FieldRainInit( sFieldRainPrim* prim );
+void FieldRainUpdate();
+void FieldRainAddToRender( sTag* ot, MATRIX* m );
 
 
 

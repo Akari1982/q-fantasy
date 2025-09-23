@@ -4,12 +4,12 @@
 
 
 
-extern DISPENV global_dispenv;
-extern DRAWENV global_drawenv;
+extern DISPENV g_global_dispenv;
+extern DRAWENV g_global_drawenv;
 
 
 
-void system_main();
-void system_init_base();
-void system_init_akao_engine();
-void system_init_dispenv_drawenv();
+void SystemMain();
+void SystemInitBase();
+void SystemInitAkaoEngine();
+void SystemInitDispEnvDrawEnv();

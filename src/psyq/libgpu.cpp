@@ -3,6 +3,15 @@
 
 
 
+s32 PsyqVSync( s32 mode )
+{
+    GameRender();
+
+    return 1;
+}
+
+
+
 DISPENV* PsyqSetDefDispEnv( DISPENV* env, s32 x, s32 y, s32 w, s32 h )
 {
     (env->disp).x = x;
