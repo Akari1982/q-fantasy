@@ -10,8 +10,10 @@
 
 void EndingMain()
 {
-//    funca2504( 0x280, 0x1e0, 0x200, 0, 0, 0 );
-//
+    // Init area 0x280 x 0x1e0 for rendering.
+    // Distance 0x200 and background color is black
+//    ending_render_init( 0x280, 0x1e0, 0x200, 0, 0, 0 );
+
 //    do
 //    {
 //        system_psyq_cd_search_file( SP + 0x20, "\STARTUP\SCEAP.LZS;1" );
@@ -35,7 +37,7 @@ void EndingMain()
 //        } while( V0 > 0 );
 //    } while( V0 != 0 )
 //
-//    func34bb0( 0x80180000, 0x80100000 );
+//    system_lzs_decompress( 0x80180000, 0x80100000 );
 //
 //    system_psyq_set_disp_mask( 1 );
 //
@@ -43,7 +45,7 @@ void EndingMain()
 //    {
 //        rb = rb < 0x1;
 //
-//        funca273c( 0 );
+//        ending_render_vsync( 0 );
 //
 //        s16 even_odd = system_psyq_get_ode() ^ 0x1;
 //
@@ -89,7 +91,7 @@ void EndingMain()
 //    {
 //        rb = rb < 0x1;
 //
-//        funca273c( 0 );
+//        ending_render_vsync( 0 );
 //
 //        s16 even_odd = system_psyq_get_ode() ^ 0x1;
 //
@@ -114,7 +116,7 @@ void EndingMain()
 //    {
 //        rb = rb < 0x1;
 //
-//        funca273c( 0 );
+//        ending_render_vsync( 0 );
 //
 //        s16 even_odd = system_psyq_get_ode() ^ 0x1;
 //

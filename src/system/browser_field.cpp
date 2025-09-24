@@ -172,7 +172,7 @@ void ArgGetMemory8( u8 mem_block, u32 op_ofs, u32 arg_ofs )
         ImGui::Text( "M0_1[0x%02x]", READ_LE_U8( &l_dat_file[arg_ofs] ) );
         ImGui::PopStyleColor();
     }
-    else if( (bank == 0x3) || (bank == 0x3) )
+    else if( (bank == 0x3) || (bank == 0x4) )
     {
         ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 1, 0, 1 ) );
         ImGui::Text( "M1_1[0x%02x]", READ_LE_U8( &l_dat_file[arg_ofs] ) );
@@ -231,7 +231,7 @@ void ArgGetMemory16( u8 mem_block, u32 op_ofs, u32 arg_ofs )
         ImGui::Text( "M0_2[0x%02x]", READ_LE_U8( &l_dat_file[arg_ofs] ) );
         ImGui::PopStyleColor();
     }
-    else if( (bank == 0x3) || (bank == 0x3) )
+    else if( (bank == 0x3) || (bank == 0x4) )
     {
         ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 1, 0, 1 ) );
         ImGui::Text( "M1_2[0x%02x]", READ_LE_U8( &l_dat_file[arg_ofs] ) );

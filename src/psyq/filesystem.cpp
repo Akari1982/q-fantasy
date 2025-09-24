@@ -77,7 +77,7 @@ void LZSExtract( std::vector<u8>& input, std::vector<u8>& output )
                     output.resize( extract_size );
                 }
 
-                real_offset += 0x1;;
+                real_offset += 0x1;
             }
 
             if( input_length == 0 ) break;
