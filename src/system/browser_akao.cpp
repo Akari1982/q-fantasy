@@ -1,7 +1,7 @@
 #include "kernel/akao.h"
+#include "kernel/file.h"
 #include "system/browser_akao.h"
 #include "system/icons_font.h"
-#include "psyq/filesystem.h"
 
 #include "ofxImGui.h"
 #include <format>
@@ -298,7 +298,7 @@ static void BrowserAkaoFillMusicInfo()
 
             u32 ofst = 0x11a000 + i * 0x800;
             std::vector<u8> part(temp.begin() + ofst, temp.begin() + ofst + 0x800);
-            LZSExtract( part, snd );
+            FileLZSExtract( part, snd );
 
             u8 check0 = READ_LE_U8( &snd[0x0] );
             u8 check1 = READ_LE_U8( &snd[0x1] );
@@ -425,7 +425,7 @@ void BrowserAkaoMusicPlay( u32 id, u32 file_id )
         std::vector<u8> snd;
         u32 ofst = 0x11a000 + g_musics[id].files[file_id].id * 0x800;
         std::vector<u8> part(temp.begin() + ofst, temp.begin() + ofst + 0x800);
-        LZSExtract( part, snd );
+        FileLZSExtract( part, snd );
         u16 music_size = READ_LE_U16( &snd[0x6] );
         AkaoCopyMusic( &snd[0x10], music_size );
     }

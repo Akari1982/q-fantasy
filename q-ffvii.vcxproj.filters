@@ -70,9 +70,6 @@
     <ClCompile Include="src\psyq\psxgte.cpp">
       <Filter>src\psyq</Filter>
     </ClCompile>
-    <ClCompile Include="src\psyq\filesystem.cpp">
-      <Filter>src\psyq</Filter>
-    </ClCompile>
     <ClCompile Include="src\psyq\typedef.cpp">
       <Filter>src\psyq</Filter>
     </ClCompile>
@@ -120,6 +117,12 @@
     </ClCompile>
     <ClCompile Include="src\ending\ending.cpp">
       <Filter>src\ending</Filter>
+    </ClCompile>
+    <ClCompile Include="src\system\browser_ending.cpp">
+      <Filter>src\system</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\file.cpp">
+      <Filter>src\kernel</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -219,9 +222,6 @@
     <ClInclude Include="src\psyq\typedef.h">
       <Filter>src\psyq</Filter>
     </ClInclude>
-    <ClInclude Include="src\psyq\filesystem.h">
-      <Filter>src\psyq</Filter>
-    </ClInclude>
     <ClInclude Include="src\psyq\psxspu\spu.h">
       <Filter>src\psyq\psxspu</Filter>
     </ClInclude>
@@ -293,6 +293,12 @@
     </ClInclude>
     <ClInclude Include="src\ending\ending.h">
       <Filter>src\ending</Filter>
+    </ClInclude>
+    <ClInclude Include="src\system\browser_ending.h">
+      <Filter>src\system</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernel\file.h">
+      <Filter>src\kernel</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
