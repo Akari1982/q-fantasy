@@ -1,7 +1,7 @@
 #include "ending.h"
 #include "system/game.h"
 #include "kernel/system.h"
-#include "psyq/filesystem.h"
+#include "kernel/file.h"
 #include "psyq/libgte.h"
 
 #include <vector>

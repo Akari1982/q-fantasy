@@ -1,6 +1,7 @@
 #include "application.h"
 #include "icons_font.h"
 #include "browser_akao.h"
+#include "browser_ending.h"
 #include "browser_field.h"
 #include "browser_field_opcodes.h"
 
@@ -147,6 +148,7 @@ void Application::draw()
     g_GameVram.draw( 0, 0, 640, 480 );
 
     BrowserField();
+    BrowserEnding();
     BrowserAkao();
 
     if( ImGui::BeginMainMenuBar() )
@@ -154,6 +156,12 @@ void Application::draw()
         if( ImGui::BeginMenu( "Field" ) )
         {
             g_browser_field = true;
+            ImGui::EndMenu();
+        }
+
+        if( ImGui::BeginMenu( "Ending" ) )
+        {
+            g_browser_ending = true;
             ImGui::EndMenu();
         }
 

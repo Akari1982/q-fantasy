@@ -1,7 +1,7 @@
 #include "browser_field.h"
 #include "browser_field_opcodes.h"
 #include "system/icons_font.h"
-#include "psyq/filesystem.h"
+#include "kernel/file.h"
 #include "field/field.h"
 #include "field/field_list.h"
 
@@ -12,7 +12,7 @@ bool g_browser_field = false;
 
 std::vector<u8> l_dat_file;
 
-void ParseEvents( u8 actor_id );
+void ParseFieldEvents( u8 actor_id );
 
 
 
@@ -118,7 +118,7 @@ void BrowserField()
         }
         ImGui::Separator();
 
-        ParseEvents( 0x0 );
+        ParseFieldEvents( 0x0 );
 
         ImGui::EndChild();
 
@@ -318,7 +318,7 @@ void ArgSetMemory16( u8 mem_block, u32 op_ofs, u32 arg_ofs )
 
 
 
-void ParseEvents( u8 actor_id )
+void ParseFieldEvents( u8 actor_id )
 {
     u32 ate_addr = READ_LE_U32( &l_dat_file[0x0] ) - g_field_dat_base_addr;
     u8 actors_n = READ_LE_U8( &l_dat_file[ate_addr + 0x2] );
