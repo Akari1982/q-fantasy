@@ -3,6 +3,10 @@
 
 
 
+std::array<u8, 2048 * 512> g_vram;
+
+
+
 s32 PsyqVSync( s32 mode )
 {
     GameRender();

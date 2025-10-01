@@ -102,3 +102,7 @@ void PsyqSetSemiTrans( T* p, s32 abe )
     if( abe == 0 ) p->code &= ~2;
     else p->code |= 2;
 }
+
+
+
+extern std::array<u8, 2048 * 512> g_vram;
