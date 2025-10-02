@@ -2,7 +2,7 @@
 #include "system.h"
 #include "ending/ending.h"
 #include "field/field.h"
-#include "psyq/filesystem.h"
+#include "kernel/file.h"
 #include "psyq/libgte.h"
 #include "psyq/libspu.h"
 

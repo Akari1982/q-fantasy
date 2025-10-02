@@ -1,19 +1,22 @@
 #pragma once
 
+#include "typedef.h"
+#include <span>
+
+
+
 struct TIM_IMAGE
 {
     u32 mode;
-    struct RECT* crect;
+    SRECT crect;
     const void* caddr;
-    struct RECT* prect;
+    SRECT prect;
     const void* paddr;
 };
 
-int OpenTIM( std::vector<u8>::const_iterator ptr );
-TIM_IMAGE* ReadTIM( TIM_IMAGE* timimg );
 
-void StoreImage( struct RECT* rect, std::vector<u16>& output );
-void LoadImage( struct RECT* pRect, const u8* data );
-void LoadImage( struct RECT* pRect, std::span<u8>::iterator data );
-void LoadImage( struct RECT* pRect, std::span<u16>::iterator data );
-void loadTimToVram( std::vector<u8>::const_iterator ptr, short imageX, short imageY, short palX, short palY, short palW, short palH );
+
+int PsyqGpuOpenTim( std::vector<u8>::const_iterator ptr );
+TIM_IMAGE* PsyqGpuReadTim( TIM_IMAGE* timimg );
+
+void PsyqGpuLoadImage( SRECT* rect, std::span<u8>::iterator data );

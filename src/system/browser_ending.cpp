@@ -22,7 +22,6 @@ void BrowserEnding()
     static bool loaded = false;
     if( loaded == false )
     {
-        //FileLZS( "FIELD/ENDING.X", l_dat_file );
         FileRead( "FIELD/ENDING.X", l_ending_file );
         FileRead( "MOVIE/OPENING.BIN", l_opening_file );
         {

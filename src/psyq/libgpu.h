@@ -2,6 +2,8 @@
 
 #include "typedef.h"
 
+#include <array>
+
 
 
 struct sColorAndCode

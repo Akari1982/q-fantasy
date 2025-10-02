@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <vector>
+#include <span>
 
 
 
@@ -24,6 +25,14 @@ u16 READ_LE_U16( const std::vector< u8 >::const_iterator& input );
 s16 READ_LE_S16( const std::vector< u8 >::const_iterator& input );
 u32 READ_LE_U32( const std::vector< u8 >::const_iterator& input );
 s32 READ_LE_S32( const std::vector< u8 >::const_iterator& input );
+u8 READ_LE_U8( const std::span<u8>::iterator& input );
+s8 READ_LE_S8( const std::span<u8>::iterator& input );
+u16 READ_LE_U16( const std::span<u8>::iterator& input );
+s16 READ_LE_S16( const std::span<u8>::iterator& input );
+u32 READ_LE_U32( const std::span<u8>::iterator& input );
+s32 READ_LE_S32( const std::span<u8>::iterator& input );
+
+
 
 struct DVECTOR
 {

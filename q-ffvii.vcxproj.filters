@@ -124,6 +124,9 @@
     <ClCompile Include="src\kernel\file.cpp">
       <Filter>src\kernel</Filter>
     </ClCompile>
+    <ClCompile Include="src\psyq\tim.cpp">
+      <Filter>src\psyq</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="third_party\ofxImGui\src\BaseEngine.h">
@@ -299,6 +302,9 @@
     </ClInclude>
     <ClInclude Include="src\kernel\file.h">
       <Filter>src\kernel</Filter>
+    </ClInclude>
+    <ClInclude Include="src\psyq\tim.h">
+      <Filter>src\psyq</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

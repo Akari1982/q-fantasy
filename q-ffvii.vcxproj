@@ -120,6 +120,7 @@
     <ClCompile Include="src\psyq\psxspu\common\timer.cpp" />
     <ClCompile Include="src\psyq\psxspu\of_audio_stream.cpp" />
     <ClCompile Include="src\psyq\psxspu\spu.cpp" />
+    <ClCompile Include="src\psyq\tim.cpp" />
     <ClCompile Include="src\psyq\typedef.cpp" />
     <ClCompile Include="src\system\application.cpp" />
     <ClCompile Include="src\system\browser_akao.cpp" />
@@ -170,6 +171,7 @@
     <ClInclude Include="src\psyq\psxspu\common\timer.h" />
     <ClInclude Include="src\psyq\psxspu\common\types.h" />
     <ClInclude Include="src\psyq\psxspu\spu.h" />
+    <ClInclude Include="src\psyq\tim.h" />
     <ClInclude Include="src\psyq\typedef.h" />
     <ClInclude Include="src\system\application.h" />
     <ClInclude Include="src\system\browser_akao.h" />
