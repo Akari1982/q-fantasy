@@ -34,6 +34,10 @@ int GetTimData( std::vector<u8>::const_iterator input, TIM_IMAGE* timimg )
             clut_len = READ_LE_U32( timaddr ) / 4;
             timaddr += READ_LE_U32( timaddr ) & ~0x3;
         }
+        else
+        {
+            timimg->caddr = nullptr;
+        }
 
         timimg->prect.x = READ_LE_S16( timaddr + 0x4 + 0x0 );
         timimg->prect.y = READ_LE_S16( timaddr + 0x4 + 0x2 );
@@ -52,15 +56,33 @@ int GetTimData( std::vector<u8>::const_iterator input, TIM_IMAGE* timimg )
 
 TIM_IMAGE* PsyqGpuReadTim( TIM_IMAGE* timimg )
 {
-    int timOffset = GetTimData( l_current_tim, timimg );
+    int tim_offset = GetTimData( l_current_tim, timimg );
 
-    if( timOffset != -1 )
+    if( tim_offset != -1 )
     {
-        l_current_tim += timOffset * 4;
+        l_current_tim += tim_offset * 4;
         return timimg;
     }
 
     return nullptr;
+}
+
+
+
+void PsyqGpuLoadImage( SRECT* rect, const u8* data )
+{
+    int vram_offset = rect->y * 2048 + rect->x * 2;
+
+    for( int y = 0; y < rect->h; ++y )
+    {
+        auto vramIterator = g_vram.begin() + vram_offset;
+        for( int x = 0; x < (rect->w * 2); ++x )
+        {
+            *(vramIterator++) = *(data++);
+            ++vram_offset;
+        }
+        vram_offset += 2048 - rect->w * 2;
+    }
 }
 
 

@@ -1,5 +1,5 @@
 #include "field.h"
-#include "kernel/system.h"
+#include "kernel/game.h"
 #include "kernel/akao.h"
 #include "kernel/file.h"
 #include "psyq/libgte.h"

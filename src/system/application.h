@@ -28,3 +28,12 @@ private:
     ofxImGui::Gui gui;
     ImVec4 backgroundColor;
 };
+
+
+
+void GameRender();
+
+
+
+extern std::shared_ptr<ofAppBaseWindow> g_application;
+extern ofFbo g_screen;

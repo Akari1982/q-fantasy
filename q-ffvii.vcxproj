@@ -108,7 +108,7 @@
     <ClCompile Include="src\field\field.cpp" />
     <ClCompile Include="src\kernel\akao.cpp" />
     <ClCompile Include="src\kernel\file.cpp" />
-    <ClCompile Include="src\kernel\system.cpp" />
+    <ClCompile Include="src\kernel\game.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\psyq\libapi.cpp" />
     <ClCompile Include="src\psyq\libgpu.cpp" />
@@ -127,7 +127,6 @@
     <ClCompile Include="src\system\browser_ending.cpp" />
     <ClCompile Include="src\system\browser_field.cpp" />
     <ClCompile Include="src\system\browser_field_opcodes.cpp" />
-    <ClCompile Include="src\system\game.cpp" />
     <ClCompile Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_glfw.cpp" />
     <ClCompile Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_glfw_context_support.cpp" />
     <ClCompile Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_opengl2.cpp" />
@@ -155,7 +154,7 @@
     <ClInclude Include="src\kernel\akao_commands.h" />
     <ClInclude Include="src\kernel\akao_opcodes.h" />
     <ClInclude Include="src\kernel\file.h" />
-    <ClInclude Include="src\kernel\system.h" />
+    <ClInclude Include="src\kernel\game.h" />
     <ClInclude Include="src\psyq\libapi.h" />
     <ClInclude Include="src\psyq\libgpu.h" />
     <ClInclude Include="src\psyq\libgte.h" />
@@ -178,7 +177,6 @@
     <ClInclude Include="src\system\browser_ending.h" />
     <ClInclude Include="src\system\browser_field.h" />
     <ClInclude Include="src\system\browser_field_opcodes.h" />
-    <ClInclude Include="src\system\game.h" />
     <ClInclude Include="src\system\icons_font.h" />
     <ClInclude Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_glfw.h" />
     <ClInclude Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_glfw_arc_support.h" />

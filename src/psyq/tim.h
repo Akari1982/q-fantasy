@@ -19,4 +19,5 @@ struct TIM_IMAGE
 int PsyqGpuOpenTim( std::vector<u8>::const_iterator ptr );
 TIM_IMAGE* PsyqGpuReadTim( TIM_IMAGE* timimg );
 
+void PsyqGpuLoadImage( SRECT* rect, const u8* data );
 void PsyqGpuLoadImage( SRECT* rect, std::span<u8>::iterator data );

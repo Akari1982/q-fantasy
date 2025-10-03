@@ -1,5 +1,5 @@
 #include "libgpu.h"
-#include "system/game.h"
+#include "system/application.h"
 
 
 
@@ -132,9 +132,9 @@ DRAWENV copyDrawEnv;
 DISPENV* PsyqPutDispEnv( DISPENV* env )
 {
     
-    if( ( g_GameVram.getWidth() != (env->disp).w ) || ( g_GameVram.getHeight() != (env->disp).h ) )
+    if( ( g_screen.getWidth() != (env->disp).w ) || ( g_screen.getHeight() != (env->disp).h ) )
     {
-        g_GameVram.allocate( (env->disp).w, (env->disp).h, GL_RGBA );
+        g_screen.allocate( (env->disp).w, (env->disp).h, GL_RGBA );
     }
 
     copyDispEnv = *env;
@@ -214,12 +214,12 @@ void sTag::execute()
 void
 LINE_F2::execute()
 {
-    g_GameVram.begin();
+    g_screen.begin();
 
     ofSetColor( r0, g0, b0, ( code & 2 ) ? 0x3f : 0xff );
     ofSetLineWidth( 1 );
     ofDrawLine( glm::vec3( 0xa0 + x0y0.vx, 0x78 + x0y0.vy, 0 ), glm::vec3( 0xa0 + x1y1.vx, 0x78 + x1y1.vy, 0 ) );
-    g_GameVram.end();
+    g_screen.end();
 }
 
 

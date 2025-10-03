@@ -2,4 +2,4 @@
 
 
 
-void EndingMain();
+void EndingMainLogo();

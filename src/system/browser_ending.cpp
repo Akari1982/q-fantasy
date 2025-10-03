@@ -1,6 +1,7 @@
 #include "browser_ending.h"
 #include "system/icons_font.h"
 #include "kernel/file.h"
+#include "psyq/tim.h"
 
 #include "ofxImGui.h"
 #include <format>
@@ -25,11 +26,26 @@ void BrowserEnding()
         FileRead( "FIELD/ENDING.X", l_ending_file );
         FileRead( "MOVIE/OPENING.BIN", l_opening_file );
         {
-            u32 part = FileGetPackPointer(l_opening_file, 0);
+            u32 part = FileGetPackPointer( l_opening_file, 0 );
             std::vector<u8> part_file(l_opening_file.begin() + part, l_opening_file.end());
             std::vector<u8> extracted;
-            FileLZSExtract(part_file, extracted);
-            FileWrite("0.tim", extracted);
+            FileLZSExtract( part_file, extracted );
+            FileWrite( "0.tim", extracted );
+
+            PsyqGpuOpenTim( extracted.begin() );
+
+            TIM_IMAGE image;
+            PsyqGpuReadTim( &image );
+
+            if( image.paddr != 0 )
+            {
+                PsyqGpuLoadImage( &image.prect, (u8*)image.paddr );
+            }
+
+            if( image.caddr != 0 )
+            {
+                PsyqGpuLoadImage( &image.crect, (u8*)image.caddr );
+            }
         }
         {
             u32 part = FileGetPackPointer( l_opening_file, 1 );

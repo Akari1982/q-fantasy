@@ -97,13 +97,7 @@
     <ClCompile Include="src\kernel\akao.cpp">
       <Filter>src\kernel</Filter>
     </ClCompile>
-    <ClCompile Include="src\kernel\system.cpp">
-      <Filter>src\kernel</Filter>
-    </ClCompile>
     <ClCompile Include="src\system\application.cpp">
-      <Filter>src\system</Filter>
-    </ClCompile>
-    <ClCompile Include="src\system\game.cpp">
       <Filter>src\system</Filter>
     </ClCompile>
     <ClCompile Include="src\system\browser_akao.cpp">
@@ -126,6 +120,9 @@
     </ClCompile>
     <ClCompile Include="src\psyq\tim.cpp">
       <Filter>src\psyq</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\game.cpp">
+      <Filter>src\kernel</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -270,13 +267,7 @@
     <ClInclude Include="src\kernel\akao_opcodes.h">
       <Filter>src\kernel</Filter>
     </ClInclude>
-    <ClInclude Include="src\kernel\system.h">
-      <Filter>src\kernel</Filter>
-    </ClInclude>
     <ClInclude Include="src\system\application.h">
-      <Filter>src\system</Filter>
-    </ClInclude>
-    <ClInclude Include="src\system\game.h">
       <Filter>src\system</Filter>
     </ClInclude>
     <ClInclude Include="src\system\icons_font.h">
@@ -305,6 +296,9 @@
     </ClInclude>
     <ClInclude Include="src\psyq\tim.h">
       <Filter>src\psyq</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernel\game.h">
+      <Filter>src\kernel</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

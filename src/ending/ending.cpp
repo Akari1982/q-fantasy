@@ -1,14 +1,10 @@
 #include "ending.h"
-#include "system/game.h"
-#include "kernel/system.h"
-#include "kernel/file.h"
-#include "psyq/libgte.h"
 
 #include <vector>
 
 
 
-void EndingMain()
+void EndingMainLogo()
 {
     // Init area 0x280 x 0x1e0 for rendering.
     // Distance 0x200 and background color is black

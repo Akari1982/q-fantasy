@@ -4,10 +4,67 @@
 #include "browser_ending.h"
 #include "browser_field.h"
 #include "browser_field_opcodes.h"
+#include "psyq/libgpu.h"
 
 
 
-ofFbo g_GameVram;
+std::shared_ptr<ofAppBaseWindow> g_application;
+ofFbo g_screen;
+
+
+
+void GameRender()
+{
+    ofTexture texture;
+    texture.allocate( 1024, 512, GL_RGBA );
+
+    const u16* src = reinterpret_cast<const u16*>(g_vram.data());
+
+    ofPixels pixels;
+    pixels.allocate( 1024, 512, OF_PIXELS_RGBA );
+
+    for( int i = 0; i < 1024 * 512; ++i )
+    {
+        u16 color = src[i];
+
+        // Извлекаем компоненты цвета из RGB565
+        u8 r = ((color >> 11) & 0x1f) << 3;
+        u8 g = ((color >> 5) & 0x3f) << 2;
+        u8 b = (color & 0x1f) << 3;
+
+        // Устанавливаем RGBA значения
+        int index = i * 4;
+        pixels[index + 0] = r; // Red
+        pixels[index + 1] = g; // Green
+        pixels[index + 2] = b; // Blue
+        pixels[index + 3] = 255; // Alpha (полностью непрозрачный)
+    }
+
+    // Загружаем данные в текстуру
+    texture.loadData( pixels );
+
+    g_screen.begin();
+
+    // Рисуем текстуру на конкретных координатах
+    //ofEnableAlphaBlending();
+    //ofSetColor( 255 );
+    int x = 0; // Начальная координата X для размещения текстуры
+    int y = 0; // Начальная координата Y для размещения текстуры
+
+    texture.draw( x, y, 1024, 512 );
+
+    g_screen.end();
+
+
+
+    if( g_application->getWindowShouldClose() )
+    {
+        std::exit( EXIT_SUCCESS );
+    }
+
+    ofGetMainLoop()->loopOnce();
+    ofGetMainLoop()->pollEvents();
+}
 
 
 
@@ -111,10 +168,10 @@ void Application::setup()
 
         ImWchar jp_ranges[] =
         {
-            0x0020, 0x00FF,       // Basic Latin
-            0x3040, 0x309F,       // Hiragana
-            0x30A0, 0x30FF,       // Katakana
-            0x4E00, 0x9FAF,       // Kanji (CJK Unified Ideographs)
+            0x0020, 0x00ff, // Basic Latin
+            0x3040, 0x309f, // Hiragana
+            0x30a0, 0x30ff, // Katakana
+            0x4e00, 0x9faf, // Kanji (CJK Unified Ideographs)
             0,
         };
         io.Fonts->AddFontFromFileTTF( "system/NotoSansCJKjp-Regular.otf", 18.0f, &icons_config, jp_ranges );
@@ -123,10 +180,10 @@ void Application::setup()
 
     backgroundColor = ofColor( 255, 255, 255 );
 
-    g_GameVram.allocate( 800, 600, GL_RGBA );
-    g_GameVram.begin();
+    g_screen.allocate( 800, 600, GL_RGBA );
+    g_screen.begin();
     ofClear( 255, 0, 255, 255 );
-    g_GameVram.end();
+    g_screen.end();
 
     FieldBrowserInitOpcode();
 }
@@ -142,10 +199,9 @@ void Application::update()
 void Application::draw()
 {
     gui.begin(); //required to call this at beginning
-    //ImGui::ShowDemoWindow();
 
-    //g_GameVram.draw( 0, 0, ofGetWidth(), ofGetHeight() );
-    g_GameVram.draw( 0, 0, 640, 480 );
+    //g_screen.draw( 0, 0, ofGetWidth(), ofGetHeight() );
+    g_screen.draw( 0, 0, 640, 480 );
 
     BrowserField();
     BrowserEnding();
@@ -174,9 +230,9 @@ void Application::draw()
         ImGui::EndMainMenuBar();
     }
 
-    g_GameVram.begin();
+    g_screen.begin();
     ofClear( 100, 100, 100, 255 );
-    g_GameVram.end();
+    g_screen.end();
 
     gui.end(); //required to call this at end
 }
