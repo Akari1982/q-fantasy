@@ -160,6 +160,8 @@ void PsyqSpuInit()
 
 void PsyqSpuQuit()
 {
+    std::lock_guard<std::mutex> lock( l_spu_mutex );
+
     SPU::Shutdown();
 }
 

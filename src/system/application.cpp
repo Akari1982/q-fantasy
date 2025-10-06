@@ -16,7 +16,7 @@ ofFbo g_screen;
 void GameRender()
 {
     ofTexture texture;
-    texture.allocate( 1024, 512, GL_RGBA );
+    texture.allocate( 1024, 512, GL_RGBA8 );
 
     const u16* src = reinterpret_cast<const u16*>(g_vram.data());
 
@@ -42,12 +42,13 @@ void GameRender()
 
     // Загружаем данные в текстуру
     texture.loadData( pixels );
+    texture.setTextureMinMagFilter( GL_LINEAR, GL_LINEAR );
 
     g_screen.begin();
 
     // Рисуем текстуру на конкретных координатах
-    //ofEnableAlphaBlending();
-    //ofSetColor( 255 );
+    ofEnableAlphaBlending();
+    ofSetColor( 255 );
     int x = 0; // Начальная координата X для размещения текстуры
     int y = 0; // Начальная координата Y для размещения текстуры
 
@@ -178,11 +179,9 @@ void Application::setup()
         io.Fonts->Build();
     }
 
-    backgroundColor = ofColor( 255, 255, 255 );
-
-    g_screen.allocate( 800, 600, GL_RGBA );
+    g_screen.allocate( 1280, 600, GL_RGBA );
     g_screen.begin();
-    ofClear( 255, 0, 255, 255 );
+    ofClear( 0, 0, 255, 255 );
     g_screen.end();
 
     FieldBrowserInitOpcode();
@@ -201,7 +200,7 @@ void Application::draw()
     gui.begin(); //required to call this at beginning
 
     //g_screen.draw( 0, 0, ofGetWidth(), ofGetHeight() );
-    g_screen.draw( 0, 0, 640, 480 );
+    g_screen.draw( 0, 0, 1280, 600 );
 
     BrowserField();
     BrowserEnding();
@@ -231,7 +230,7 @@ void Application::draw()
     }
 
     g_screen.begin();
-    ofClear( 100, 100, 100, 255 );
+    //ofClear( 100, 100, 100, 255 );
     g_screen.end();
 
     gui.end(); //required to call this at end
