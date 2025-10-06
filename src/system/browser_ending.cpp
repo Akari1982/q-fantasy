@@ -56,6 +56,14 @@ void BrowserEnding()
         LoadTim( 0x11 );
         LoadTim( 0x12 );
 
+        u32 part = FileGetPackPointer( l_opening_file, 0x13 );
+        std::vector<u8> part_file(l_opening_file.begin() + part, l_opening_file.begin() + part + 0x20);
+        FileWrite( "13.pack", part_file );
+
+        part = FileGetPackPointer( l_opening_file, 0x14 );
+        std::vector<u8> part_file1(l_opening_file.begin() + part, l_opening_file.begin() + part + 0x20);
+        FileWrite( "14.pack", part_file1 );
+
         loaded = true;
     }
 
@@ -385,14 +393,14 @@ void ParseEndingEvents( u8 id )
                 ImGui::PopStyleColor();
 
                 ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0.5, 0.5, 0.5, 1 ) );
-                ImGui::Text( ", pack_id:" ); ImGui::SameLine(0, 0);
+                ImGui::Text( ", flags:" ); ImGui::SameLine(0, 0);
                 ImGui::PopStyleColor();
                 ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 0.5, 0, 1 ) );
                 ImGui::Text( "0x%04x", READ_LE_U16( &l_ending_file[event_ofs + 0x4] ) ); ImGui::SameLine( 0, 0 );
                 ImGui::PopStyleColor();
 
                 ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0.5, 0.5, 0.5, 1 ) );
-                ImGui::Text( ", c:" ); ImGui::SameLine(0, 0);
+                ImGui::Text( ", pack_id:" ); ImGui::SameLine(0, 0);
                 ImGui::PopStyleColor();
                 ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 0.5, 0, 1 ) );
                 ImGui::Text( "0x%04x", READ_LE_U16( &l_ending_file[event_ofs + 0x6] ) ); ImGui::SameLine( 0, 0 );
