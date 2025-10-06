@@ -133,7 +133,7 @@ DISPENV* PsyqPutDispEnv( DISPENV* env )
 {
     if( ( g_screen.getWidth() != (env->disp).w ) || ( g_screen.getHeight() != (env->disp).h ) )
     {
-        //g_screen.allocate( (env->disp).w, (env->disp).h, GL_RGBA );
+        g_screen.allocate( (env->disp).w, (env->disp).h, GL_RGBA );
     }
 
     copyDispEnv = *env;

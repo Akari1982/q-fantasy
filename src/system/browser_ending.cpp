@@ -64,7 +64,7 @@ void BrowserEnding()
     if( ImGui::Begin( "Ending Browser", &g_browser_ending, ImGuiWindowFlags_NoCollapse ) )
     {
         ImGui::BeginDisabled( l_event_id == 0 );
-        if( ImGui::Button( "Event 0" ) )
+        if( ImGui::Button( "Start credits" ) )
         {
             l_event_id = 0;
         }
@@ -73,7 +73,7 @@ void BrowserEnding()
         ImGui::SameLine();
 
         ImGui::BeginDisabled( l_event_id == 1 );
-        if( ImGui::Button( "Event 1" ) )
+        if( ImGui::Button( "End credits" ) )
         {
             l_event_id = 1;
         }

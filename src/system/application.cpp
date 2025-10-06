@@ -155,7 +155,7 @@ void Application::update()
 void Application::draw()
 {
     //g_screen.draw( 0, 0, ofGetWidth(), ofGetHeight() );
-    //g_screen.draw( 0, 0, 1280, 600 );
+    g_screen.draw( 0, 0, 800, 600 );
 
     gui.begin(); //required to call this at beginning
 
@@ -177,9 +177,9 @@ void Application::draw()
         ImGui::EndMainMenuBar();
     }
 
-    //g_screen.begin();
-    //ofClear( 100, 100, 100, 255 );
-    //g_screen.end();
+    g_screen.begin();
+    ofClear( 100, 100, 100, 255 );
+    g_screen.end();
 
     gui.end(); //required to call this at end
 }
