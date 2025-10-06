@@ -127,6 +127,7 @@
     <ClCompile Include="src\system\browser_ending.cpp" />
     <ClCompile Include="src\system\browser_field.cpp" />
     <ClCompile Include="src\system\browser_field_opcodes.cpp" />
+    <ClCompile Include="src\system\debug_vram.cpp" />
     <ClCompile Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_glfw.cpp" />
     <ClCompile Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_glfw_context_support.cpp" />
     <ClCompile Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_opengl2.cpp" />
@@ -177,6 +178,7 @@
     <ClInclude Include="src\system\browser_ending.h" />
     <ClInclude Include="src\system\browser_field.h" />
     <ClInclude Include="src\system\browser_field_opcodes.h" />
+    <ClInclude Include="src\system\debug_vram.h" />
     <ClInclude Include="src\system\icons_font.h" />
     <ClInclude Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_glfw.h" />
     <ClInclude Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_glfw_arc_support.h" />

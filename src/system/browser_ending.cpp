@@ -16,6 +16,25 @@ std::vector<u8> l_opening_file;
 
 
 
+void LoadTim( u8 id )
+{
+    u32 part = FileGetPackPointer( l_opening_file, id );
+    std::vector<u8> part_file(l_opening_file.begin() + part, l_opening_file.end());
+    std::vector<u8> extracted;
+    FileLZSExtract( part_file, extracted );
+    //FileWrite( ofToHex( id ) + ".tim", extracted );
+
+    PsyqGpuOpenTim( extracted.begin() );
+
+    TIM_IMAGE image;
+    PsyqGpuReadTim( &image );
+
+    if( image.paddr != 0 ) PsyqGpuLoadImage( &image.prect, (u8*)image.paddr );
+    if( image.caddr != 0 ) PsyqGpuLoadImage( &image.crect, (u8*)image.caddr );
+}
+
+
+
 void BrowserEnding()
 {
     if( g_browser_ending == false ) return;
@@ -25,91 +44,18 @@ void BrowserEnding()
     {
         FileRead( "FIELD/ENDING.X", l_ending_file );
         FileRead( "MOVIE/OPENING.BIN", l_opening_file );
-        {
-            u32 part = FileGetPackPointer( l_opening_file, 0 );
-            std::vector<u8> part_file(l_opening_file.begin() + part, l_opening_file.end());
-            std::vector<u8> extracted;
-            FileLZSExtract( part_file, extracted );
-            FileWrite( "0.tim", extracted );
 
-            PsyqGpuOpenTim( extracted.begin() );
+        LoadTim( 0x0 );
+        LoadTim( 0x1 );
+        LoadTim( 0x2 );
+        LoadTim( 0x3 );
+        LoadTim( 0x4 );
+        LoadTim( 0x5 );
+        LoadTim( 0x6 );
+        LoadTim( 0x7 );
+        LoadTim( 0x11 );
+        LoadTim( 0x12 );
 
-            TIM_IMAGE image;
-            PsyqGpuReadTim( &image );
-
-            if( image.paddr != 0 )
-            {
-                PsyqGpuLoadImage( &image.prect, (u8*)image.paddr );
-            }
-
-            if( image.caddr != 0 )
-            {
-                PsyqGpuLoadImage( &image.crect, (u8*)image.caddr );
-            }
-        }
-        {
-            u32 part = FileGetPackPointer( l_opening_file, 1 );
-            std::vector<u8> part_file(l_opening_file.begin() + part, l_opening_file.end());
-            std::vector<u8> extracted;
-            FileLZSExtract( part_file, extracted );
-            FileWrite( "1.tim", extracted );
-        }
-        {
-            u32 part = FileGetPackPointer( l_opening_file, 2 );
-            std::vector<u8> part_file(l_opening_file.begin() + part, l_opening_file.end());
-            std::vector<u8> extracted;
-            FileLZSExtract( part_file, extracted );
-            FileWrite( "2.tim", extracted );
-        }
-        {
-            u32 part = FileGetPackPointer( l_opening_file, 3 );
-            std::vector<u8> part_file(l_opening_file.begin() + part, l_opening_file.end());
-            std::vector<u8> extracted;
-            FileLZSExtract( part_file, extracted );
-            FileWrite( "3.tim", extracted );
-        }
-        {
-            u32 part = FileGetPackPointer( l_opening_file, 4 );
-            std::vector<u8> part_file(l_opening_file.begin() + part, l_opening_file.end());
-            std::vector<u8> extracted;
-            FileLZSExtract( part_file, extracted );
-            FileWrite( "4.tim", extracted );
-        }
-        {
-            u32 part = FileGetPackPointer( l_opening_file, 5 );
-            std::vector<u8> part_file(l_opening_file.begin() + part, l_opening_file.end());
-            std::vector<u8> extracted;
-            FileLZSExtract( part_file, extracted );
-            FileWrite( "5.tim", extracted );
-        }
-        {
-            u32 part = FileGetPackPointer( l_opening_file, 6 );
-            std::vector<u8> part_file(l_opening_file.begin() + part, l_opening_file.end());
-            std::vector<u8> extracted;
-            FileLZSExtract( part_file, extracted );
-            FileWrite( "6.tim", extracted );
-        }
-        {
-            u32 part = FileGetPackPointer( l_opening_file, 7 );
-            std::vector<u8> part_file(l_opening_file.begin() + part, l_opening_file.end());
-            std::vector<u8> extracted;
-            FileLZSExtract( part_file, extracted );
-            FileWrite( "7.tim", extracted );
-        }
-        {
-            u32 part = FileGetPackPointer( l_opening_file, 0x11 );
-            std::vector<u8> part_file(l_opening_file.begin() + part, l_opening_file.end());
-            std::vector<u8> extracted;
-            FileLZSExtract( part_file, extracted );
-            FileWrite( "0x11.tim", extracted );
-        }
-        {
-            u32 part = FileGetPackPointer( l_opening_file, 0x12 );
-            std::vector<u8> part_file(l_opening_file.begin() + part, l_opening_file.end());
-            std::vector<u8> extracted;
-            FileLZSExtract( part_file, extracted );
-            FileWrite( "0x12.tim", extracted );
-        }
         loaded = true;
     }
 

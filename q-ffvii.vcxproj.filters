@@ -124,6 +124,9 @@
     <ClCompile Include="src\kernel\game.cpp">
       <Filter>src\kernel</Filter>
     </ClCompile>
+    <ClCompile Include="src\system\debug_vram.cpp">
+      <Filter>src\system</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="third_party\ofxImGui\src\BaseEngine.h">
@@ -299,6 +302,9 @@
     </ClInclude>
     <ClInclude Include="src\kernel\game.h">
       <Filter>src\kernel</Filter>
+    </ClInclude>
+    <ClInclude Include="src\system\debug_vram.h">
+      <Filter>src\system</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
