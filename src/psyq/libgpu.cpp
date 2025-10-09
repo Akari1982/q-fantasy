@@ -150,9 +150,9 @@ DRAWENV* PsyqPutDrawEnv( DRAWENV* env )
 
 
 
-void sTag::execute()
+void OTag::execute()
 {
-    sColorAndCode colorAndCode = *(sColorAndCode*)(((u8*)this) + sizeof(sTag));
+    sColorAndCode colorAndCode = *(sColorAndCode*)(((u8*)this) + sizeof(OTag));
 
     u8 code = colorAndCode.code;
     if( size == 0 )
@@ -165,7 +165,7 @@ void sTag::execute()
             //case 0x20: ((POLY_F3*)this)->execute(); break;
             //case 0x24: ((POLY_FT3*)this)->execute(); break;
             //case 0x28: ((POLY_F4*)this)->execute(); break;
-            //case 0x2C: ((POLY_FT4*)this)->execute(); break;
+            case 0x2c: ((POLY_FT4*)this)->execute(); break;
             //case 0x30: ((POLY_G3*)this)->execute(); break;
             //case 0x34: ((POLY_GT3*)this)->execute(); break;
             //case 0x38: ((POLY_G4*)this)->execute(); break;
@@ -222,9 +222,101 @@ LINE_F2::execute()
 
 
 
-sTag* PsyqClearOTagR( sTag* ot, s32 n )
+void
+POLY_FT4::execute()
 {
-    sTag* current = ot;
+    g_screen.begin();
+    //ofSetColor( r0, g0, b0, ( code & 2 ) ? 0x3f : 0xff );
+
+    static ofTexture texture;
+    static ofShader psxShader;
+    if( !texture.isAllocated() )
+    {
+        psxShader.load( "../system/psx_render.vert", "../system/psx_render.frag" );
+        texture.allocate( 2048, 512, GL_LUMINANCE );
+        texture.setTextureMinMagFilter( GL_NEAREST, GL_NEAREST );
+    }
+
+    //const u16* src = reinterpret_cast<const u16*>(g_vram.data());
+
+    ofPixels pixels;
+    pixels.allocate( 2048, 512, OF_IMAGE_GRAYSCALE );
+    memcpy( pixels.getData(), g_vram.data(), g_vram.size());
+
+/*
+    pixels.allocate( 1024, 512, OF_PIXELS_RGBA );
+
+    for( int i = 0; i < 1024 * 512; ++i )
+    {
+        u16 color = src[i];
+
+        u8 r = ((color >> 11) & 0x1f) << 3;
+        u8 g = ((color >> 5) & 0x3f) << 2;
+        u8 b = (color & 0x1f) << 3;
+
+        int index = i * 4;
+        pixels[index + 0] = r; // Red
+        pixels[index + 1] = g; // Green
+        pixels[index + 2] = b; // Blue
+        pixels[index + 3] = 255; // Alpha
+    }
+
+    texture.loadData( pixels.getData(), 1024, 512, GL_RGBA );
+*/
+
+    texture.loadData( pixels );
+
+    ofVboMesh mesh;
+    std::vector<glm::vec3> vertices =
+    {
+        {x0, y0, 0},
+        {x1, y1, 0},
+        {x3, y3, 0},
+        {x2, y2, 0}
+    };
+
+    std::vector<glm::vec2> texCoords =
+    {
+        {0, 0},
+        {1, 0},
+        {1, 1},
+        {0, 1}
+    };
+
+    std::vector<ofFloatColor> colors =
+    {
+        {1.0f, 1.0f, 1.0f, 1.0f},
+        {0.0f, 0.0f, 0.0f, 1.0f},
+        {1.0f, 1.0f, 1.0f, 1.0f},
+        {1.0f, 1.0f, 1.0f, 0.0f}
+    };
+
+    mesh.setMode( OF_PRIMITIVE_TRIANGLE_FAN );
+    mesh.addVertices( vertices );
+    mesh.addTexCoords( texCoords );
+    mesh.addColors( colors );
+
+    psxShader.begin();
+    psxShader.setUniformTexture( "vramTexture", texture, 0 );
+    psxShader.setUniform4f( "clutInfo", glm::vec4( 0, 0x1e0, 256, 1 ) );
+    //psxShader.setUniform4f( "clutInfo", glm::vec4( clut & 0x3f, (clut >> 0x6) & 0x1ff, 256, 0 ) );
+    psxShader.setUniform2f( "vramSize", 2048, 512 );
+    psxShader.setUniform4f( "tpageInfo", 0x380, 0, 256, 256 );
+
+    //texture.bind();
+    mesh.draw();
+    //texture.unbind();
+
+    psxShader.end();
+
+    g_screen.end();
+}
+
+
+
+OTag* PsyqClearOTagR( OTag* ot, s32 n )
+{
+    OTag* current = ot;
     for( int i = 0; i < n - 1; ++i )
     {
         ++current;
@@ -239,7 +331,24 @@ sTag* PsyqClearOTagR( sTag* ot, s32 n )
 
 
 
-void PsyqDrawOTag( sTag* ot )
+OTag* PsyqClearOTag( OTag* ot, s32 n )
+{
+    OTag* current = ot;
+    for( int i = n - 1; i != 0; --i )
+    {
+        ++current;
+        (current - 1)->next = current;
+        (current - 1)->size = 0;
+    }
+
+    PsyqTermPrim( ot );
+
+    return ot;
+}
+
+
+
+void PsyqDrawOTag( OTag* ot )
 {
     while( ot )
     {
@@ -252,13 +361,21 @@ void PsyqDrawOTag( sTag* ot )
 
 void PsyqSetLineF2( LINE_F2* p )
 {
-    p->size = 3;
+    p->size = 0x3;
     p->code = 0x40;
 }
 
 
 
-void PsyqAddPrim( sTag* ot, sTag* p )
+void PsyqSetPolyFT4( POLY_FT4* p )
+{
+    p->size = 0x9;
+    p->code = 0x2c;
+}
+
+
+
+void PsyqAddPrim( OTag* ot, OTag* p )
 {
     p->next = ot->next;
     ot->next = p;
@@ -266,8 +383,22 @@ void PsyqAddPrim( sTag* ot, sTag* p )
 
 
 
-void PsyqTermPrim( sTag* p )
+void PsyqTermPrim( OTag* p )
 {
     p->next = nullptr;
     p->size = 0;
+}
+
+
+
+u16 PsyqGetClut( s32 x, s32 y )
+{
+    return (y << 0x6) | ((x >> 0x4) & 0x3f);
+}
+
+
+
+u16 PsyqGetTPage( int tp, int abr, int x, int y )
+{
+    return ((y & 0x200) << 0x2) | ((tp & 0x3) << 0x7) | ((abr & 0x3) << 0x5) | ((y & 0x100) >> 0x4) | ((x & 0x3ff) >> 0x6);
 }

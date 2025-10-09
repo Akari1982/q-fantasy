@@ -110,6 +110,8 @@
     <ClCompile Include="src\kernel\file.cpp" />
     <ClCompile Include="src\kernel\game.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\menu\menu.cpp" />
+    <ClCompile Include="src\menu\newgame.cpp" />
     <ClCompile Include="src\psyq\libapi.cpp" />
     <ClCompile Include="src\psyq\libgpu.cpp" />
     <ClCompile Include="src\psyq\libgte.cpp" />
@@ -156,6 +158,8 @@
     <ClInclude Include="src\kernel\akao_opcodes.h" />
     <ClInclude Include="src\kernel\file.h" />
     <ClInclude Include="src\kernel\game.h" />
+    <ClInclude Include="src\menu\menu.h" />
+    <ClInclude Include="src\menu\newgame.h" />
     <ClInclude Include="src\psyq\libapi.h" />
     <ClInclude Include="src\psyq\libgpu.h" />
     <ClInclude Include="src\psyq\libgte.h" />

@@ -33,7 +33,7 @@ void FieldLoadMimDatFiles();
 
 void FieldRainInit( sFieldRainPrim* prim );
 void FieldRainUpdate();
-void FieldRainAddToRender( sTag* ot, MATRIX* m );
+void FieldRainAddToRender( OTag* ot, MATRIX* m );
 
 
 

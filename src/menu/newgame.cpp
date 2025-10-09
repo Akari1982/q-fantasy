@@ -1,0 +1,153 @@
+#include "newgame.h"
+#include "menu.h"
+#include "kernel/file.h"
+#include "psyq/libgpu.h"
+
+#include <vector>
+#include <memory>
+#include <functional>
+
+#define NEWGAME_FADEIN  0
+#define NEWGAME_MENU    1
+#define NEWGAME_FADEOUT 2
+#define NEWGAME_FINISH -1
+
+u32 l_newgame_state;
+u32 l_newgame_rb;
+OTag* l_newgame_otag_p;
+OTag l_newgame_otag[0x2][0x4];
+
+DRAWENV l_newgame_drawenv[0x2];
+DISPENV l_newgame_dispenv[0x2];
+
+std::vector<std::unique_ptr<OTag>> l_newgame_draw[0x2];
+
+
+
+void MenuNewGameInit()
+{
+    std::vector<u8> file;
+    FileRead( "MENU/SAVEMENU.MNU", file );
+    std::vector<u8> part_file(file.begin() + 0x4edc, file.end());
+    MenuLoadImage( part_file.begin(), 0x380, 0, 0, 0x1e0 );
+}
+
+
+
+bool MenuNewGameUpdate( u32 frame )
+{
+//    system_menu_draw_cursor( h[0x801e3668] - 0x12, h[0x801e366a] + b[0x801e3e09] * 0xc + 0x6 );
+
+//    system_menu_draw_string( h[0x801e3668] + 0x8, h[0x801e366a] + 0x6, 0x801e317c, 0x7 ); // "NEW GAME"
+//    system_menu_draw_string( h[0x801e3668] + 0x8, h[0x801e366a] + 0x12, 0x801e2e64, ( (bu[0x801e8f38] != 0) || (bu[0x801e8f3b] != 0) ) ? 0x7 : 0 ); // "Continue?"
+
+//    RECT rect;
+//    rect.x = 0;
+//    rect.y = 0;
+//    rect.w = 0x100;
+//    rect.h = 0x100;
+//    system_menu_set_draw_mode( 0, 0x1, 0x7f, &rect );
+
+    auto poly = std::make_unique<POLY_FT4>();
+    PsyqSetPolyFT4( poly.get() );
+    poly->r0 = 0x60;
+    poly->g0 = 0x60;
+    poly->b0 = 0x60;
+    poly->x0 = 0x6f;
+    poly->y0 = 0x54;
+    poly->u0 = 0;
+    poly->v0 = 0;
+    poly->clut = PsyqGetClut( 0, 0x1e0 );
+    poly->x1 = 0x119;
+    poly->y1 = 0x54;
+    poly->u1 = 0x96;
+    poly->v1 = 0;
+    poly->tpage = PsyqGetTPage( 0x1, 0, 0x380, 0 );
+    poly->x2 = 0x6f;
+    poly->y2 = 0xea;
+    poly->u2 = 0;
+    poly->v2 = 0x96;
+    poly->x3 = 0x119;
+    poly->y3 = 0xea;
+    poly->u3 = 0x96;
+    poly->v3 = 0x96;
+    PsyqAddPrim( g_menu_otag, poly.get() );
+    g_menu_poly->emplace_back(std::move(poly));
+
+    auto poly2 = std::make_unique<LINE_F2>();
+    PsyqSetLineF2( poly2.get() );
+    poly2->r0 = 0x10;
+    poly2->g0 = 0x10;
+    poly2->b0 = 0x10;
+    poly2->x0y0.vx = 0x0;
+    poly2->x0y0.vy = 0x0;
+    poly2->x1y1.vx = 0x100;
+    poly2->x1y1.vy = 0x100;
+    PsyqAddPrim( g_menu_otag, poly2.get() );
+    g_menu_poly->emplace_back(std::move(poly2));
+
+    return false;
+}
+
+
+
+bool MenuNewGameMain()
+{
+    MenuCreateDrawenvDispenv( l_newgame_drawenv, l_newgame_dispenv );
+
+    u32 frame = 0;
+    bool result = false;
+
+    l_newgame_state = NEWGAME_FADEIN;
+
+    MenuNewGameInit();
+
+    l_newgame_rb = 0;
+
+    while( true )
+    {
+        l_newgame_draw[l_newgame_rb].clear();
+        MenuSetPoly( &l_newgame_draw[l_newgame_rb] );
+
+        l_newgame_otag_p = l_newgame_otag[l_newgame_rb];
+        PsyqClearOTag( l_newgame_otag_p , 0x1 );
+        MenuSetOTag( l_newgame_otag_p );
+
+//        system_menu_draw_add_window();
+
+        result = MenuNewGameUpdate( frame );
+
+        if( l_newgame_state == NEWGAME_FINISH ) break;
+
+        PsyqVSync( 0 );
+
+//        system_psyq_put_dispenv( &l_newgame_dispenv[l_newgame_rb] );
+//        system_psyq_put_drawenv( &l_newgame_drawenv[l_newgame_rb] );
+
+        frame += 0x1;
+
+        PsyqDrawOTag( l_newgame_otag_p );
+
+        l_newgame_rb ^= 0x1;
+    }
+
+//    func1d4c38();
+
+    PsyqVSync( 0 );
+
+//    system_psyq_put_dispenv( 0x801e3f00 );
+//    system_psyq_put_drawenv( 0x801e3e90 );
+
+//    for( int i = 0; i < 0x3; ++i )
+//    {
+//        if( bu[0x8009cbdc + i] != 0xff )
+//        {
+//            system_init_player_stat_from_equip( i );
+//            system_init_player_stat_from_materia( i );
+//        }
+//    }
+
+//    system_calculate_total_lure_gil_preemptive_value();
+
+    return result;
+}

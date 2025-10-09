@@ -2,6 +2,7 @@
 #include "file.h"
 #include "game.h"
 #include "ending/ending.h"
+#include "menu/newgame.h"
 #include "field/field.h"
 #include "psyq/libgte.h"
 #include "psyq/libspu.h"
@@ -20,6 +21,9 @@ void GameMain()
     GameInitDispEnvDrawEnv();
 
     EndingMainLogo();
+
+    MenuNewGameMain();
+
     FieldMain();
 }
 

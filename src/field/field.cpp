@@ -326,7 +326,7 @@ void FieldRainUpdate()
 
 
 
-void FieldRainAddToRender( sTag* ot, MATRIX* m )
+void FieldRainAddToRender( OTag* ot, MATRIX* m )
 {
     //S1 = A1;
     //packet = A3;
