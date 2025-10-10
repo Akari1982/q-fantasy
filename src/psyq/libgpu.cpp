@@ -285,16 +285,16 @@ POLY_FT4::execute()
 
     std::vector<ofFloatColor> colors =
     {
-        {1.0f, 1.0f, 1.0f, 1.0f},
-        {0.0f, 0.0f, 0.0f, 1.0f},
-        {1.0f, 1.0f, 1.0f, 1.0f},
-        {1.0f, 1.0f, 1.0f, 0.0f}
+        {1.0f, 0.0f, 0.0f, 1.0f},
+        {1.0f, 0.0f, 0.0f, 1.0f},
+        {1.0f, 0.0f, 0.0f, 1.0f},
+        {1.0f, 0.0f, 0.0f, 1.0f}
     };
 
     mesh.setMode( OF_PRIMITIVE_TRIANGLE_FAN );
     mesh.addVertices( vertices );
-    mesh.addTexCoords( texCoords );
     mesh.addColors( colors );
+    mesh.addTexCoords( texCoords );
 
     psxShader.begin();
     psxShader.setUniformTexture( "vramTexture", texture, 0 );

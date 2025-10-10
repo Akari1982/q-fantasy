@@ -91,5 +91,6 @@ void main() {
         finalColor = getColorFromCLUT(colorIndex, clutInfo.x, clutInfo.y);
     }
     
-    gl_FragColor = vColor;   // vec4(finalColor, 1.0) * vColor;
+    //gl_FragColor = vColor;   // vec4(finalColor, 1.0) * vColor;
+    gl_FragColor = vec4(vColor.r, vColor.g, vColor.b, 1);
 }
