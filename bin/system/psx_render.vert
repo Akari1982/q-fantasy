@@ -1,19 +1,21 @@
-#version 120
+#version 150
 
-// Атрибуты вершин POLY_FT4
-attribute vec3 position;    // x, y, z
-attribute vec2 texcoord;    // u, v
-attribute vec4 color;       // r, g, b, a
+// POLY_FT4
+in vec4 position;
+in vec4 color;
+in vec3 normals;
+in vec2 texcoord;
 
-// Varying
-varying vec2 vTexCoord;
-varying vec4 vColor;
+out vec4 vColor;
+out vec2 vTexCoord;
+
+uniform mat4 projectionMatrix;
 
 void main()
 {
-    gl_Position = gl_ModelViewProjectionMatrix * vec4(position, 1.0);
+    gl_Position = projectionMatrix * position;
 
     // send to fragment shader
-    vTexCoord = texcoord;
     vColor = color;
+    vTexCoord = texcoord;
 }

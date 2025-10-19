@@ -1,96 +1,111 @@
-#version 120
+#version 130 // Обновляем до версии 1.30, чтобы использовать texelFetch
 
-// Включаем расширения для целочисленных операций
-#extension GL_EXT_gpu_shader4 : enable
-#extension GL_EXT_shader_integer_mix : enable
+// Устаревшие расширения не нужны
+// #extension GL_EXT_gpu_shader4 : enable
+// #extension GL_EXT_shader_integer_mix : enable
 
-uniform sampler2D vramTexture;
-uniform vec2 vramSize;
-uniform vec4 tpageInfo;
-uniform vec4 clutInfo;
-uniform vec4 texWindow;
+uniform usampler2D texture0;
+uniform ivec4 tpage;
+uniform ivec2 clut;
+uniform ivec4 texWindow;
 
-varying vec2 vTexCoord;
-varying vec4 vColor;
+in vec4 vColor;
+in vec2 vTexCoord;
 
-// Заменяем uint на float для совместимости
-vec3 psxColorToRGB(float color15) {
-    float r = floor(mod(color15, 32.0));
-    float g = floor(mod(color15 / 32.0, 32.0));
-    float b = floor(mod(color15 / 1024.0, 32.0));
-    return vec3(r, g, b) / 31.0;
-}
+out vec4 fragColor;
 
-// Альтернативная реализация без битовых операций
-vec3 psxColorToRGB_alt(float color15) {
-    // Распаковываем 15-bit цвет используя математику
-    float r = mod(color15, 32.0);
-    float g = mod(floor(color15 / 32.0), 32.0);
-    float b = floor(color15 / 1024.0);
-    return vec3(r, g, b) / 31.0;
-}
 
-float getColor15(vec2 coord) {
-    vec4 texData = texture2D(vramTexture, coord);
-    // Комбинируем R и G компоненты в 16-bit значение
-    float low = texData.r * 255.0;
-    float high = texData.g * 255.0;
-    return low + high * 256.0;
-}
 
-vec2 applyTextureWindow(vec2 texCoord) {
-    vec2 result = texCoord;
-    
-    if(texWindow.z > 0.0 && texWindow.w > 0.0) {
-        result = texWindow.xy + mod(texCoord * texWindow.zw, texWindow.zw);
-    }
-    
-    return result;
-}
+vec4 psx_color_to_rgba( int color )
+{
+    int r = (color >> 0) & 31;
+    int g = (color >> 5) & 31;
+    int b = (color >> 10) & 31;
+    int stp_bit = (color >> 15) & 1;
 
-float getColorIndex(vec2 texCoord, float colorDepth) {
-    vec2 finalCoord = applyTextureWindow(texCoord);
-    vec2 vramCoord = (vec2(tpageInfo.x, tpageInfo.y) + finalCoord) / vramSize;
-    vec4 texData = texture2D(vramTexture, vramCoord);
-    
-    if(colorDepth == 0.0) { // 4-bit
-        float texelValue = texData.r * 255.0;
-        float pixelIndex = mod(floor(finalCoord.x), 2.0);
-        if(pixelIndex == 0.0) {
-            return mod(texelValue, 16.0);
-        } else {
-            return floor(texelValue / 16.0);
+    float alpha = 1.0;
+
+    if (tpage.w == 0)
+    {
+        if (stp_bit == 1)
+        {
+            if (r == 0 && g == 0 && b == 0)
+            {
+                alpha = 0.0;
+            }
+            else
+            {
+                alpha = 0.5;
+            }
         }
     }
-    else { // 8-bit
-        return texData.r * 255.0;
+
+    return vec4( vec3( r, g, b ) / 31.0, alpha );
+}
+
+
+
+int get_color_16bit(ivec2 texelCoord)
+{
+    uint low = texelFetch(texture0, texelCoord, 0).r;
+    uint high = texelFetch(texture0, texelCoord + ivec2(1, 0), 0).r;
+    return int(low | (high << 8));
+}
+
+
+
+int get_color_index( ivec2 texelCoord, int colorDepth )
+{
+    ivec2 vramCoord = ivec2(tpage.x * 2, tpage.y) + texelCoord;
+    uint texelValue = texelFetch(texture0, vramCoord, 0).r;
+
+    if (colorDepth == 0) // 4-bit
+    {
+        int pixelIndex = texelCoord.x & 1;
+        if (pixelIndex == 0)
+        {
+            return int(texelValue) & 15;
+        }
+        else
+        {
+            return int(texelValue) >> 4;
+        }
+    }
+    else // 8-bit
+    {
+        return int(texelValue);
     }
 }
 
-vec3 getColorFromCLUT(float colorIndex, float clutX, float clutY) {
-    vec2 clutCoord = vec2(
-        (clutX + colorIndex + 0.5) / vramSize.x,
-        (clutY + 0.5) / vramSize.y
-    );
-    
-    float color15 = getColor15(clutCoord);
-    return psxColorToRGB(color15);
+
+
+vec4 get_clut_color(int color_id, int clutX, int clutY)
+{
+    ivec2 clut_texel_coord = ivec2((clutX + color_id) * 2, clutY);
+    int color = get_color_16bit(clut_texel_coord);
+    return psx_color_to_rgba(color);
 }
 
-void main() {
-    float colorDepth = clutInfo.w;
-    vec3 finalColor;
-    
-    if(colorDepth == 2.0) { // 16-bit direct
-        vec2 finalCoord = applyTextureWindow(vTexCoord);
-        vec2 vramCoord = (vec2(tpageInfo.x, tpageInfo.y) + finalCoord) / vramSize;
-        float color15 = getColor15(vramCoord);
-        finalColor = psxColorToRGB(color15);
-    } else {
-        float colorIndex = getColorIndex(vTexCoord, colorDepth);
-        finalColor = getColorFromCLUT(colorIndex, clutInfo.x, clutInfo.y);
+
+
+void main()
+{
+    int color_depth = tpage.z;
+    vec4 finalColor;
+
+    ivec2 texel_coord = ivec2(vTexCoord);
+
+    if( color_depth == 2 ) // 16-bit direct
+    {
+        ivec2 vramCoord = ivec2(tpage.x * 2, tpage.y) + texel_coord;
+        int color = get_color_16bit(vramCoord);
+        finalColor = psx_color_to_rgba(color);
     }
-    
-    //gl_FragColor = vColor;   // vec4(finalColor, 1.0) * vColor;
-    gl_FragColor = vec4(vColor.r, vColor.g, vColor.b, 1);
+    else
+    {
+        int color_id = get_color_index( texel_coord, color_depth);
+        finalColor = get_clut_color(color_id, clut.x, clut.y);
+    }
+
+    fragColor = finalColor;// * vColor;
 }
