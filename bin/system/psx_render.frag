@@ -12,35 +12,77 @@ uniform ivec4 texWindow;
 in vec4 vColor;
 in vec2 vTexCoord;
 
+const float dither_matrix[16] = float[]
+(
+    -4.0,  0.0, -3.0,  1.0,
+     2.0, -2.0,  3.0, -1.0,
+    -3.0,  1.0, -4.0,  0.0,
+     3.0, -1.0,  2.0, -2.0
+);
+const int dithering_enabled = 1;
+
 out vec4 fragColor;
 
 
 
 vec4 psx_color_to_rgba( int color )
 {
-    int r = (color >> 0) & 31;
-    int g = (color >> 5) & 31;
-    int b = (color >> 10) & 31;
-    int stp_bit = (color >> 15) & 1;
+    ivec2 fragCoord = ivec2( gl_FragCoord.xy );
+    vec3 full_color = vec3( float((color >> 0) & 31), float((color >> 5) & 31), float((color >> 10) & 31) );
 
-    float alpha = 1.0;
+    // Получаем значение дизеринга из матрицы Байера
+    float dither_value = dither_matrix[(fragCoord.y % 4) * 4 + (fragCoord.x % 4)];
 
-    if (tpage.w == 0)
+    // Применяем дизеринг, если он включен
+    if( dithering_enabled == 1 )
     {
-        if (stp_bit == 1)
-        {
-            if (r == 0 && g == 0 && b == 0)
-            {
-                alpha = 0.0;
-            }
-            else
-            {
-                alpha = 0.5;
-            }
-        }
+        full_color += dither_value;
     }
 
-    return vec4( vec3( r, g, b ) / 31.0, alpha );
+    // Квантизируем цвет обратно в 5-битную палитру
+    vec3 final_color_5bit = floor(full_color);
+    
+    int stp_bit = (color >> 15) & 1;
+    float alpha = 1.0;
+    if( tpage.w == 0 && stp_bit == 1 )
+    {
+        if( final_color_5bit.r == 0.0 && final_color_5bit.g == 0.0 && final_color_5bit.b == 0.0 )
+        {
+            alpha = 0.0;
+        }
+        else
+        {
+            alpha = 0.5;
+        }
+    }
+    
+    return vec4(final_color_5bit / 31.0, alpha);
+
+
+
+//    int r = (color >> 0) & 31;
+//    int g = (color >> 5) & 31;
+//    int b = (color >> 10) & 31;
+//    int stp_bit = (color >> 15) & 1;
+
+//    float alpha = 1.0;
+
+//    if (tpage.w == 0)
+//    {
+//        if (stp_bit == 1)
+//        {
+//            if (r == 0 && g == 0 && b == 0)
+//            {
+//                alpha = 0.0;
+//            }
+//            else
+//            {
+//                alpha = 0.5;
+//            }
+//        }
+//    }
+
+//    return vec4( vec3( r, g, b ) / 31.0, alpha );
 }
 
 
@@ -97,9 +139,9 @@ void main()
 
     if( color_depth == 2 ) // 16-bit direct
     {
-        ivec2 vramCoord = ivec2(tpage.x * 2, tpage.y) + texel_coord;
-        int color = get_color_16bit(vramCoord);
-        finalColor = psx_color_to_rgba(color);
+        ivec2 vramCoord = ivec2( tpage.x * 2, tpage.y ) + texel_coord;
+        int color = get_color_16bit( vramCoord );
+        finalColor = psx_color_to_rgba( color );
     }
     else
     {
