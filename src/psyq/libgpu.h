@@ -68,6 +68,13 @@ struct POLY_FT4 : public OTag
     void execute();
 };
 
+struct DR_MODE : public OTag
+{
+    u32 code[2];
+
+    void execute();
+};
+
 struct DR_ENV : public OTag
 {
     u32 code[ 15 ];
@@ -109,6 +116,8 @@ DRAWENV* PsyqSetDefDrawEnv( DRAWENV* env, s32 x, s32 y, s32 w, s32 h );
 void PsyqSetDrawEnv( DR_ENV *dr_env, DRAWENV *env );
 DISPENV* PsyqPutDispEnv( DISPENV* env );
 DRAWENV* PsyqPutDrawEnv( DRAWENV* env );
+
+void PsyqSetDrawMode( DR_MODE* p, int dfe, int dtd, int tpage, SRECT* tw );
 
 OTag* PsyqClearOTagR( OTag* ot, s32 n );
 OTag* PsyqClearOTag( OTag* ot, s32 n );

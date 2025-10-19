@@ -150,6 +150,127 @@ DRAWENV* PsyqPutDrawEnv( DRAWENV* env )
 
 
 
+u32 get_mode( int dfe, int dtd, int tpage )
+{
+    if( dtd != 0 ) add_dtd = 0x200; // Dither 24bit to 15bit Dither Enabled
+    if( dfe != 0 ) add_dfe = 0x400; // Drawing to display area Allowed
+    return 0xe1000000 | add_dtd | add_dfe | (tpage & 0x9ff);
+}
+
+
+
+u32 get_tw( RECT* tw )
+{
+    if( tw == nullptr ) return 0;
+    u32 off_x = tw->x >> 0x3;
+    u32 off_y = tw->y >> 0x3;
+    u32 mask_x = ((0 - tw->w) & 0xff) >> 0x3;
+    u32 mask_y = ((0 - tw->h) & 0xff) >> 0x3;
+    return 0xe2000000 | (off_y << 0xf) | (off_x << 0xa) | (mask_y << 0x5) | mask_x;
+}
+
+
+
+void PsyqSetDrawMode( DR_MODE* p, int dfe, int dtd, int tpage, SRECT* tw )
+{
+    p->size = 0x2;
+    p->code[0] = get_mode( dfe, dtd, tpage );
+    p->code[1] = get_tw( tw );
+}
+
+
+
+OTag* PsyqClearOTagR( OTag* ot, s32 n )
+{
+    OTag* current = ot;
+    for( int i = 0; i < n - 1; ++i )
+    {
+        ++current;
+        current->next = current - 1;
+        current->size = 0;
+    }
+
+    PsyqTermPrim( ot );
+
+    return ot;
+}
+
+
+
+OTag* PsyqClearOTag( OTag* ot, s32 n )
+{
+    OTag* current = ot;
+    for( int i = n - 1; i != 0; --i )
+    {
+        ++current;
+        (current - 1)->next = current;
+        (current - 1)->size = 0;
+    }
+
+    PsyqTermPrim( ot );
+
+    return ot;
+}
+
+
+
+void PsyqDrawOTag( OTag* ot )
+{
+    while( ot )
+    {
+        ot->execute();
+        ot = ot->next;
+    }
+}
+
+
+
+void PsyqSetLineF2( LINE_F2* p )
+{
+    p->size = 0x3;
+    p->code = 0x40;
+}
+
+
+
+void PsyqSetPolyFT4( POLY_FT4* p )
+{
+    p->size = 0x9;
+    p->code = 0x2c;
+}
+
+
+
+void PsyqAddPrim( OTag* ot, OTag* p )
+{
+    p->next = ot->next;
+    ot->next = p;
+}
+
+
+
+void PsyqTermPrim( OTag* p )
+{
+    p->next = nullptr;
+    p->size = 0;
+}
+
+
+
+u16 PsyqGetClut( s32 x, s32 y )
+{
+    return (y << 0x6) | ((x >> 0x4) & 0x3f);
+}
+
+
+
+u16 PsyqGetTPage( int tp, int abr, int x, int y )
+{
+    return ((y & 0x200) << 0x2) | ((tp & 0x3) << 0x7) | ((abr & 0x3) << 0x5) | ((y & 0x100) >> 0x4) | ((x & 0x3ff) >> 0x6);
+}
+
+
+
 void OTag::execute()
 {
     sColorAndCode colorAndCode = *(sColorAndCode*)(((u8*)this) + sizeof(OTag));
@@ -318,95 +439,4 @@ POLY_FT4::execute()
     psxShader.end();
 
     g_screen.end();
-}
-
-
-
-OTag* PsyqClearOTagR( OTag* ot, s32 n )
-{
-    OTag* current = ot;
-    for( int i = 0; i < n - 1; ++i )
-    {
-        ++current;
-        current->next = current - 1;
-        current->size = 0;
-    }
-
-    PsyqTermPrim( ot );
-
-    return ot;
-}
-
-
-
-OTag* PsyqClearOTag( OTag* ot, s32 n )
-{
-    OTag* current = ot;
-    for( int i = n - 1; i != 0; --i )
-    {
-        ++current;
-        (current - 1)->next = current;
-        (current - 1)->size = 0;
-    }
-
-    PsyqTermPrim( ot );
-
-    return ot;
-}
-
-
-
-void PsyqDrawOTag( OTag* ot )
-{
-    while( ot )
-    {
-        ot->execute();
-        ot = ot->next;
-    }
-}
-
-
-
-void PsyqSetLineF2( LINE_F2* p )
-{
-    p->size = 0x3;
-    p->code = 0x40;
-}
-
-
-
-void PsyqSetPolyFT4( POLY_FT4* p )
-{
-    p->size = 0x9;
-    p->code = 0x2c;
-}
-
-
-
-void PsyqAddPrim( OTag* ot, OTag* p )
-{
-    p->next = ot->next;
-    ot->next = p;
-}
-
-
-
-void PsyqTermPrim( OTag* p )
-{
-    p->next = nullptr;
-    p->size = 0;
-}
-
-
-
-u16 PsyqGetClut( s32 x, s32 y )
-{
-    return (y << 0x6) | ((x >> 0x4) & 0x3f);
-}
-
-
-
-u16 PsyqGetTPage( int tp, int abr, int x, int y )
-{
-    return ((y & 0x200) << 0x2) | ((tp & 0x3) << 0x7) | ((abr & 0x3) << 0x5) | ((y & 0x100) >> 0x4) | ((x & 0x3ff) >> 0x6);
 }

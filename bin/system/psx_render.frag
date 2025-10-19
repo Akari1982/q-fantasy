@@ -28,25 +28,24 @@ out vec4 fragColor;
 vec4 psx_color_to_rgba( int color )
 {
     ivec2 fragCoord = ivec2( gl_FragCoord.xy );
-    vec3 full_color = vec3( float((color >> 0) & 31), float((color >> 5) & 31), float((color >> 10) & 31) );
 
-    // Получаем значение дизеринга из матрицы Байера
+    int r = (color >> 0) & 31;
+    int g = (color >> 5) & 31;
+    int b = (color >> 10) & 31;
+    int stp_bit = (color >> 15) & 1;
+
+    vec3 full_color = vec3( float(r), float(g), float(b) );
+
     float dither_value = dither_matrix[(fragCoord.y % 4) * 4 + (fragCoord.x % 4)];
 
-    // Применяем дизеринг, если он включен
-    if( dithering_enabled == 1 )
-    {
-        full_color += dither_value;
-    }
+    if( dithering_enabled == 1 ) full_color += dither_value;
 
-    // Квантизируем цвет обратно в 5-битную палитру
-    vec3 final_color_5bit = floor(full_color);
-    
-    int stp_bit = (color >> 15) & 1;
+    vec3 final_color = floor(full_color);
+
     float alpha = 1.0;
     if( tpage.w == 0 && stp_bit == 1 )
     {
-        if( final_color_5bit.r == 0.0 && final_color_5bit.g == 0.0 && final_color_5bit.b == 0.0 )
+        if( (r == 0) && (g == 0) && (b == 0) )
         {
             alpha = 0.0;
         }
@@ -55,34 +54,8 @@ vec4 psx_color_to_rgba( int color )
             alpha = 0.5;
         }
     }
-    
-    return vec4(final_color_5bit / 31.0, alpha);
 
-
-
-//    int r = (color >> 0) & 31;
-//    int g = (color >> 5) & 31;
-//    int b = (color >> 10) & 31;
-//    int stp_bit = (color >> 15) & 1;
-
-//    float alpha = 1.0;
-
-//    if (tpage.w == 0)
-//    {
-//        if (stp_bit == 1)
-//        {
-//            if (r == 0 && g == 0 && b == 0)
-//            {
-//                alpha = 0.0;
-//            }
-//            else
-//            {
-//                alpha = 0.5;
-//            }
-//        }
-//    }
-
-//    return vec4( vec3( r, g, b ) / 31.0, alpha );
+    return vec4( final_color / 31.0, alpha );
 }
 
 
