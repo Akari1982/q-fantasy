@@ -9,6 +9,7 @@
 
 void MenuLoadImage( std::vector<u8>::const_iterator ptr, s16 img_x, s16 img_y, s16 clut_x, s16 clut_y );
 void MenuCreateDrawenvDispenv( DRAWENV* drawenv, DISPENV* dispenv );
+void MenuSetDrawMode( int dfe, int dtd, int tpage, SRECT* tw );
 
 void MenuSetOTag( OTag* otag );
 void MenuSetPoly( std::vector<std::unique_ptr<OTag>>* poly );

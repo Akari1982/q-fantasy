@@ -41,12 +41,12 @@ bool MenuNewGameUpdate( u32 frame )
 //    system_menu_draw_string( h[0x801e3668] + 0x8, h[0x801e366a] + 0x6, 0x801e317c, 0x7 ); // "NEW GAME"
 //    system_menu_draw_string( h[0x801e3668] + 0x8, h[0x801e366a] + 0x12, 0x801e2e64, ( (bu[0x801e8f38] != 0) || (bu[0x801e8f3b] != 0) ) ? 0x7 : 0 ); // "Continue?"
 
-//    RECT rect;
-//    rect.x = 0;
-//    rect.y = 0;
-//    rect.w = 0x100;
-//    rect.h = 0x100;
-//    system_menu_set_draw_mode( 0, 0x1, 0x7f, &rect );
+    SRECT rect;
+    rect.x = 0;
+    rect.y = 0;
+    rect.w = 0x100;
+    rect.h = 0x100;
+    MenuSetDrawMode( 0, 0x1, 0x7f, &rect );
 
     auto poly = std::make_unique<POLY_FT4>();
     PsyqSetPolyFT4( poly.get() );

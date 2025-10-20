@@ -5,6 +5,9 @@
 
 std::array<u8, 2048 * 512> g_vram;
 
+// rendering settings
+u32 l_rendering_dtd = 0;
+
 
 
 s32 PsyqVSync( s32 mode )
@@ -152,6 +155,8 @@ DRAWENV* PsyqPutDrawEnv( DRAWENV* env )
 
 u32 get_mode( int dfe, int dtd, int tpage )
 {
+    u32 add_dtd = 0;
+    u32 add_dfe = 0;
     if( dtd != 0 ) add_dtd = 0x200; // Dither 24bit to 15bit Dither Enabled
     if( dfe != 0 ) add_dfe = 0x400; // Drawing to display area Allowed
     return 0xe1000000 | add_dtd | add_dfe | (tpage & 0x9ff);
@@ -159,7 +164,7 @@ u32 get_mode( int dfe, int dtd, int tpage )
 
 
 
-u32 get_tw( RECT* tw )
+u32 get_tw( SRECT* tw )
 {
     if( tw == nullptr ) return 0;
     u32 off_x = tw->x >> 0x3;
@@ -273,6 +278,28 @@ u16 PsyqGetTPage( int tp, int abr, int x, int y )
 
 void OTag::execute()
 {
+    if( size == 0 ) return;
+
+    u8 code = *((u8*)this + sizeof(OTag) + 0x3);
+
+    if( code == 0x2c )
+    {
+        ((POLY_FT4*)this)->execute();
+    }
+    else if( code == 0x40 )
+    {
+        ((LINE_F2*)this)->execute();
+    }
+    else if( (code == 0xe1) && (size == 0x2) )
+    {
+        ((DR_MODE*)this)->execute();
+    }
+    else
+    {
+        ofLog( OF_LOG_ERROR, "Unsupported OTag: 0x" + ofToHex( code ) );
+    }
+
+/*
     sColorAndCode colorAndCode = *(sColorAndCode*)(((u8*)this) + sizeof(OTag));
 
     u8 code = colorAndCode.code;
@@ -327,12 +354,12 @@ void OTag::execute()
             //((DR_MODE*)this)->execute();
         }
     }
+*/
 }
 
 
 
-void
-LINE_F2::execute()
+void LINE_F2::execute()
 {
     g_screen.begin();
     ofSetColor( r0, g0, b0, (code & 0x2) ? 0x3f : 0xff );
@@ -343,8 +370,7 @@ LINE_F2::execute()
 
 
 
-void
-POLY_FT4::execute()
+void POLY_FT4::execute()
 {
     g_screen.begin();
  
@@ -435,8 +461,16 @@ POLY_FT4::execute()
     psxShader.setUniformTexture( "texture0", texture, 0 );
     psxShader.setUniform2i( "clut", 0, 0x1e0 );
     psxShader.setUniform4i( "tpage", 0x380, 0, 1, 0 );
+    psxShader.setUniform1i( "dtd", l_rendering_dtd );
     mesh.draw();
     psxShader.end();
 
     g_screen.end();
+}
+
+
+
+void DR_MODE::execute()
+{
+    l_rendering_dtd = (code[0] & 0x200) ? 1 : 0;
 }

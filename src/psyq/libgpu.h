@@ -77,7 +77,7 @@ struct DR_MODE : public OTag
 
 struct DR_ENV : public OTag
 {
-    u32 code[ 15 ];
+    u32 code[15];
 
     void execute();
 };

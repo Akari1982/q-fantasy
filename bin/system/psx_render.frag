@@ -7,7 +7,7 @@
 uniform usampler2D texture0;
 uniform ivec4 tpage;
 uniform ivec2 clut;
-uniform ivec4 texWindow;
+uniform int dtd;
 
 in vec4 vColor;
 in vec2 vTexCoord;
@@ -19,7 +19,6 @@ const float dither_matrix[16] = float[]
     -3.0,  1.0, -4.0,  0.0,
      3.0, -1.0,  2.0, -2.0
 );
-const int dithering_enabled = 1;
 
 out vec4 fragColor;
 
@@ -38,7 +37,7 @@ vec4 psx_color_to_rgba( int color )
 
     float dither_value = dither_matrix[(fragCoord.y % 4) * 4 + (fragCoord.x % 4)];
 
-    if( dithering_enabled == 1 ) full_color += dither_value;
+    if( dtd == 1 ) full_color += dither_value;
 
     vec3 final_color = floor(full_color);
 

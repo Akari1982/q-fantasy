@@ -79,6 +79,16 @@ void MenuCreateDrawenvDispenv( DRAWENV* drawenv, DISPENV* dispenv )
 
 
 
+void MenuSetDrawMode( int dfe, int dtd, int tpage, SRECT* tw )
+{
+    auto poly = std::make_unique<DR_MODE>();
+    PsyqSetDrawMode( poly.get(), dfe, dtd, tpage, tw );
+    PsyqAddPrim( g_menu_otag, poly.get() );
+    g_menu_poly->emplace_back(std::move(poly));
+}
+
+
+
 void MenuSetOTag( OTag* otag )
 {
     g_menu_otag = otag;
