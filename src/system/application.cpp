@@ -5,11 +5,12 @@
 #include "browser_field.h"
 #include "browser_field_opcodes.h"
 #include "debug_vram.h"
+#include "psyq/libgpu.h"
 
 
 
 std::shared_ptr<ofAppBaseWindow> g_application;
-ofFbo g_screen;
+ofTexture g_screen;
 
 
 
@@ -136,11 +137,6 @@ void Application::setup()
         io.Fonts->Build();
     }
 
-    //g_screen.allocate( 1280, 600, GL_RGBA );
-    //g_screen.begin();
-    //ofClear( 0, 0, 255, 255 );
-    //g_screen.end();
-
     FieldBrowserInitOpcode();
 }
 
@@ -154,8 +150,7 @@ void Application::update()
 
 void Application::draw()
 {
-    //g_screen.draw( 0, 0, ofGetWidth(), ofGetHeight() );
-    g_screen.draw( 0, 0, 800, 600 );
+    g_screen.draw( 100, 100, 800, 600 );
 
     gui.begin(); //required to call this at beginning
 
@@ -176,10 +171,6 @@ void Application::draw()
 
         ImGui::EndMainMenuBar();
     }
-
-    g_screen.begin();
-    ofClear( 100, 100, 100, 255 );
-    g_screen.end();
 
     gui.end(); //required to call this at end
 }

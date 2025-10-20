@@ -35,9 +35,9 @@ void DebugVram()
             {
                 u16 color = src[i];
 
-                u8 r = ((color >> 11) & 0x1f) << 3;
-                u8 g = ((color >> 5) & 0x3f) << 2;
-                u8 b = (color & 0x1f) << 3;
+                u8 b = ((color >> 0xa) & 0x1f) << 3;
+                u8 g = ((color >> 0x5) & 0x1f) << 3;
+                u8 r = ((color >> 0x0) & 0x1f) << 3;
 
                 int index = i * 4;
                 pixels[index + 0] = r; // Red

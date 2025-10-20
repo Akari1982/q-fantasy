@@ -4,15 +4,80 @@
 
 
 std::array<u8, 2048 * 512> g_vram;
+ofFbo l_render;
 
 // rendering settings
 u32 l_rendering_dtd = 0;
+u32 l_rendering_draw_x = 0;
+u32 l_rendering_draw_y = 0;
+u32 l_rendering_disp_x = 0;
+u32 l_rendering_disp_y = 0;
+
+
+
+void update_vram()
+{
+    // update vram from render buffer
+    ofTexture& texture = l_render.getTexture();
+    ofPixels pixels;
+    texture.readToPixels(pixels);
+
+    int w = pixels.getWidth();
+    int h = pixels.getHeight();
+
+    for( int y = 0; y < h; ++y )
+    {
+        for( int x = 0; x < w; ++x )
+        {
+            ofColor color = pixels.getColor( x, y );
+
+            u16 r = (color.r >> 3) & 0x1f;
+            u16 g = (color.g >> 3) & 0x1f;
+            u16 b = (color.b >> 3) & 0x1f;
+
+            u16 rgb = (b << 0xa) | (g << 0x5) | r;
+
+            g_vram[((l_rendering_draw_y + y) * 2048) + (l_rendering_draw_x + x) * 2 + 0] = rgb & 0xff;
+            g_vram[((l_rendering_draw_y + y) * 2048) + (l_rendering_draw_x + x) * 2 + 1] = rgb >> 0x8;
+        }
+    }
+
+    // update draw tex from vram
+    if( !g_screen.isAllocated() )
+    {
+        g_screen.allocate( 1024, 512, GL_RGBA8, false );
+    }
+
+    w = g_screen.getWidth();
+    h = g_screen.getHeight();
+    pixels.allocate( w, h, OF_PIXELS_RGBA );
+
+    for( int y = 0; y < h; ++y )
+    {
+        for( int x = 0; x < w; ++x )
+        {
+            int vram_x = l_rendering_disp_x + x;
+            int vram_y = l_rendering_disp_y + y;
+            u16 color = (g_vram[vram_y * 2048 + vram_x * 2 + 1] << 0x8) | g_vram[vram_y * 2048 + vram_x * 2 + 0];
+
+            u8 b = ((color >> 0xa) & 0x1f) << 3;
+            u8 g = ((color >> 0x5) & 0x1f) << 3;
+            u8 r = ((color >> 0x0) & 0x1f) << 3;
+
+            pixels.setColor( x, y, ofColor(r, g, b, 255) );
+        }
+    }
+
+    g_screen.loadData( pixels );
+}
 
 
 
 s32 PsyqVSync( s32 mode )
 {
     GameRender();
+
+    update_vram();
 
     return 1;
 }
@@ -21,14 +86,14 @@ s32 PsyqVSync( s32 mode )
 
 DISPENV* PsyqSetDefDispEnv( DISPENV* env, s32 x, s32 y, s32 w, s32 h )
 {
-    (env->disp).x = x;
-    (env->disp).y = y;
-    (env->disp).w = w;
-    (env->disp).h = h;
-    (env->screen).x = 0;
-    (env->screen).y = 0;
-    (env->screen).w = 0;
-    (env->screen).h = 0;
+    env->disp.x = x;
+    env->disp.y = y;
+    env->disp.w = w;
+    env->disp.h = h;
+    env->screen.x = 0;
+    env->screen.y = 0;
+    env->screen.w = 0;
+    env->screen.h = 0;
     env->isrgb24 = 0;
     env->isinter = 0;
     env->pad1 = 0;
@@ -40,16 +105,16 @@ DISPENV* PsyqSetDefDispEnv( DISPENV* env, s32 x, s32 y, s32 w, s32 h )
 
 DRAWENV* PsyqSetDefDrawEnv( DRAWENV* env, s32 x, s32 y, s32 w, s32 h )
 {
-    (env->clip).x = x;
-    (env->clip).y = y;
-    (env->clip).w = w;
-    (env->clip).h = h;
+    env->clip.x = x;
+    env->clip.y = y;
+    env->clip.w = w;
+    env->clip.h = h;
     env->ofs[ 0 ] = x;
     env->ofs[ 1 ] = y;
-    (env->tw).x = 0;
-    (env->tw).y = 0;
-    (env->tw).w = 0;
-    (env->tw).h = 0;
+    env->tw.x = 0;
+    env->tw.y = 0;
+    env->tw.w = 0;
+    env->tw.h = 0;
     env->tpage = 0xa;
     env->dtd = 1;
     env->dfe = 0;
@@ -129,17 +194,16 @@ void PsyqSetDrawEnv( DR_ENV* dr_env, DRAWENV* env )
 
 
 
-DISPENV copyDispEnv;
-DRAWENV copyDrawEnv;
-
 DISPENV* PsyqPutDispEnv( DISPENV* env )
 {
-    if( ( g_screen.getWidth() != (env->disp).w ) || ( g_screen.getHeight() != (env->disp).h ) )
+    if( (g_screen.getWidth() != env->disp.w) || (g_screen.getHeight() != env->disp.h) )
     {
-        g_screen.allocate( (env->disp).w, (env->disp).h, GL_RGBA );
+        g_screen.allocate( env->disp.w, env->disp.h, GL_RGBA, false );
     }
 
-    copyDispEnv = *env;
+    l_rendering_disp_x = env->disp.x;
+    l_rendering_disp_y = env->disp.y;
+
     return env;
 }
 
@@ -147,7 +211,18 @@ DISPENV* PsyqPutDispEnv( DISPENV* env )
 
 DRAWENV* PsyqPutDrawEnv( DRAWENV* env )
 {
-    copyDrawEnv = *env;
+    if( (l_render.getWidth() != env->clip.w) || (l_render.getHeight() != env->clip.h) )
+    {
+        l_render.allocate( env->clip.w, env->clip.h, GL_RGBA );
+    }
+
+    l_rendering_draw_x = env->clip.x;
+    l_rendering_draw_y = env->clip.y;
+
+    l_render.begin();
+    ofClear( env->r0, env->g0, env->b0, 255 );
+    l_render.end();
+
     return env;
 }
 
@@ -361,18 +436,18 @@ void OTag::execute()
 
 void LINE_F2::execute()
 {
-    g_screen.begin();
+    l_render.begin();
     ofSetColor( r0, g0, b0, (code & 0x2) ? 0x3f : 0xff );
     ofSetLineWidth( 1 );
     ofDrawLine( glm::vec3( 0xa0 + x0y0.vx, 0x78 + x0y0.vy, 0 ), glm::vec3( 0xa0 + x1y1.vx, 0x78 + x1y1.vy, 0 ) );
-    g_screen.end();
+    l_render.end();
 }
 
 
 
 void POLY_FT4::execute()
 {
-    g_screen.begin();
+    l_render.begin();
  
     static ofTexture texture;
     static ofShader psxShader;
@@ -454,7 +529,7 @@ void POLY_FT4::execute()
     mesh.addNormals( normals );
     mesh.addTexCoords( texCoords );
 
-    glm::mat4 projection = glm::ortho(0.0f, 1024.0f, 0.0f, 512.0f, -1.0f, 1.0f);
+    glm::mat4 projection = glm::ortho( 0.0f, l_render.getWidth(), 0.0f, l_render.getHeight(), -1.0f, 1.0f );
 
     psxShader.begin();
     psxShader.setUniformMatrix4f("projectionMatrix", projection);
@@ -465,7 +540,7 @@ void POLY_FT4::execute()
     mesh.draw();
     psxShader.end();
 
-    g_screen.end();
+    l_render.end();
 }
 
 

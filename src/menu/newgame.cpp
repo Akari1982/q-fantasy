@@ -74,18 +74,6 @@ bool MenuNewGameUpdate( u32 frame )
     PsyqAddPrim( g_menu_otag, poly.get() );
     g_menu_poly->emplace_back(std::move(poly));
 
-    auto poly2 = std::make_unique<LINE_F2>();
-    PsyqSetLineF2( poly2.get() );
-    poly2->r0 = 0x10;
-    poly2->g0 = 0x10;
-    poly2->b0 = 0x10;
-    poly2->x0y0.vx = 0x0;
-    poly2->x0y0.vy = 0x0;
-    poly2->x1y1.vx = 0x100;
-    poly2->x1y1.vy = 0x100;
-    PsyqAddPrim( g_menu_otag, poly2.get() );
-    g_menu_poly->emplace_back(std::move(poly2));
-
     return false;
 }
 
@@ -121,8 +109,8 @@ bool MenuNewGameMain()
 
         PsyqVSync( 0 );
 
-//        system_psyq_put_dispenv( &l_newgame_dispenv[l_newgame_rb] );
-//        system_psyq_put_drawenv( &l_newgame_drawenv[l_newgame_rb] );
+        PsyqPutDispEnv( &l_newgame_dispenv[l_newgame_rb] );
+        PsyqPutDrawEnv( &l_newgame_drawenv[l_newgame_rb] );
 
         frame += 0x1;
 
@@ -135,8 +123,8 @@ bool MenuNewGameMain()
 
     PsyqVSync( 0 );
 
-//    system_psyq_put_dispenv( 0x801e3f00 );
-//    system_psyq_put_drawenv( 0x801e3e90 );
+//    PsyqPutDispEnv( 0x801e3f00 );
+//    PsyqPutDrawEnv( 0x801e3e90 );
 
 //    for( int i = 0; i < 0x3; ++i )
 //    {

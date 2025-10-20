@@ -35,45 +35,42 @@ void MenuLoadImage( std::vector<u8>::const_iterator ptr, s16 img_x, s16 img_y, s
 
 void MenuCreateDrawenvDispenv( DRAWENV* drawenv, DISPENV* dispenv )
 {
-//    system_psyq_vsync( 0 );
-//
-//    system_psyq_set_def_drawenv( drawenv, 0, 0, 0x180, 0x1d8 );
-//    drawenv->dfe = 0x1;
-//    drawenv->isbg = 0x1;
-//    system_psyq_put_drawenv( drawenv );
-//
-//    system_psyq_vsync( 0 );
-//
-//    system_psyq_set_def_drawenv( drawenv + 0x0, 0,  0x8, 0x180, 0xe0 );
-//    system_psyq_set_def_drawenv( drawenv + 0x1, 0, 0xf0, 0x180, 0xe0 );
-//
-//    system_psyq_set_def_dispenv( dispenv + 0x0, 0, 0xe8, 0x16c, 0xf0 );
-//    system_psyq_set_def_dispenv( dispenv + 0x1, 0,    0, 0x16c, 0xf0 );
-//
-//    (drawenv + 0x0)->dtd = 0x1;
-//    (drawenv + 0x0)->dfe = 0x1;
-//    (drawenv + 0x0)->isbg = 0x1;
-//    (drawenv + 0x0)->r0 = 0;
-//    (drawenv + 0x0)->g0 = 0;
-//    (drawenv + 0x0)->b0 = 0;
-//
-//    (drawenv + 0x1)->dtd = 0x1;
-//    (drawenv + 0x1)->dfe = 0x1;
-//    (drawenv + 0x1)->isbg = 0x1;
-//    (drawenv + 0x1)->r0 = 0;
-//    (drawenv + 0x1)->g0 = 0;
-//    (drawenv + 0x1)->b0 = 0;
-//
-//    V0 = system_gpu_get_type();
-//    V0 = ( ( V0 == 1 ) || ( V0 == 2 ) ) ? 0xaf : 0x3f;
-//    (drawenv + 0x0)->tpage = V0;
-//    (drawenv + 0x1)->tpage = V0;
-//
-//    system_psyq_vsync( 0 );
-//
-//    system_psyq_put_dispenv( dispenv );
-//    system_psyq_put_drawenv( drawenv );
-//
+    PsyqVSync( 0 );
+
+    PsyqSetDefDrawEnv( drawenv, 0, 0, 0x180, 0x1d8 );
+    drawenv->dfe = 0x1;
+    drawenv->isbg = 0x1;
+    PsyqPutDrawEnv( drawenv );
+
+    PsyqVSync( 0 );
+
+    PsyqSetDefDrawEnv( drawenv + 0x0, 0,  0x8, 0x180, 0xe0 );
+    PsyqSetDefDrawEnv( drawenv + 0x1, 0, 0xf0, 0x180, 0xe0 );
+
+    PsyqSetDefDispEnv( dispenv + 0x0, 0, 0xe8, 0x16c, 0xf0 );
+    PsyqSetDefDispEnv( dispenv + 0x1, 0,    0, 0x16c, 0xf0 );
+
+    (drawenv + 0x0)->dtd = 0x1;
+    (drawenv + 0x0)->dfe = 0x1;
+    (drawenv + 0x0)->isbg = 0x1;
+    (drawenv + 0x0)->r0 = 0;
+    (drawenv + 0x0)->g0 = 0;
+    (drawenv + 0x0)->b0 = 0;
+    (drawenv + 0x0)->tpage = 0x3f;
+
+    (drawenv + 0x1)->dtd = 0x1;
+    (drawenv + 0x1)->dfe = 0x1;
+    (drawenv + 0x1)->isbg = 0x1;
+    (drawenv + 0x1)->r0 = 0;
+    (drawenv + 0x1)->g0 = 0;
+    (drawenv + 0x1)->b0 = 0;
+    (drawenv + 0x1)->tpage = 0x3f;
+
+    PsyqVSync( 0 );
+
+    PsyqPutDispEnv( dispenv );
+    PsyqPutDrawEnv( drawenv );
+
 //    system_psyq_set_disp_mask( 0x1 );
 }
 
