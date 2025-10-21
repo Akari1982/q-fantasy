@@ -121,5 +121,5 @@ void main()
         finalColor = get_clut_color(color_id, clut.x, clut.y);
     }
 
-    fragColor = finalColor;// * vColor;
+    fragColor = finalColor * vColor;
 }

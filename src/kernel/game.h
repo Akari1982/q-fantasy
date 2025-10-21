@@ -10,6 +10,3 @@ extern DRAWENV g_global_drawenv;
 
 
 void GameMain();
-void GameInitBase();
-void GameInitAkaoEngine();
-void GameInitDispEnvDrawEnv();

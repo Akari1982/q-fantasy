@@ -173,8 +173,10 @@ void FieldMainLoop()
             walkmesh_prim[ i * 3 + 0 ].r0 = 0x7f;
             walkmesh_prim[ i * 3 + 0 ].g0 = 0x0;
             walkmesh_prim[ i * 3 + 0 ].b0 = 0x0;
-            walkmesh_prim[ i * 3 + 0 ].x0y0 = sxy1;
-            walkmesh_prim[ i * 3 + 0 ].x1y1 = sxy2;
+            walkmesh_prim[ i * 3 + 0 ].x0 = sxy1.vx;
+            walkmesh_prim[ i * 3 + 0 ].y0 = sxy1.vy;
+            walkmesh_prim[ i * 3 + 0 ].x1 = sxy2.vx;
+            walkmesh_prim[ i * 3 + 0 ].y1 = sxy2.vy;
             PsyqAddPrim( &field_rain_prim[ 0 ].poly[ 0 ], &walkmesh_prim[ i * 3 + 0 ] );
 
             PsyqSetLineF2( &walkmesh_prim[ i * 3 + 1 ] );
@@ -182,8 +184,10 @@ void FieldMainLoop()
             walkmesh_prim[ i * 3 + 1 ].r0 = 0x7f;
             walkmesh_prim[ i * 3 + 1 ].g0 = 0x0;
             walkmesh_prim[ i * 3 + 1 ].b0 = 0x0;
-            walkmesh_prim[ i * 3 + 1 ].x0y0 = sxy1;
-            walkmesh_prim[ i * 3 + 1 ].x1y1 = sxy3;
+            walkmesh_prim[ i * 3 + 1 ].x0 = sxy1.vx;
+            walkmesh_prim[ i * 3 + 1 ].y0 = sxy1.vy;
+            walkmesh_prim[ i * 3 + 1 ].x1 = sxy3.vx;
+            walkmesh_prim[ i * 3 + 1 ].y1 = sxy3.vy;
             PsyqAddPrim( &field_rain_prim[ 0 ].poly[ 0 ], &walkmesh_prim[ i * 3 + 1 ] );
 
             PsyqSetLineF2( &walkmesh_prim[ i * 3 + 2 ] );
@@ -191,8 +195,10 @@ void FieldMainLoop()
             walkmesh_prim[ i * 3 + 2 ].r0 = 0x7f;
             walkmesh_prim[ i * 3 + 2 ].g0 = 0x0;
             walkmesh_prim[ i * 3 + 2 ].b0 = 0x0;
-            walkmesh_prim[ i * 3 + 2 ].x0y0 = sxy2;
-            walkmesh_prim[ i * 3 + 2 ].x1y1 = sxy3;
+            walkmesh_prim[ i * 3 + 2 ].x0 = sxy2.vx;
+            walkmesh_prim[ i * 3 + 2 ].y0 = sxy2.vy;
+            walkmesh_prim[ i * 3 + 2 ].x1 = sxy3.vx;
+            walkmesh_prim[ i * 3 + 2 ].y1 = sxy3.vy;
             PsyqAddPrim( &field_rain_prim[ 0 ].poly[ 0 ], &walkmesh_prim[ i * 3 + 2 ] );
         }
         PsyqPopMatrix();
@@ -350,12 +356,14 @@ void FieldRainAddToRender( OTag* ot, MATRIX* m )
             LINE_F2* p = &field_rain_prim[ 0 ].poly[ i ];
             //p->x0y0.vx = 500 + field_rain[ i ].m0_p1.vx / 3;
             //p->x0y0.vy = 1900 - field_rain[ i ].m0_p1.vz;
-            p->x0y0 = sxy;
+            p->x0 = sxy.vx;
+            p->y0 = sxy.vy;
 
             //A1 = S1 + i * 10 + c;
             PsyqRotTransPers( &field_rain[ i ].m8_p2, &sxy, &pt, &flag );
 
-            p->x1y1 = sxy;
+            p->x1 = sxy.vx;
+            p->y1 = sxy.vy;
 
             if( i != 0 ) PsyqAddPrim( ot, p );
         }

@@ -8,6 +8,7 @@ ofFbo l_render;
 
 // rendering settings
 u32 l_rendering_dtd = 0;
+u16 l_rendering_tpage = 0;
 u32 l_rendering_draw_x = 0;
 u32 l_rendering_draw_y = 0;
 u32 l_rendering_disp_x = 0;
@@ -321,6 +322,15 @@ void PsyqSetPolyFT4( POLY_FT4* p )
 
 
 
+
+void PsyqSetSprt( SPRT* p )
+{
+    p->size = 0x4;
+    p->code = 0x64;
+}
+
+
+
 void PsyqAddPrim( OTag* ot, OTag* p )
 {
     p->next = ot->next;
@@ -357,13 +367,17 @@ void OTag::execute()
 
     u8 code = *((u8*)this + sizeof(OTag) + 0x3);
 
-    if( code == 0x2c )
+    if( (code & 0xfc) == 0x2c )
     {
         ((POLY_FT4*)this)->execute();
     }
-    else if( code == 0x40 )
+    else if( (code & 0xfc) == 0x40 )
     {
         ((LINE_F2*)this)->execute();
+    }
+    else if( (code & 0xfc) == 0x64 )
+    {
+        ((SPRT*)this)->execute();
     }
     else if( (code == 0xe1) && (size == 0x2) )
     {
@@ -373,63 +387,6 @@ void OTag::execute()
     {
         ofLog( OF_LOG_ERROR, "Unsupported OTag: 0x" + ofToHex( code ) );
     }
-
-/*
-    sColorAndCode colorAndCode = *(sColorAndCode*)(((u8*)this) + sizeof(OTag));
-
-    u8 code = colorAndCode.code;
-    if( size == 0 )
-    {
-    }
-    else if( ( code & 0xe0 ) == 0x20 ) //poly
-    {
-        switch( code & 0x3c )
-        {
-            //case 0x20: ((POLY_F3*)this)->execute(); break;
-            //case 0x24: ((POLY_FT3*)this)->execute(); break;
-            //case 0x28: ((POLY_F4*)this)->execute(); break;
-            case 0x2c: ((POLY_FT4*)this)->execute(); break;
-            //case 0x30: ((POLY_G3*)this)->execute(); break;
-            //case 0x34: ((POLY_GT3*)this)->execute(); break;
-            //case 0x38: ((POLY_G4*)this)->execute(); break;
-            default: break;
-        }
-    }
-    else if( ( code & 0xe0 ) == 0x40 ) // line
-    {
-        switch( code & 0x4c )
-        {
-            case 0x40: ((LINE_F2*)this)->execute(); break;
-            //case 0x42: break;
-            //case 0x48: ((LINE_F3*)this)->execute(); break;
-            default: break;
-        }
-    }
-    else if( ( code & 0xe0 ) == 0x60 ) // rect
-    {
-        switch( code & 0x7c )
-        {
-            //case 0x60: ((TILE*)this)->execute(); break;
-            //case 0x64: ((SPRT*)this)->execute(); break;
-            //case 0x74:
-            //case 0x7c: ((SPRT_8*)this)->execute(); break;
-            default: break;
-        }
-    }
-    else
-    {
-        assert( code == 0xe1 );
-        if( size == 1 )
-        {
-            //((DR_TPAGE*)this)->execute();
-        }
-        else
-        {
-            assert( size == 2 );
-            //((DR_MODE*)this)->execute();
-        }
-    }
-*/
 }
 
 
@@ -439,7 +396,7 @@ void LINE_F2::execute()
     l_render.begin();
     ofSetColor( r0, g0, b0, (code & 0x2) ? 0x3f : 0xff );
     ofSetLineWidth( 1 );
-    ofDrawLine( glm::vec3( 0xa0 + x0y0.vx, 0x78 + x0y0.vy, 0 ), glm::vec3( 0xa0 + x1y1.vx, 0x78 + x1y1.vy, 0 ) );
+    ofDrawLine( glm::vec3( 0xa0 + x0, 0x78 + y0, 0 ), glm::vec3( 0xa0 + x1, 0x78 + y1, 0 ) );
     l_render.end();
 }
 
@@ -492,34 +449,34 @@ void POLY_FT4::execute()
 
     std::vector<glm::vec3> vertices =
     {
-        {  0x6f, 0x54, 0 },
-        { 0x119, 0x54, 0 },
-        { 0x119, 0xea, 0 },
-        {  0x6f, 0xea, 0 }
+        { x0, y0, 0 },
+        { x1, y1, 0 },
+        { x3, y3, 0 },
+        { x2, y2, 0 }
     };
 
     std::vector<ofFloatColor> colors =
     {
-        { 0x60 / 256.0f, 0x60 / 256.0f, 0x60 / 256.0f, 1.0f },
-        { 0x60 / 256.0f, 0x60 / 256.0f, 0x60 / 256.0f, 1.0f },
-        { 0x60 / 256.0f, 0x60 / 256.0f, 0x60 / 256.0f, 1.0f },
-        { 0x60 / 256.0f, 0x60 / 256.0f, 0x60 / 256.0f, 1.0f }
+        { r0 / 256.0f, g0 / 256.0f, b0 / 256.0f, 1.0f },
+        { r0 / 256.0f, g0 / 256.0f, b0 / 256.0f, 1.0f },
+        { r0 / 256.0f, g0 / 256.0f, b0 / 256.0f, 1.0f },
+        { r0 / 256.0f, g0 / 256.0f, b0 / 256.0f, 1.0f }
     };
 
     std::vector<glm::vec3> normals =
     {
-        {0, 0, 0},
-        {0, 0, 0},
-        {0, 0, 0},
-        {0, 0, 0}
+        { 0, 0, 0 },
+        { 0, 0, 0 },
+        { 0, 0, 0 },
+        { 0, 0, 0 }
     };
 
     std::vector<glm::vec2> texCoords =
     {
-        {  0x0,  0x0 },
-        { 0x96,  0x0 },
-        { 0x96, 0x96 },
-        {  0x0, 0x96 }
+        { u0, v0 },
+        { u1, v1 },
+        { u3, v3 },
+        { u2, v2 }
     };
 
     mesh.clear();
@@ -534,8 +491,117 @@ void POLY_FT4::execute()
     psxShader.begin();
     psxShader.setUniformMatrix4f("projectionMatrix", projection);
     psxShader.setUniformTexture( "texture0", texture, 0 );
-    psxShader.setUniform2i( "clut", 0, 0x1e0 );
-    psxShader.setUniform4i( "tpage", 0x380, 0, 1, 0 );
+    psxShader.setUniform2i( "clut", (clut & 0x3f) * 0x10, (clut & 0xffc0) >> 0x6 );
+    psxShader.setUniform4i( "tpage", (tpage << 0x6) & 0x3ff, (tpage << 0x4) & 0x100, (tpage >> 0x7) & 0x3, (tpage >> 0x5) & 0x3 );
+    psxShader.setUniform1i( "dtd", l_rendering_dtd );
+    mesh.draw();
+    psxShader.end();
+
+    l_render.end();
+}
+
+
+
+void SPRT::execute()
+{
+    l_render.begin();
+ 
+    static ofTexture texture;
+    static ofShader psxShader;
+    if( !texture.isAllocated() )
+    {
+        psxShader.load( "../system/psx_render.vert", "../system/psx_render.frag" );
+
+        ofDisableArbTex();
+
+        int textureWidth = 2048;
+        int textureHeight = 512;
+
+        GLuint texID;
+        glGenTextures( 1, &texID );
+        glBindTexture( GL_TEXTURE_2D, texID );
+        
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+
+        glTexImage2D( GL_TEXTURE_2D, 0, GL_R8UI, textureWidth, textureHeight, 0, GL_RED_INTEGER, GL_UNSIGNED_BYTE, nullptr );
+
+        texture.setUseExternalTextureID( texID );
+        
+        texture.texData.width = textureWidth;
+        texture.texData.height = textureHeight;
+        texture.texData.tex_w = textureWidth;
+        texture.texData.tex_h = textureHeight;
+        texture.texData.glInternalFormat = GL_R8UI;
+        texture.texData.textureTarget = GL_TEXTURE_2D;
+
+        glBindTexture( GL_TEXTURE_2D, 0 );
+    }
+
+    const u16* src = reinterpret_cast<const u16*>(g_vram.data());
+
+    ofPixels pixels;
+    pixels.allocate( 2048, 512, OF_IMAGE_GRAYSCALE );
+    memcpy( pixels.getData(), g_vram.data(), g_vram.size());
+    texture.loadData( pixels.getData(), 2048, 512, GL_RED_INTEGER, GL_UNSIGNED_BYTE );
+
+    ofVboMesh mesh;
+
+    std::vector<glm::vec3> vertices =
+    {
+        { x0,     y0,     0 },
+        { x0 + w, y0,     0 },
+        { x0 + w, y0 + h, 0 },
+        { x0,     y0 + h, 0 }
+    };
+
+    if( code & 0x01 )
+    {
+        r0 = 255;
+        g0 = 255;
+        b0 = 255;
+    }
+
+    std::vector<ofFloatColor> colors =
+    {
+        { r0 / 256.0f, g0 / 256.0f, b0 / 256.0f, 1.0f },
+        { r0 / 256.0f, g0 / 256.0f, b0 / 256.0f, 1.0f },
+        { r0 / 256.0f, g0 / 256.0f, b0 / 256.0f, 1.0f },
+        { r0 / 256.0f, g0 / 256.0f, b0 / 256.0f, 1.0f }
+    };
+
+    std::vector<glm::vec3> normals =
+    {
+        { 0, 0, 0 },
+        { 0, 0, 0 },
+        { 0, 0, 0 },
+        { 0, 0, 0 }
+    };
+
+    std::vector<glm::vec2> texCoords =
+    {
+        { u0,     v0     },
+        { u0 + w, v0     },
+        { u0 + w, v0 + h },
+        { u0,     v0 + h }
+    };
+
+    mesh.clear();
+    mesh.setMode( OF_PRIMITIVE_TRIANGLE_FAN );
+    mesh.addVertices( vertices );
+    mesh.addColors( colors );
+    mesh.addNormals( normals );
+    mesh.addTexCoords( texCoords );
+
+    glm::mat4 projection = glm::ortho( 0.0f, l_render.getWidth(), 0.0f, l_render.getHeight(), -1.0f, 1.0f );
+
+    psxShader.begin();
+    psxShader.setUniformMatrix4f("projectionMatrix", projection);
+    psxShader.setUniformTexture( "texture0", texture, 0 );
+    //psxShader.setUniform2i( "clut", (clut & 0x3f) * 0x10, (clut & 0xffc0) >> 0x6 );
+    psxShader.setUniform2i( "clut", 0x100, 0x1e1 );
+    //psxShader.setUniform4i( "tpage", (l_rendering_tpage << 0x6) & 0x3ff, (l_rendering_tpage << 0x4) & 0x100, (l_rendering_tpage >> 0x7) & 0x3, (l_rendering_tpage >> 0x5) & 0x3 );
+    psxShader.setUniform4i( "tpage", 0x3c0, 0x100, 1, 0 );
     psxShader.setUniform1i( "dtd", l_rendering_dtd );
     mesh.draw();
     psxShader.end();
@@ -548,4 +614,5 @@ void POLY_FT4::execute()
 void DR_MODE::execute()
 {
     l_rendering_dtd = (code[0] & 0x200) ? 1 : 0;
+    l_rendering_tpage = code[0] & 0x9ff;
 }

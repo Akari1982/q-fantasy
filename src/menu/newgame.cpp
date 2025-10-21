@@ -22,6 +22,8 @@ DISPENV l_newgame_dispenv[0x2];
 
 std::vector<std::unique_ptr<OTag>> l_newgame_draw[0x2];
 
+DVECTOR l_newgame_center = {0x96, 0x5d};
+
 
 
 void MenuNewGameInit()
@@ -36,10 +38,10 @@ void MenuNewGameInit()
 
 bool MenuNewGameUpdate( u32 frame )
 {
-//    system_menu_draw_cursor( h[0x801e3668] - 0x12, h[0x801e366a] + b[0x801e3e09] * 0xc + 0x6 );
+    MenuDrawCursor( l_newgame_center.vx - 0x12, l_newgame_center.vy + 0x6 );
 
-//    system_menu_draw_string( h[0x801e3668] + 0x8, h[0x801e366a] + 0x6, 0x801e317c, 0x7 ); // "NEW GAME"
-//    system_menu_draw_string( h[0x801e3668] + 0x8, h[0x801e366a] + 0x12, 0x801e2e64, ( (bu[0x801e8f38] != 0) || (bu[0x801e8f3b] != 0) ) ? 0x7 : 0 ); // "Continue?"
+    // system_menu_draw_string( l_newgame_center.vx + 0x8, l_newgame_center.vy + 0x6, 0x801e317c, 0x7 ); // "NEW GAME"
+    // system_menu_draw_string( l_newgame_center.vx + 0x8, l_newgame_center.vy + 0x12, 0x801e2e64, ( (bu[0x801e8f38] != 0) || (bu[0x801e8f3b] != 0) ) ? 0x7 : 0 ); // "Continue?"
 
     SRECT rect;
     rect.x = 0;

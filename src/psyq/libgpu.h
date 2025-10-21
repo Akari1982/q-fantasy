@@ -6,24 +6,6 @@
 
 
 
-struct sColorAndCode
-{
-    u8 r, g, b;
-    union
-    {
-        struct
-        {
-            u8 textureBlending : 1;
-            u8 semiTransparent : 1;
-            u8 textured : 1;
-            u8 quad : 1;
-            u8 gouraud : 1;
-            u8 command : 3;
-        };
-        u8 code;
-    };
-};
-
 struct OTag
 {
     OTag* next = nullptr;
@@ -34,16 +16,10 @@ struct OTag
 
 struct LINE_F2 : public OTag
 {
-    union
-    {
-        struct
-        {
-            u8 r0, g0, b0;
-            u8 code;
-        };
-        sColorAndCode m_colorAndCode;
-    };
-    DVECTOR x0y0, x1y1;
+    u8 r0, g0, b0;
+    u8 code;
+    s16 x0, y0;
+    s16 x1, y1;
 
     void execute();
 };
@@ -64,6 +40,18 @@ struct POLY_FT4 : public OTag
     s16 x3, y3;
     u8 u3, v3;
     u16 pad2;
+
+    void execute();
+};
+
+struct SPRT : public OTag
+{
+    u8 r0, g0, b0;
+    u8 code;
+    s16 x0, y0;
+    u8 u0, v0;
+    u16 clut;
+    s16 w, h;
 
     void execute();
 };
@@ -125,6 +113,7 @@ void PsyqDrawOTag( OTag* ot );
 
 void PsyqSetLineF2( LINE_F2* p );
 void PsyqSetPolyFT4( POLY_FT4* p );
+void PsyqSetSprt( SPRT* p );
 
 void PsyqAddPrim( OTag* ot, OTag* p );
 void PsyqTermPrim( OTag* );
@@ -135,8 +124,15 @@ u16 PsyqGetTPage( int tp, int abr, int x, int y );
 template< typename T >
 void PsyqSetSemiTrans( T* p, s32 abe )
 {
-    if( abe == 0 ) p->code &= ~2;
-    else p->code |= 2;
+    if( abe == 0 ) p->code &= ~0x2;
+    else p->code |= 0x2;
+}
+
+template< typename T >
+void PsyqSetShadeTex( T* p, s32 tge )
+{
+    if( tge == 0 ) p->code &= ~0x1;
+    else p->code |= 0x1;
 }
 
 

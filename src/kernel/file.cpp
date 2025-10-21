@@ -5,6 +5,10 @@
 
 
 
+std::vector<u8>::const_iterator l_gzip_data;
+
+
+
 u32 FileGetPackPointer( std::vector<u8>& file, u32 id )
 {
     return READ_LE_U32( &file[id * 0x4] );
@@ -99,12 +103,33 @@ void FileLZSExtract( std::vector<u8>& input, std::vector<u8>& output )
 
 
 
-bool GZIPExtract( std::vector<u8>& input, std::vector<u8>& output )
+void GZIPSetDataBlock( std::vector<u8>& data )
+{
+    l_gzip_data = data.begin();
+}
+
+
+
+u16 GZIPGetType()
+{
+    return ( READ_LE_U16( l_gzip_data + 0x0 ) != 0 ) ? READ_LE_U16( l_gzip_data + 0x4 ) : 0xffff;
+}
+
+
+
+u16 GZIPGetSize()
+{
+    return ( READ_LE_U16( l_gzip_data + 0x0 ) != 0 ) ? READ_LE_U16( l_gzip_data + 0x2 ) : 0;
+}
+
+
+
+bool GZIPExtract( std::vector<u8>::const_iterator input, u32 size, std::vector<u8>& output )
 {
     // Setup z_stream for gzip unpack
     z_stream strm{};
-    strm.next_in = input.data();
-    strm.avail_in = (u32)input.size();
+    strm.next_in = const_cast<Bytef*>(&(*input));
+    strm.avail_in = size;
 
     // 16+MAX_WBITS - gzip support
     if( inflateInit2( &strm, 16 + MAX_WBITS ) != Z_OK )
@@ -147,6 +172,18 @@ bool GZIPExtract( std::vector<u8>& input, std::vector<u8>& output )
 
 
 
+void GZIPPackDecompressNextBlock( std::vector<u8>& output )
+{
+    u16 size = READ_LE_U16( l_gzip_data + 0x0 );
+    if( size != 0 )
+    {
+        GZIPExtract( l_gzip_data + 0x6, size, output );
+        l_gzip_data += 0x6 + size;
+    }
+}
+
+
+
 void FileLZS( const std::string& name, std::vector<u8>& output )
 {
     std::vector<u8> temp_dat;
@@ -165,7 +202,7 @@ void FileBINGZIP( const std::string& name, std::vector<u8>& output )
     FileRead( name, temp_dat );
     // remove first 0x8 byte (they are header data to clean working memory for executable)
     if( temp_dat.size() >= 0x8 ) temp_dat.erase( temp_dat.begin(), temp_dat.begin() + 0x8 );
-    GZIPExtract( temp_dat, output );
+    GZIPExtract( temp_dat.begin(), temp_dat.size(), output );
 }
 
 

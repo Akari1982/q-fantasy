@@ -1,5 +1,8 @@
 #include "menu.h"
 #include "psyq/tim.h"
+#include "psyq/libgpu.h"
+
+
 
 std::vector<std::unique_ptr<OTag>>* g_menu_poly;
 OTag* g_menu_otag;
@@ -95,4 +98,30 @@ void MenuSetOTag( OTag* otag )
 void MenuSetPoly( std::vector<std::unique_ptr<OTag>>* poly )
 {
     g_menu_poly = poly;
+}
+
+
+
+void MenuDrawCursor( s16 x, s16 y )
+{
+    auto poly = std::make_unique<SPRT>();
+    PsyqSetSprt( poly.get() );
+    PsyqSetSemiTrans( poly.get(), 0x1 );
+    PsyqSetShadeTex( poly.get(), 0x1 );
+    poly->x0 = x;
+    poly->y0 = y;
+    poly->u0 = 0xe0;
+    poly->v0 = 0x8;
+    poly->clut = PsyqGetClut( 0x100, 0x1e1 );
+    poly->w = 0x18;
+    poly->h = 0x10;
+    PsyqAddPrim( g_menu_otag, poly.get() );
+    g_menu_poly->emplace_back(std::move(poly));
+
+    SRECT rect;
+    rect.x = 0;
+    rect.y = 0;
+    rect.w = 0xff;
+    rect.h = 0xff;
+    MenuSetDrawMode( 0, 0x1, PsyqGetTPage( 0, 0x2, 0x3c0, 0x100 ), &rect );
 }
