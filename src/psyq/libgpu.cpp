@@ -1,10 +1,13 @@
 #include "libgpu.h"
 #include "system/application.h"
 
+#define VRAM_W 2048
+#define VRAM_H 512
 
-
-std::array<u8, 2048 * 512> g_vram;
+std::array<u8, VRAM_W * VRAM_H> g_vram;
 ofFbo l_render;
+ofTexture l_render_texture;
+ofShader l_render_shader;
 
 // rendering settings
 u32 l_rendering_dtd = 0;
@@ -38,15 +41,15 @@ void update_vram()
 
             u16 rgb = (b << 0xa) | (g << 0x5) | r;
 
-            g_vram[((l_rendering_draw_y + y) * 2048) + (l_rendering_draw_x + x) * 2 + 0] = rgb & 0xff;
-            g_vram[((l_rendering_draw_y + y) * 2048) + (l_rendering_draw_x + x) * 2 + 1] = rgb >> 0x8;
+            g_vram[((l_rendering_draw_y + y) * VRAM_W) + (l_rendering_draw_x + x) * 2 + 0] = rgb & 0xff;
+            g_vram[((l_rendering_draw_y + y) * VRAM_W) + (l_rendering_draw_x + x) * 2 + 1] = rgb >> 0x8;
         }
     }
 
     // update draw tex from vram
     if( !g_screen.isAllocated() )
     {
-        g_screen.allocate( 1024, 512, GL_RGBA8, false );
+        g_screen.allocate( VRAM_W / 2, VRAM_H, GL_RGBA8, false );
     }
 
     w = g_screen.getWidth();
@@ -59,7 +62,7 @@ void update_vram()
         {
             int vram_x = l_rendering_disp_x + x;
             int vram_y = l_rendering_disp_y + y;
-            u16 color = (g_vram[vram_y * 2048 + vram_x * 2 + 1] << 0x8) | g_vram[vram_y * 2048 + vram_x * 2 + 0];
+            u16 color = (g_vram[vram_y * VRAM_W + vram_x * 2 + 1] << 0x8) | g_vram[vram_y * VRAM_W + vram_x * 2 + 0];
 
             u8 b = ((color >> 0xa) & 0x1f) << 3;
             u8 g = ((color >> 0x5) & 0x1f) << 3;
@@ -70,6 +73,39 @@ void update_vram()
     }
 
     g_screen.loadData( pixels );
+
+    // update vram texture for rendering
+    if( !l_render_texture.isAllocated() )
+    {
+        l_render_shader.load( "../system/psx_render.vert", "../system/psx_render.frag" );
+
+        ofDisableArbTex();
+
+        GLuint texID;
+        glGenTextures( 1, &texID );
+        glBindTexture( GL_TEXTURE_2D, texID );
+        
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+
+        glTexImage2D( GL_TEXTURE_2D, 0, GL_R8UI, VRAM_W, VRAM_H, 0, GL_RED_INTEGER, GL_UNSIGNED_BYTE, nullptr );
+
+        l_render_texture.setUseExternalTextureID( texID );
+        l_render_texture.texData.width = VRAM_W;
+        l_render_texture.texData.height = VRAM_H;
+        l_render_texture.texData.tex_w = VRAM_W;
+        l_render_texture.texData.tex_h = VRAM_H;
+        l_render_texture.texData.glInternalFormat = GL_R8UI;
+        l_render_texture.texData.textureTarget = GL_TEXTURE_2D;
+
+        glBindTexture( GL_TEXTURE_2D, 0 );
+    }
+
+    const u16* src = reinterpret_cast<const u16*>(g_vram.data());
+
+    pixels.allocate( VRAM_W, VRAM_H, OF_IMAGE_GRAYSCALE );
+    memcpy( pixels.getData(), g_vram.data(), g_vram.size());
+    l_render_texture.loadData( pixels.getData(), VRAM_W, VRAM_H, GL_RED_INTEGER, GL_UNSIGNED_BYTE );
 }
 
 
@@ -405,45 +441,6 @@ void LINE_F2::execute()
 void POLY_FT4::execute()
 {
     l_render.begin();
- 
-    static ofTexture texture;
-    static ofShader psxShader;
-    if( !texture.isAllocated() )
-    {
-        psxShader.load( "../system/psx_render.vert", "../system/psx_render.frag" );
-
-        ofDisableArbTex();
-
-        int textureWidth = 2048;
-        int textureHeight = 512;
-
-        GLuint texID;
-        glGenTextures( 1, &texID );
-        glBindTexture( GL_TEXTURE_2D, texID );
-        
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-
-        glTexImage2D( GL_TEXTURE_2D, 0, GL_R8UI, textureWidth, textureHeight, 0, GL_RED_INTEGER, GL_UNSIGNED_BYTE, nullptr );
-
-        texture.setUseExternalTextureID( texID );
-        
-        texture.texData.width = textureWidth;
-        texture.texData.height = textureHeight;
-        texture.texData.tex_w = textureWidth;
-        texture.texData.tex_h = textureHeight;
-        texture.texData.glInternalFormat = GL_R8UI;
-        texture.texData.textureTarget = GL_TEXTURE_2D;
-
-        glBindTexture( GL_TEXTURE_2D, 0 );
-    }
-
-    const u16* src = reinterpret_cast<const u16*>(g_vram.data());
-
-    ofPixels pixels;
-    pixels.allocate( 2048, 512, OF_IMAGE_GRAYSCALE );
-    memcpy( pixels.getData(), g_vram.data(), g_vram.size());
-    texture.loadData( pixels.getData(), 2048, 512, GL_RED_INTEGER, GL_UNSIGNED_BYTE );
 
     ofVboMesh mesh;
 
@@ -457,10 +454,10 @@ void POLY_FT4::execute()
 
     std::vector<ofFloatColor> colors =
     {
-        { r0 / 256.0f, g0 / 256.0f, b0 / 256.0f, 1.0f },
-        { r0 / 256.0f, g0 / 256.0f, b0 / 256.0f, 1.0f },
-        { r0 / 256.0f, g0 / 256.0f, b0 / 256.0f, 1.0f },
-        { r0 / 256.0f, g0 / 256.0f, b0 / 256.0f, 1.0f }
+        { r0 / 128.0f, g0 / 128.0f, b0 / 128.0f, 1.0f },
+        { r0 / 128.0f, g0 / 128.0f, b0 / 128.0f, 1.0f },
+        { r0 / 128.0f, g0 / 128.0f, b0 / 128.0f, 1.0f },
+        { r0 / 128.0f, g0 / 128.0f, b0 / 128.0f, 1.0f }
     };
 
     std::vector<glm::vec3> normals =
@@ -488,14 +485,16 @@ void POLY_FT4::execute()
 
     glm::mat4 projection = glm::ortho( 0.0f, l_render.getWidth(), 0.0f, l_render.getHeight(), -1.0f, 1.0f );
 
-    psxShader.begin();
-    psxShader.setUniformMatrix4f("projectionMatrix", projection);
-    psxShader.setUniformTexture( "texture0", texture, 0 );
-    psxShader.setUniform2i( "clut", (clut & 0x3f) * 0x10, (clut & 0xffc0) >> 0x6 );
-    psxShader.setUniform4i( "tpage", (tpage << 0x6) & 0x3ff, (tpage << 0x4) & 0x100, (tpage >> 0x7) & 0x3, (tpage >> 0x5) & 0x3 );
-    psxShader.setUniform1i( "dtd", l_rendering_dtd );
+    l_render_shader.begin();
+    l_render_shader.setUniformMatrix4f("projectionMatrix", projection);
+    l_render_shader.setUniformTexture( "texture0", l_render_texture, 0 );
+    l_render_shader.setUniform2i( "clut", (clut & 0x3f) * 0x10, (clut & 0xffc0) >> 0x6 );
+    l_render_shader.setUniform2i( "tpage", (tpage << 0x6) & 0x3ff, (tpage << 0x4) & 0x100 );
+    l_render_shader.setUniform1i( "depth", (tpage >> 0x7) & 0x3 );
+    l_render_shader.setUniform1i( "abr", (tpage >> 0x5) & 0x3 );
+    l_render_shader.setUniform1i( "dtd", l_rendering_dtd );
     mesh.draw();
-    psxShader.end();
+    l_render_shader.end();
 
     l_render.end();
 }
@@ -505,45 +504,6 @@ void POLY_FT4::execute()
 void SPRT::execute()
 {
     l_render.begin();
- 
-    static ofTexture texture;
-    static ofShader psxShader;
-    if( !texture.isAllocated() )
-    {
-        psxShader.load( "../system/psx_render.vert", "../system/psx_render.frag" );
-
-        ofDisableArbTex();
-
-        int textureWidth = 2048;
-        int textureHeight = 512;
-
-        GLuint texID;
-        glGenTextures( 1, &texID );
-        glBindTexture( GL_TEXTURE_2D, texID );
-        
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-
-        glTexImage2D( GL_TEXTURE_2D, 0, GL_R8UI, textureWidth, textureHeight, 0, GL_RED_INTEGER, GL_UNSIGNED_BYTE, nullptr );
-
-        texture.setUseExternalTextureID( texID );
-        
-        texture.texData.width = textureWidth;
-        texture.texData.height = textureHeight;
-        texture.texData.tex_w = textureWidth;
-        texture.texData.tex_h = textureHeight;
-        texture.texData.glInternalFormat = GL_R8UI;
-        texture.texData.textureTarget = GL_TEXTURE_2D;
-
-        glBindTexture( GL_TEXTURE_2D, 0 );
-    }
-
-    const u16* src = reinterpret_cast<const u16*>(g_vram.data());
-
-    ofPixels pixels;
-    pixels.allocate( 2048, 512, OF_IMAGE_GRAYSCALE );
-    memcpy( pixels.getData(), g_vram.data(), g_vram.size());
-    texture.loadData( pixels.getData(), 2048, 512, GL_RED_INTEGER, GL_UNSIGNED_BYTE );
 
     ofVboMesh mesh;
 
@@ -564,10 +524,10 @@ void SPRT::execute()
 
     std::vector<ofFloatColor> colors =
     {
-        { r0 / 256.0f, g0 / 256.0f, b0 / 256.0f, 1.0f },
-        { r0 / 256.0f, g0 / 256.0f, b0 / 256.0f, 1.0f },
-        { r0 / 256.0f, g0 / 256.0f, b0 / 256.0f, 1.0f },
-        { r0 / 256.0f, g0 / 256.0f, b0 / 256.0f, 1.0f }
+        { r0 / 128.0f, g0 / 128.0f, b0 / 128.0f, 1.0f },
+        { r0 / 128.0f, g0 / 128.0f, b0 / 128.0f, 1.0f },
+        { r0 / 128.0f, g0 / 128.0f, b0 / 128.0f, 1.0f },
+        { r0 / 128.0f, g0 / 128.0f, b0 / 128.0f, 1.0f }
     };
 
     std::vector<glm::vec3> normals =
@@ -595,16 +555,16 @@ void SPRT::execute()
 
     glm::mat4 projection = glm::ortho( 0.0f, l_render.getWidth(), 0.0f, l_render.getHeight(), -1.0f, 1.0f );
 
-    psxShader.begin();
-    psxShader.setUniformMatrix4f("projectionMatrix", projection);
-    psxShader.setUniformTexture( "texture0", texture, 0 );
-    //psxShader.setUniform2i( "clut", (clut & 0x3f) * 0x10, (clut & 0xffc0) >> 0x6 );
-    psxShader.setUniform2i( "clut", 0x100, 0x1e1 );
-    //psxShader.setUniform4i( "tpage", (l_rendering_tpage << 0x6) & 0x3ff, (l_rendering_tpage << 0x4) & 0x100, (l_rendering_tpage >> 0x7) & 0x3, (l_rendering_tpage >> 0x5) & 0x3 );
-    psxShader.setUniform4i( "tpage", 0x3c0, 0x100, 1, 0 );
-    psxShader.setUniform1i( "dtd", l_rendering_dtd );
+    l_render_shader.begin();
+    l_render_shader.setUniformMatrix4f( "matrix", projection );
+    l_render_shader.setUniformTexture( "texture0", l_render_texture, 0 );
+    l_render_shader.setUniform2i( "clut", (clut & 0x3f) * 0x10, (clut & 0xffc0) >> 0x6 );
+    l_render_shader.setUniform2i( "tpage", (l_rendering_tpage << 0x6) & 0x3ff, (l_rendering_tpage << 0x4) & 0x100 );
+    l_render_shader.setUniform1i( "depth", (l_rendering_tpage >> 0x7) & 0x3 );
+    l_render_shader.setUniform1i( "abr", (l_rendering_tpage >> 0x5) & 0x3 );
+    l_render_shader.setUniform1i( "dtd", 0 );
     mesh.draw();
-    psxShader.end();
+    l_render_shader.end();
 
     l_render.end();
 }
