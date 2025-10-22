@@ -3,6 +3,9 @@
 #include "psyq/libgpu.h"
 
 
+
+std::vector<u8> g_font_paddings;
+
 u8 l_max_string_size = 0x40;
 u8 l_str_global_mode = 1;
 
@@ -192,12 +195,10 @@ s16 MenuDrawSingleLetter( s16 x, s16 y, u8 color, u16 letter )
     }
 
     u8 glyph = letter & 0xff;
-    //font_padding = w[0x800707c0];
+    u8 letter_pad = g_font_paddings[glyph + set_start] >> 0x5;
+    u8 letter_w = g_font_paddings[glyph + set_start] & 0x1f;
 
-    //letter_pad = bu[font_padding + glyph + set_start] >> 0x5;
-    //letter_w = bu[font_padding + glyph + set_start] & 0x1f
-
-    //x += letter_pad;
+    x += letter_pad;
     u16 tex_x = (glyph % 0x15) * 0xc;
     tex_y += (glyph / 0x15) * 0xc;
 
@@ -214,7 +215,7 @@ s16 MenuDrawSingleLetter( s16 x, s16 y, u8 color, u16 letter )
     PsyqAddPrim( g_menu_otag, poly.get() );
     g_menu_poly->emplace_back(std::move(poly));
 
-    x += 0x10;//letter_w;
+    x += letter_w;
 
     if( l_str_global_mode == 0 )
     {

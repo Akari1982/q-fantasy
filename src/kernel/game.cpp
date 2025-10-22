@@ -2,6 +2,7 @@
 #include "file.h"
 #include "game.h"
 #include "ending/ending.h"
+#include "menu/menu.h"
 #include "menu/newgame.h"
 #include "field/field.h"
 #include "psyq/libgte.h"
@@ -105,10 +106,9 @@ void GameInitKernel()
             rect.h = READ_LE_S16( &temp[offset + 0x12] );
             PsyqGpuLoadImage( &rect, &temp[offset + 0x14] );
         }
-        else if( type == 0x1 ) // font width data
+        else if( type == 0x1 )
         {
-            std::vector<u8> temp;
-            GZIPPackDecompressNextBlock( temp );
+            GZIPPackDecompressNextBlock( g_font_paddings );
         }
     }
 }

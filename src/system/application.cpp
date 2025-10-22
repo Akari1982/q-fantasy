@@ -31,6 +31,8 @@ void Application::setup()
 {
     ofSetLogLevel(OF_LOG_VERBOSE);
 
+    ofDisableArbTex();
+
     gui.setup( nullptr, true, ImGuiConfigFlags_ViewportsEnable );
     // set imGui style
     {

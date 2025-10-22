@@ -1,22 +1,23 @@
 #version 130
 
-uniform usampler2D texture0;
-uniform ivec2 tpage;
-uniform ivec2 clut;
-uniform int depth;
-uniform int transp;
-uniform int abr;
-uniform int dtd;
+uniform usampler2D g_texture;
+uniform sampler2D g_background;
+uniform ivec2 g_tpage;
+uniform ivec2 g_clut;
+uniform int g_depth;
+uniform int g_transp;
+uniform int g_abr;
+uniform int g_dtd;
 
 in vec4 vColor;
 in vec2 vTexCoord;
 
-const float dither_matrix[16] = float[]
+const int dither_matrix[16] = int[]
 (
-    -4.0,  0.0, -3.0,  1.0,
-     2.0, -2.0,  3.0, -1.0,
-    -3.0,  1.0, -4.0,  0.0,
-     3.0, -1.0,  2.0, -2.0
+    -4,  0, -3,  1,
+     2, -2,  3, -1,
+    -3,  1, -4,  0,
+     3, -1,  2, -2
 );
 
 // Pas gamma correction
@@ -63,60 +64,76 @@ vec4 psx_color_to_rgba( int color )
 {
     ivec2 frag_coord = ivec2( gl_FragCoord.xy );
 
-    int r = (color >> 0) & 31;
-    int g = (color >> 5) & 31;
-    int b = (color >> 10) & 31;
-    int stp_bit = (color >> 15) & 1;
+    int r = ((color >> 0x0) & 0x1f) << 0x3;
+    int g = ((color >> 0x5) & 0x1f) << 0x3;
+    int b = ((color >> 0xa) & 0x1f) << 0x3;
+    int stp_bit = (color >> 0xf) & 0x1;
 
-    vec3 full_color = vec3( float( r ), float( g ), float( b ) );
+    ivec3 full_color = ivec3( r, g, b );
 
-    float dither_value = dither_matrix[(frag_coord.y % 4) * 4 + (frag_coord.x % 4)];
+    int dither_value = dither_matrix[(frag_coord.y % 4) * 4 + (frag_coord.x % 4)];
 
-    if( dtd == 1 )
+    if( g_dtd == 1 )
     {
         full_color += dither_value;
-        full_color = clamp( full_color, 0.0, 31.0 );
+        full_color = clamp( full_color, 0, 0xff );
     }
-
-    float alpha = 1.0;
 
     if( color == 0 )
     {
-        alpha = 0.0;
+        discard;
     }
-    else
+
+    vec3 final_color = vec3(
+        psx_gamma_lut[full_color.x >> 0x3],
+        psx_gamma_lut[full_color.y >> 0x3],
+        psx_gamma_lut[full_color.z >> 0x3]
+    );
+    final_color *= vColor.xyz;
+
+    if( (g_transp == 1) && (stp_bit == 1) )
     {
-        if( r == 0 && g == 0 && b == 0 )
-        {
-            alpha = 0.0;
-        }
+        vec3 back_color = texelFetch( g_background, frag_coord, 0 ).xyz;
 
-        if( transp == 1 && stp_bit == 1 )
+        switch( g_abr )
         {
-            alpha = 0.5;
-
-            // need to use abr here for different color mixing
+            case 0: // 0.5 x B + 0.5 x F
+                final_color = mix(back_color, final_color, 0.5);
+                break;
+            case 1: // 1.0 x B + 1.0 x F
+                final_color = back_color + final_color;
+                break;
+            case 2: // 1.0 x B - 1.0 x F
+                final_color = back_color - final_color;
+                final_color = clamp( final_color, 0, 1 );
+                break;
+            case 3: // 1.0 x B + 0.25 x F
+                final_color = back_color + final_color * 0.25;
+                break;
+            default:
+                final_color = final_color;
+                break;
         }
     }
 
-    return vec4(full_color, alpha);
+    return vec4(final_color, 1.0);
 }
 
 
 
 int get_color_16bit( ivec2 texel_coord )
 {
-    uint low = texelFetch( texture0, texel_coord, 0 ).r;
-    uint high = texelFetch( texture0, texel_coord + ivec2(1, 0), 0 ).r;
+    uint low = texelFetch( g_texture, texel_coord, 0 ).r;
+    uint high = texelFetch( g_texture, texel_coord + ivec2(1, 0), 0 ).r;
     return int(low | (high << 8));
 }
 
 
 
-vec4 get_clut_color( int color_id )
+vec4 get_g_clut_color( int color_id )
 {
-    ivec2 clut_texel_coord = ivec2((clut.x + color_id) * 2, clut.y);
-    int color = get_color_16bit( clut_texel_coord );
+    ivec2 g_clut_texel_coord = ivec2((g_clut.x + color_id) * 2, g_clut.y);
+    int color = get_color_16bit( g_clut_texel_coord );
     return psx_color_to_rgba( color );
 }
 
@@ -128,39 +145,32 @@ void main()
 
     ivec2 texel_coord = ivec2(vTexCoord);
 
-    if( depth == 0 ) // 4-bit
+    if( g_depth == 0 ) // 4-bit
     {
-        ivec2 vram_coord = ivec2( tpage.x * 2, tpage.y ) + ivec2(texel_coord.x / 2, texel_coord.y);
-        uint texel = texelFetch( texture0, vram_coord, 0 ).r;
+        ivec2 vram_coord = ivec2(g_tpage.x * 2, g_tpage.y) + ivec2(texel_coord.x / 2, texel_coord.y);
+        uint texel = texelFetch( g_texture, vram_coord, 0 ).r;
 
         if( (texel_coord.x & 1) == 0 )
         {
-            final_color = get_clut_color( int( texel ) & 0xf );
+            final_color = get_g_clut_color( int(texel) & 0xf );
         }
         else
         {
-            final_color = get_clut_color( int( texel ) >> 4 );
+            final_color = get_g_clut_color( int(texel) >> 4 );
         }
     }
-    else if( depth == 1 ) // 8-bit
+    else if( g_depth == 1 ) // 8-bit
     {
-        ivec2 vram_coord = ivec2( tpage.x * 2, tpage.y ) + texel_coord;
-        uint texel = texelFetch( texture0, vram_coord, 0 ).r;
-        final_color = get_clut_color( int(texel) );
+        ivec2 vram_coord = ivec2(g_tpage.x * 2, g_tpage.y) + texel_coord;
+        uint texel = texelFetch( g_texture, vram_coord, 0 ).r;
+        final_color = get_g_clut_color( int(texel) );
     }
     else // 16-bit direct
     {
-        ivec2 vramCoord = ivec2( tpage.x * 2, tpage.y ) + texel_coord;
+        ivec2 vramCoord = ivec2( g_tpage.x * 2, g_tpage.y ) + texel_coord;
         int color = get_color_16bit( vramCoord );
         final_color = psx_color_to_rgba( color );
     }
 
-    final_color = vec4(
-        psx_gamma_lut[int(final_color.x)],
-        psx_gamma_lut[int(final_color.y)],
-        psx_gamma_lut[int(final_color.z)],
-        final_color.w
-    );
-
-    fragColor = final_color * vColor;
+    fragColor = final_color;
 }

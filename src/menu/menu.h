@@ -35,5 +35,7 @@ void MenuDrawCursor( s16 x, s16 y );
 
 
 
+extern std::vector<u8> g_font_paddings;
+
 extern std::vector<std::unique_ptr<OTag>>* g_menu_poly;
 extern OTag* g_menu_otag;

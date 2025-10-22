@@ -8,11 +8,11 @@ in vec2 texcoord;
 out vec4 vColor;
 out vec2 vTexCoord;
 
-uniform mat4 matrix;
+uniform mat4 g_matrix;
 
 void main()
 {
-    gl_Position = matrix * position;
+    gl_Position = g_matrix * position;
 
     vColor = color;
     vTexCoord = texcoord;
