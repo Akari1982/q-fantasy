@@ -3,6 +3,8 @@
 #include "psyq/libgpu.h"
 
 
+u8 l_max_string_size = 0x40;
+u8 l_str_global_mode = 1;
 
 std::vector<std::unique_ptr<OTag>>* g_menu_poly;
 OTag* g_menu_otag;
@@ -124,4 +126,147 @@ void MenuDrawCursor( s16 x, s16 y )
     rect.w = 0xff;
     rect.h = 0xff;
     MenuSetDrawMode( 0, 0x1, PsyqGetTPage( 0, 0x2, 0x3c0, 0x100 ), &rect );
+}
+
+
+
+s16 MenuDrawSingleLetter( s16 x, s16 y, u8 color, u16 letter )
+{
+    u16 clut_x = 0;
+    s16 tpage_x = 0;
+    u16 set_start = 0;
+    u16 tex_y = 0;
+
+    switch( (letter >> 0x8) )
+    {
+        case 0xf8:
+        {
+            return x;
+        }
+
+        case 0xfa:
+        {
+            tex_y = 0x84;
+            set_start = 0xe7;
+        }
+        break;
+
+        case 0xfb:
+        {
+            clut_x = 0x10;
+            tex_y = 0x0;
+            set_start = 0x1b9;
+        }
+        break;
+
+        case 0xfc:
+        {
+            clut_x = 0x10;
+            tex_y = 0x84;
+            set_start = 0x2a0;
+        }
+        break;
+
+        case 0xfd:
+        {
+            tex_y = 0x84;
+            set_start = 0x372;
+            tpage_x = -0x40;
+        }
+        break;
+
+        case 0xfe:
+        {
+            clut_x = 0x10;
+            tex_y = 0x84;
+            set_start = 0x444;
+            tpage_x = -0x40;
+        }
+        break;
+
+        default:
+        {
+            set_start = 0;
+            tex_y = 0;
+        }
+    }
+
+    u8 glyph = letter & 0xff;
+    //font_padding = w[0x800707c0];
+
+    //letter_pad = bu[font_padding + glyph + set_start] >> 0x5;
+    //letter_w = bu[font_padding + glyph + set_start] & 0x1f
+
+    //x += letter_pad;
+    u16 tex_x = (glyph % 0x15) * 0xc;
+    tex_y += (glyph / 0x15) * 0xc;
+
+    auto poly = std::make_unique<SPRT>();
+    PsyqSetSprt( poly.get() );
+    PsyqSetShadeTex( poly.get(), 0x1 );
+    poly->x0 = x;
+    poly->y0 = y;
+    poly->u0 = tex_x;
+    poly->v0 = tex_y;
+    poly->clut = PsyqGetClut( 0x100 | clut_x, 0x1f0 + color );
+    poly->w = 0xc;
+    poly->h = 0xc;
+    PsyqAddPrim( g_menu_otag, poly.get() );
+    g_menu_poly->emplace_back(std::move(poly));
+
+    x += 0x10;//letter_w;
+
+    if( l_str_global_mode == 0 )
+    {
+        SRECT tw;
+        tw.x = 0;
+        tw.y = 0;
+        tw.w = 0xff;
+        tw.h = 0xff;
+        auto poly = std::make_unique<DR_MODE>();
+        PsyqSetDrawMode( poly.get(), 0, 0x1, (((0x380 + tpage_x) & 0x3ff) >> 0x6) | 0x30, &tw );
+        PsyqAddPrim( g_menu_otag, poly.get() );
+        g_menu_poly->emplace_back(std::move(poly));
+    }
+
+    return x;
+}
+
+
+
+void MenuDrawString( s16 x, s16 y, MenuStr& str, u8 color )
+{
+    u8* temp = str.str.data();
+    if( str.str.size() == 0 ) return;
+
+    s16 cur_x = x;
+
+    for( int i = 0; i < l_max_string_size; ++i )
+    {
+        u16 letter = *temp;
+        temp += 0x1;
+
+        if( letter == 0xff ) break;
+
+        if( (letter == 0xf8) || (letter == 0xfa) || (letter == 0xfb) || (letter == 0xfc) || (letter == 0xfd) || (letter == 0xfe) )
+        {
+            letter = (letter << 0x8) | *temp;
+            temp += 0x1;
+        }
+
+        cur_x = MenuDrawSingleLetter( cur_x, y, color, letter );
+    }
+
+    if( l_str_global_mode != 0 )
+    {
+        SRECT tw;
+        tw.x = 0;
+        tw.y = 0;
+        tw.w = 0xff;
+        tw.h = 0xff;
+        auto poly = std::make_unique<DR_MODE>();
+        PsyqSetDrawMode( poly.get(), 0, 0x1, 0x3e, &tw );
+        PsyqAddPrim( g_menu_otag, poly.get() );
+        g_menu_poly->emplace_back(std::move(poly));
+    }
 }

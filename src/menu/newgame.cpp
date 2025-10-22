@@ -40,8 +40,10 @@ bool MenuNewGameUpdate( u32 frame )
 {
     MenuDrawCursor( l_newgame_center.vx - 0x12, l_newgame_center.vy + 0x6 );
 
-    // system_menu_draw_string( l_newgame_center.vx + 0x8, l_newgame_center.vy + 0x6, 0x801e317c, 0x7 ); // "NEW GAME"
-    // system_menu_draw_string( l_newgame_center.vx + 0x8, l_newgame_center.vy + 0x12, 0x801e2e64, ( (bu[0x801e8f38] != 0) || (bu[0x801e8f3b] != 0) ) ? 0x7 : 0 ); // "Continue?"
+    MenuStr str_new = MenuStr("NEW GAME");
+    MenuStr str_con = MenuStr("Continue?");
+    MenuDrawString( l_newgame_center.vx + 0x8, l_newgame_center.vy + 0x6, str_new, 0x7 );
+    MenuDrawString( l_newgame_center.vx + 0x8, l_newgame_center.vy + 0x12, str_con, 0x0 );
 
     SRECT rect;
     rect.x = 0;

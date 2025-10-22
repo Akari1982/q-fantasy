@@ -491,6 +491,7 @@ void POLY_FT4::execute()
     l_render_shader.setUniform2i( "clut", (clut & 0x3f) * 0x10, (clut & 0xffc0) >> 0x6 );
     l_render_shader.setUniform2i( "tpage", (tpage << 0x6) & 0x3ff, (tpage << 0x4) & 0x100 );
     l_render_shader.setUniform1i( "depth", (tpage >> 0x7) & 0x3 );
+    l_render_shader.setUniform1i( "transp",(code & 0x2) ? 1 : 0 );
     l_render_shader.setUniform1i( "abr", (tpage >> 0x5) & 0x3 );
     l_render_shader.setUniform1i( "dtd", l_rendering_dtd );
     mesh.draw();
