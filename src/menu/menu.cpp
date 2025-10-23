@@ -4,6 +4,13 @@
 
 
 
+u16 g_buttons_1_state;
+u16 g_buttons_1_prev;
+u16 g_buttons_1_pressed;
+u16 g_buttons_1_repeated;
+bool l_buttons_1_repeat_start;
+u16 l_buttons_1_repeat_cur;
+
 std::vector<u8> g_font_paddings;
 
 u8 l_max_string_size = 0x40;
@@ -11,6 +18,54 @@ u8 l_str_global_mode = 1;
 
 std::vector<std::unique_ptr<OTag>>* g_menu_poly;
 OTag* g_menu_otag;
+
+
+
+void MenuUpdateButtons()
+{
+    u32 buttons = ButtonsGetCurrent();
+
+    g_buttons_1_state = buttons;
+    g_buttons_1_pressed = (g_buttons_1_state ^ g_buttons_1_prev) & g_buttons_1_state;
+    g_buttons_1_repeated = 0;
+
+    // repeat logic
+    if( g_buttons_1_state == g_buttons_1_prev )
+    {
+        if( l_buttons_1_repeat_start == false )
+        {
+            if( l_buttons_1_repeat_cur != 0xf )
+            {
+                l_buttons_1_repeat_cur += 0x1;
+            }
+            else
+            {
+                l_buttons_1_repeat_start = true;
+                l_buttons_1_repeat_cur = 0;
+            }
+        }
+        else
+        {
+            if( l_buttons_1_repeat_cur != 3 )
+            {
+                l_buttons_1_repeat_cur += 0x1;
+            }
+            else
+            {
+                l_buttons_1_repeat_cur = 0;
+                g_buttons_1_repeated = g_buttons_1_state;
+            }
+        }
+    }
+    else
+    {
+        l_buttons_1_repeat_start = false;
+        l_buttons_1_repeat_cur = 0;
+    }
+
+    g_buttons_1_prev = g_buttons_1_state;
+    g_buttons_1_repeated |= g_buttons_1_pressed;
+}
 
 
 

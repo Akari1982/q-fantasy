@@ -38,7 +38,12 @@ void MenuNewGameInit()
 
 bool MenuNewGameUpdate( u32 frame )
 {
-    MenuDrawCursor( l_newgame_center.vx - 0x12, l_newgame_center.vy + 0x6 );
+    static int y = 0;
+    if( g_buttons_1_repeated == BUTTON_UP ) y -= 0x5;
+    if( g_buttons_1_repeated == BUTTON_DOWN ) y += 0x5;
+
+
+    MenuDrawCursor( l_newgame_center.vx - 0x12, l_newgame_center.vy + 0x6 + y );
 
     MenuStr str_new = MenuStr("NEW GAME");
     MenuStr str_con = MenuStr("Continue?");
@@ -98,6 +103,8 @@ bool MenuNewGameMain()
 
     while( true )
     {
+        MenuUpdateButtons();
+
         l_newgame_draw[l_newgame_rb].clear();
         MenuSetPoly( &l_newgame_draw[l_newgame_rb] );
 

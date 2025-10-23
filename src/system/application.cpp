@@ -5,6 +5,7 @@
 #include "browser_field.h"
 #include "browser_field_opcodes.h"
 #include "debug_vram.h"
+#include "kernel/buttons.h"
 #include "psyq/libgpu.h"
 
 
@@ -179,8 +180,58 @@ void Application::draw()
 
 
 
-void Application::keyPressed( int key ) {}
-void Application::keyReleased( int key ) {}
+void Application::keyPressed( int key )
+{
+    u32 buttons = 0;
+    switch( key )
+    {
+        case OF_KEY_HOME:        buttons |= BUTTON_L2; break;
+        case OF_KEY_PAGE_UP:     buttons |= BUTTON_R2; break;
+        case OF_KEY_END:         buttons |= BUTTON_L1; break;
+        case OF_KEY_PAGE_DOWN:   buttons |= BUTTON_R1; break;
+        case 's':                buttons |= BUTTON_TRIANGLE; break;
+        case 'x':                buttons |= BUTTON_CIRCLE; break;
+        case 'z':                buttons |= BUTTON_CROSS; break;
+        case 'a':                buttons |= BUTTON_SQUARE; break;
+        case OF_KEY_RIGHT_SHIFT: buttons |= BUTTON_SELECT; break;
+        case OF_KEY_RETURN:      buttons |= BUTTON_START; break;
+        case OF_KEY_UP:          buttons |= BUTTON_UP; break;
+        case OF_KEY_RIGHT:       buttons |= BUTTON_RIGHT; break;
+        case OF_KEY_DOWN:        buttons |= BUTTON_DOWN; break;
+        case OF_KEY_LEFT:        buttons |= BUTTON_LEFT; break;
+    }
+
+    if( buttons != 0 ) ButtonsPressed1( buttons );
+}
+
+
+
+void Application::keyReleased( int key )
+{
+    u32 buttons = 0;
+    switch( key )
+    {
+        case OF_KEY_HOME:        buttons |= BUTTON_L2; break;
+        case OF_KEY_PAGE_UP:     buttons |= BUTTON_R2; break;
+        case OF_KEY_END:         buttons |= BUTTON_L1; break;
+        case OF_KEY_PAGE_DOWN:   buttons |= BUTTON_R1; break;
+        case 's':                buttons |= BUTTON_TRIANGLE; break;
+        case 'x':                buttons |= BUTTON_CIRCLE; break;
+        case 'z':                buttons |= BUTTON_CROSS; break;
+        case 'a':                buttons |= BUTTON_SQUARE; break;
+        case OF_KEY_RIGHT_SHIFT: buttons |= BUTTON_SELECT; break;
+        case OF_KEY_RETURN:      buttons |= BUTTON_START; break;
+        case OF_KEY_UP:          buttons |= BUTTON_UP; break;
+        case OF_KEY_RIGHT:       buttons |= BUTTON_RIGHT; break;
+        case OF_KEY_DOWN:        buttons |= BUTTON_DOWN; break;
+        case OF_KEY_LEFT:        buttons |= BUTTON_LEFT; break;
+    }
+
+    if( buttons != 0 ) ButtonsReleased1( buttons );
+}
+
+
+
 void Application::mouseMoved( int x, int y ) {}
 void Application::mouseDragged( int x, int y, int button ) {}
 void Application::mousePressed( int x, int y, int button ) {}

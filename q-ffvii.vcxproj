@@ -107,6 +107,7 @@
     <ClCompile Include="src\ending\ending.cpp" />
     <ClCompile Include="src\field\field.cpp" />
     <ClCompile Include="src\kernel\akao.cpp" />
+    <ClCompile Include="src\kernel\buttons.cpp" />
     <ClCompile Include="src\kernel\file.cpp" />
     <ClCompile Include="src\kernel\game.cpp" />
     <ClCompile Include="src\main.cpp" />
@@ -156,6 +157,7 @@
     <ClInclude Include="src\kernel\akao.h" />
     <ClInclude Include="src\kernel\akao_commands.h" />
     <ClInclude Include="src\kernel\akao_opcodes.h" />
+    <ClInclude Include="src\kernel\buttons.h" />
     <ClInclude Include="src\kernel\file.h" />
     <ClInclude Include="src\kernel\game.h" />
     <ClInclude Include="src\menu\menu.h" />

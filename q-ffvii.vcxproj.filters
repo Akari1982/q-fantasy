@@ -133,6 +133,9 @@
     <ClCompile Include="src\menu\newgame.cpp">
       <Filter>src\menu</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\buttons.cpp">
+      <Filter>src\kernel</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="third_party\ofxImGui\src\BaseEngine.h">
@@ -317,6 +320,9 @@
     </ClInclude>
     <ClInclude Include="src\menu\newgame.h">
       <Filter>src\menu</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kernel\buttons.h">
+      <Filter>src\kernel</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
