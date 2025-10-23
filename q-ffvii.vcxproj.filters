@@ -118,9 +118,6 @@
     <ClCompile Include="src\kernel\file.cpp">
       <Filter>src\kernel</Filter>
     </ClCompile>
-    <ClCompile Include="src\psyq\tim.cpp">
-      <Filter>src\psyq</Filter>
-    </ClCompile>
     <ClCompile Include="src\kernel\game.cpp">
       <Filter>src\kernel</Filter>
     </ClCompile>
@@ -135,6 +132,15 @@
     </ClCompile>
     <ClCompile Include="src\kernel\buttons.cpp">
       <Filter>src\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="src\psyq\psxgpu.cpp">
+      <Filter>src\psyq</Filter>
+    </ClCompile>
+    <ClCompile Include="src\field\background.cpp">
+      <Filter>src\field</Filter>
+    </ClCompile>
+    <ClCompile Include="src\field\rain.cpp">
+      <Filter>src\field</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -306,9 +312,6 @@
     <ClInclude Include="src\kernel\file.h">
       <Filter>src\kernel</Filter>
     </ClInclude>
-    <ClInclude Include="src\psyq\tim.h">
-      <Filter>src\psyq</Filter>
-    </ClInclude>
     <ClInclude Include="src\kernel\game.h">
       <Filter>src\kernel</Filter>
     </ClInclude>
@@ -323,6 +326,15 @@
     </ClInclude>
     <ClInclude Include="src\kernel\buttons.h">
       <Filter>src\kernel</Filter>
+    </ClInclude>
+    <ClInclude Include="src\psyq\psxgpu.h">
+      <Filter>src\psyq</Filter>
+    </ClInclude>
+    <ClInclude Include="src\field\background.h">
+      <Filter>src\field</Filter>
+    </ClInclude>
+    <ClInclude Include="src\field\rain.h">
+      <Filter>src\field</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

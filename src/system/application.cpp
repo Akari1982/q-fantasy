@@ -6,12 +6,11 @@
 #include "browser_field_opcodes.h"
 #include "debug_vram.h"
 #include "kernel/buttons.h"
-#include "psyq/libgpu.h"
+#include "psyq/psxgpu.h"
 
 
 
 std::shared_ptr<ofAppBaseWindow> g_application;
-ofTexture g_screen;
 
 
 

@@ -1,7 +1,7 @@
 #include "browser_ending.h"
 #include "system/icons_font.h"
 #include "kernel/file.h"
-#include "psyq/tim.h"
+#include "psyq/libgpu.h"
 
 #include "ofxImGui.h"
 #include <format>
@@ -24,13 +24,13 @@ void LoadTim( u8 id )
     FileLZSExtract( part_file, extracted );
     //FileWrite( ofToHex( id ) + ".tim", extracted );
 
-    PsyqGpuOpenTim( extracted.begin() );
+    PsyqOpenTim( extracted.begin() );
 
     TIM_IMAGE image;
-    PsyqGpuReadTim( &image );
+    PsyqReadTim( &image );
 
-    if( image.paddr != 0 ) PsyqGpuLoadImage( &image.prect, (u8*)image.paddr );
-    if( image.caddr != 0 ) PsyqGpuLoadImage( &image.crect, (u8*)image.caddr );
+    if( image.paddr != 0 ) PsyqLoadImage( &image.prect, (u8*)image.paddr );
+    if( image.caddr != 0 ) PsyqLoadImage( &image.crect, (u8*)image.caddr );
 }
 
 

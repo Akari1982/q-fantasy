@@ -105,7 +105,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\ending\ending.cpp" />
+    <ClCompile Include="src\field\background.cpp" />
     <ClCompile Include="src\field\field.cpp" />
+    <ClCompile Include="src\field\rain.cpp" />
     <ClCompile Include="src\kernel\akao.cpp" />
     <ClCompile Include="src\kernel\buttons.cpp" />
     <ClCompile Include="src\kernel\file.cpp" />
@@ -117,13 +119,13 @@
     <ClCompile Include="src\psyq\libgpu.cpp" />
     <ClCompile Include="src\psyq\libgte.cpp" />
     <ClCompile Include="src\psyq\libspu.cpp" />
+    <ClCompile Include="src\psyq\psxgpu.cpp" />
     <ClCompile Include="src\psyq\psxgte.cpp" />
     <ClCompile Include="src\psyq\psxspu\audio_stream.cpp" />
     <ClCompile Include="src\psyq\psxspu\common\gsvector.cpp" />
     <ClCompile Include="src\psyq\psxspu\common\timer.cpp" />
     <ClCompile Include="src\psyq\psxspu\of_audio_stream.cpp" />
     <ClCompile Include="src\psyq\psxspu\spu.cpp" />
-    <ClCompile Include="src\psyq\tim.cpp" />
     <ClCompile Include="src\psyq\typedef.cpp" />
     <ClCompile Include="src\system\application.cpp" />
     <ClCompile Include="src\system\browser_akao.cpp" />
@@ -152,8 +154,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ending\ending.h" />
+    <ClInclude Include="src\field\background.h" />
     <ClInclude Include="src\field\field.h" />
     <ClInclude Include="src\field\field_list.h" />
+    <ClInclude Include="src\field\rain.h" />
     <ClInclude Include="src\kernel\akao.h" />
     <ClInclude Include="src\kernel\akao_commands.h" />
     <ClInclude Include="src\kernel\akao_opcodes.h" />
@@ -166,6 +170,7 @@
     <ClInclude Include="src\psyq\libgpu.h" />
     <ClInclude Include="src\psyq\libgte.h" />
     <ClInclude Include="src\psyq\libspu.h" />
+    <ClInclude Include="src\psyq\psxgpu.h" />
     <ClInclude Include="src\psyq\psxgte.h" />
     <ClInclude Include="src\psyq\psxspu\audio_stream.h" />
     <ClInclude Include="src\psyq\psxspu\common\align.h" />
@@ -177,7 +182,6 @@
     <ClInclude Include="src\psyq\psxspu\common\timer.h" />
     <ClInclude Include="src\psyq\psxspu\common\types.h" />
     <ClInclude Include="src\psyq\psxspu\spu.h" />
-    <ClInclude Include="src\psyq\tim.h" />
     <ClInclude Include="src\psyq\typedef.h" />
     <ClInclude Include="src\system\application.h" />
     <ClInclude Include="src\system\browser_akao.h" />

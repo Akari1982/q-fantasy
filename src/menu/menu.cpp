@@ -1,5 +1,4 @@
 #include "menu.h"
-#include "psyq/tim.h"
 #include "psyq/libgpu.h"
 
 
@@ -71,25 +70,25 @@ void MenuUpdateButtons()
 
 void MenuLoadImage( std::vector<u8>::const_iterator ptr, s16 img_x, s16 img_y, s16 clut_x, s16 clut_y )
 {
-    PsyqGpuOpenTim( ptr );
+    PsyqOpenTim( ptr );
 
     while( true )
     {
         TIM_IMAGE tim;
-        if( PsyqGpuReadTim( &tim ) == 0 ) return;
+        if( PsyqReadTim( &tim ) == 0 ) return;
 
         if( tim.caddr != 0 )
         {
             tim.crect.x = clut_x;
             tim.crect.y = clut_y;
-            PsyqGpuLoadImage( &tim.crect, (u8*)tim.caddr );
+            PsyqLoadImage( &tim.crect, (u8*)tim.caddr );
         }
 
         if( tim.paddr != 0 )
         {
             tim.prect.x = img_x;
             tim.prect.y = img_y;
-            PsyqGpuLoadImage( &tim.prect, (u8*)tim.paddr );
+            PsyqLoadImage( &tim.prect, (u8*)tim.paddr );
         }
     }
 }

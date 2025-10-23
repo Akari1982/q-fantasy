@@ -36,4 +36,3 @@ void GameRender();
 
 
 extern std::shared_ptr<ofAppBaseWindow> g_application;
-extern ofTexture g_screen;

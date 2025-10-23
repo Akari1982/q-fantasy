@@ -1,109 +1,123 @@
 #include "libgpu.h"
-#include "system/application.h"
-
-#define VRAM_W 2048
-#define VRAM_H 512
-
-std::array<u8, VRAM_W * VRAM_H> g_vram;
-ofFbo l_render;
-ofTexture l_render_texture;
-ofShader l_render_shader;
-
-// rendering settings
-u32 l_rendering_dtd = 0;
-u16 l_rendering_tpage = 0;
-u32 l_rendering_draw_x = 0;
-u32 l_rendering_draw_y = 0;
-u32 l_rendering_disp_x = 0;
-u32 l_rendering_disp_y = 0;
+#include "psxgpu.h"
 
 
 
-void update_vram()
+std::vector<u8>::const_iterator l_current_tim;
+
+
+
+int PsyqOpenTim( std::vector<u8>::const_iterator ptr )
 {
-    // update vram from render buffer
-    ofTexture& texture = l_render.getTexture();
-    ofPixels pixels;
-    texture.readToPixels(pixels);
+    l_current_tim = ptr;
+    return 0;
+}
 
-    int w = pixels.getWidth();
-    int h = pixels.getHeight();
 
-    for( int y = 0; y < h; ++y )
+
+int GetTimData( std::vector<u8>::const_iterator input, TIM_IMAGE* timimg )
+{
+    if( READ_LE_U32( input ) == 0x10 )
     {
-        for( int x = 0; x < w; ++x )
+        std::vector<u8>::const_iterator timaddr = input + 0x8;
+        timimg->mode = READ_LE_U32( input + 0x4 );
+
+        int clut_len = 0;
+
+        if( timimg->mode & 0x8 )
         {
-            ofColor color = pixels.getColor( x, y );
+            timimg->crect.x = READ_LE_S16( input + 0xc + 0x0 );
+            timimg->crect.y = READ_LE_S16( input + 0xc + 0x2 );
+            timimg->crect.w = READ_LE_S16( input + 0xc + 0x4 );
+            timimg->crect.h = READ_LE_S16( input + 0xc + 0x6 );
+            timimg->caddr = &(*(input + 0x14));
+            clut_len = READ_LE_U32( timaddr ) / 4;
+            timaddr += READ_LE_U32( timaddr ) & ~0x3;
+        }
+        else
+        {
+            timimg->caddr = nullptr;
+        }
 
-            u16 r = (color.r >> 3) & 0x1f;
-            u16 g = (color.g >> 3) & 0x1f;
-            u16 b = (color.b >> 3) & 0x1f;
+        timimg->prect.x = READ_LE_S16( timaddr + 0x4 + 0x0 );
+        timimg->prect.y = READ_LE_S16( timaddr + 0x4 + 0x2 );
+        timimg->prect.w = READ_LE_S16( timaddr + 0x4 + 0x4 );
+        timimg->prect.h = READ_LE_S16( timaddr + 0x4 + 0x6 );
+        timimg->paddr = &(*(timaddr + 0xc));
+        return clut_len + (READ_LE_U32( timaddr ) / 4) + 0x2;
+    }
+    else
+    {
+        return -1;
+    }
+}
 
-            u16 rgb = (b << 0xa) | (g << 0x5) | r;
 
-            g_vram[((l_rendering_draw_y + y) * VRAM_W) + (l_rendering_draw_x + x) * 2 + 0] = rgb & 0xff;
-            g_vram[((l_rendering_draw_y + y) * VRAM_W) + (l_rendering_draw_x + x) * 2 + 1] = rgb >> 0x8;
+
+TIM_IMAGE* PsyqReadTim( TIM_IMAGE* timimg )
+{
+    int tim_offset = GetTimData( l_current_tim, timimg );
+
+    if( tim_offset != -1 )
+    {
+        l_current_tim += tim_offset * 4;
+        return timimg;
+    }
+
+    return nullptr;
+}
+
+
+
+void PsyqLoadImage( SRECT* rect, const u8* data )
+{
+    int vram_offset = rect->y * 2048 + rect->x * 2;
+
+    for( int y = 0; y < rect->h; ++y )
+    {
+        auto vramIterator = g_vram.begin() + vram_offset;
+        for( int x = 0; x < (rect->w * 2); ++x )
+        {
+            *(vramIterator++) = *(data++);
+            ++vram_offset;
+        }
+        vram_offset += 2048 - rect->w * 2;
+    }
+}
+
+
+
+void PsyqLoadImage( SRECT* rect, std::span<u8>::iterator data )
+{
+    for( int y = 0; y < rect->h; ++y )
+    {
+        auto vram = g_vram.begin() + (rect->y + y) * 2048 + rect->x * 2;
+
+        for( int x = 0; x < (rect->w * 2); ++x )
+        {
+            *vram = READ_LE_U8( data );
+            vram += 1;
+            data += 1;
         }
     }
+}
 
-    // update draw tex from vram
-    if( !g_screen.isAllocated() )
-    {
-        g_screen.allocate( VRAM_W / 2, VRAM_H, GL_RGBA8, false );
-    }
 
-    w = g_screen.getWidth();
-    h = g_screen.getHeight();
-    pixels.allocate( w, h, OF_PIXELS_RGBA );
 
-    for( int y = 0; y < h; ++y )
-    {
-        for( int x = 0; x < w; ++x )
-        {
-            int vram_x = l_rendering_disp_x + x;
-            int vram_y = l_rendering_disp_y + y;
-            u16 color = (g_vram[vram_y * VRAM_W + vram_x * 2 + 1] << 0x8) | g_vram[vram_y * VRAM_W + vram_x * 2 + 0];
+u16 PsyqLoadTPage( const u8* data, int tp, int abr, int x, int y, int w, int h )
+{
+    SRECT rect;
+    rect.x = x;
+    rect.y = y;
+    rect.w = w;
+    rect.h = h;
 
-            u8 b = ((color >> 0xa) & 0x1f) << 3;
-            u8 g = ((color >> 0x5) & 0x1f) << 3;
-            u8 r = ((color >> 0x0) & 0x1f) << 3;
+    if( tp == 0 ) rect.w = w / 0x4;
+    else if( tp == 0x1 ) rect.w = w / 0x2;
 
-            pixels.setColor( x, y, ofColor(r, g, b, 255) );
-        }
-    }
+    PsyqLoadImage( &rect, data );
 
-    g_screen.loadData( pixels );
-
-    // update vram texture for rendering
-    if( !l_render_texture.isAllocated() )
-    {
-        l_render_shader.load( "../system/psx_render.vert", "../system/psx_render.frag" );
-
-        GLuint texID;
-        glGenTextures( 1, &texID );
-        glBindTexture( GL_TEXTURE_2D, texID );
-        
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-
-        glTexImage2D( GL_TEXTURE_2D, 0, GL_R8UI, VRAM_W, VRAM_H, 0, GL_RED_INTEGER, GL_UNSIGNED_BYTE, nullptr );
-
-        l_render_texture.setUseExternalTextureID( texID );
-        l_render_texture.texData.width = VRAM_W;
-        l_render_texture.texData.height = VRAM_H;
-        l_render_texture.texData.tex_w = VRAM_W;
-        l_render_texture.texData.tex_h = VRAM_H;
-        l_render_texture.texData.glInternalFormat = GL_R8UI;
-        l_render_texture.texData.textureTarget = GL_TEXTURE_2D;
-
-        glBindTexture( GL_TEXTURE_2D, 0 );
-    }
-
-    const u16* src = reinterpret_cast<const u16*>(g_vram.data());
-
-    pixels.allocate( VRAM_W, VRAM_H, OF_IMAGE_GRAYSCALE );
-    memcpy( pixels.getData(), g_vram.data(), g_vram.size());
-    l_render_texture.loadData( pixels.getData(), VRAM_W, VRAM_H, GL_RED_INTEGER, GL_UNSIGNED_BYTE );
+    return PsyqGetTPage( tp, abr, x, y );
 }
 
 
@@ -112,7 +126,7 @@ s32 PsyqVSync( s32 mode )
 {
     GameRender();
 
-    update_vram();
+    GPUUpdateVram();
 
     return 1;
 }
@@ -236,8 +250,8 @@ DISPENV* PsyqPutDispEnv( DISPENV* env )
         g_screen.allocate( env->disp.w, env->disp.h, GL_RGBA8, false );
     }
 
-    l_rendering_disp_x = env->disp.x;
-    l_rendering_disp_y = env->disp.y;
+    g_rendering_disp_x = env->disp.x;
+    g_rendering_disp_y = env->disp.y;
 
     return env;
 }
@@ -246,17 +260,17 @@ DISPENV* PsyqPutDispEnv( DISPENV* env )
 
 DRAWENV* PsyqPutDrawEnv( DRAWENV* env )
 {
-    if( (l_render.getWidth() != env->clip.w) || (l_render.getHeight() != env->clip.h) )
+    if( (g_render.getWidth() != env->clip.w) || (g_render.getHeight() != env->clip.h) )
     {
-        l_render.allocate( env->clip.w, env->clip.h, GL_RGBA );
+        g_render.allocate( env->clip.w, env->clip.h, GL_RGBA );
     }
 
-    l_rendering_draw_x = env->clip.x;
-    l_rendering_draw_y = env->clip.y;
+    g_rendering_draw_x = env->clip.x;
+    g_rendering_draw_y = env->clip.y;
 
-    l_render.begin();
+    g_render.begin();
     ofClear( env->r0, env->g0, env->b0, 255 );
-    l_render.end();
+    g_render.end();
 
     return env;
 }
@@ -391,190 +405,4 @@ u16 PsyqGetClut( s32 x, s32 y )
 u16 PsyqGetTPage( int tp, int abr, int x, int y )
 {
     return ((y & 0x200) << 0x2) | ((tp & 0x3) << 0x7) | ((abr & 0x3) << 0x5) | ((y & 0x100) >> 0x4) | ((x & 0x3ff) >> 0x6);
-}
-
-
-
-void OTag::execute()
-{
-    if( size == 0 ) return;
-
-    u8 code = *((u8*)this + sizeof(OTag) + 0x3);
-
-    if( (code & 0xfc) == 0x2c )
-    {
-        ((POLY_FT4*)this)->execute();
-    }
-    else if( (code & 0xfc) == 0x40 )
-    {
-        ((LINE_F2*)this)->execute();
-    }
-    else if( (code & 0xfc) == 0x64 )
-    {
-        ((SPRT*)this)->execute();
-    }
-    else if( (code == 0xe1) && (size == 0x2) )
-    {
-        ((DR_MODE*)this)->execute();
-    }
-    else
-    {
-        ofLog( OF_LOG_ERROR, "Unsupported OTag: 0x" + ofToHex( code ) );
-    }
-}
-
-
-
-void LINE_F2::execute()
-{
-    l_render.begin();
-    ofSetColor( r0, g0, b0, (code & 0x2) ? 0x3f : 0xff );
-    ofSetLineWidth( 1 );
-    ofDrawLine( glm::vec3( 0xa0 + x0, 0x78 + y0, 0 ), glm::vec3( 0xa0 + x1, 0x78 + y1, 0 ) );
-    l_render.end();
-}
-
-
-
-void POLY_FT4::execute()
-{
-    l_render.begin();
-
-    ofVboMesh mesh;
-
-    std::vector<glm::vec3> vertices =
-    {
-        { x0, y0, 0 },
-        { x1, y1, 0 },
-        { x3, y3, 0 },
-        { x2, y2, 0 }
-    };
-
-    std::vector<ofFloatColor> colors =
-    {
-        { r0 / 128.0f, g0 / 128.0f, b0 / 128.0f, 1.0f },
-        { r0 / 128.0f, g0 / 128.0f, b0 / 128.0f, 1.0f },
-        { r0 / 128.0f, g0 / 128.0f, b0 / 128.0f, 1.0f },
-        { r0 / 128.0f, g0 / 128.0f, b0 / 128.0f, 1.0f }
-    };
-
-    std::vector<glm::vec3> normals =
-    {
-        { 0, 0, 0 },
-        { 0, 0, 0 },
-        { 0, 0, 0 },
-        { 0, 0, 0 }
-    };
-
-    std::vector<glm::vec2> texCoords =
-    {
-        { u0, v0 },
-        { u1, v1 },
-        { u3, v3 },
-        { u2, v2 }
-    };
-
-    mesh.clear();
-    mesh.setMode( OF_PRIMITIVE_TRIANGLE_FAN );
-    mesh.addVertices( vertices );
-    mesh.addColors( colors );
-    mesh.addNormals( normals );
-    mesh.addTexCoords( texCoords );
-
-    glm::mat4 projection = glm::ortho( 0.0f, l_render.getWidth(), 0.0f, l_render.getHeight(), -1.0f, 1.0f );
-
-    l_render_shader.begin();
-    l_render_shader.setUniformMatrix4f( "g_matrix", projection );
-    l_render_shader.setUniformTexture( "g_texture", l_render_texture, 0 );
-    l_render_shader.setUniformTexture( "g_background", l_render.getTexture(), 1 );
-    l_render_shader.setUniform2i( "g_clut", (clut & 0x3f) * 0x10, (clut & 0xffc0) >> 0x6 );
-    l_render_shader.setUniform2i( "g_tpage", (tpage << 0x6) & 0x3ff, (tpage << 0x4) & 0x100 );
-    l_render_shader.setUniform1i( "g_depth", (tpage >> 0x7) & 0x3 );
-    l_render_shader.setUniform1i( "g_transp",(code & 0x2) ? 1 : 0 );
-    l_render_shader.setUniform1i( "g_abr", (tpage >> 0x5) & 0x3 );
-    l_render_shader.setUniform1i( "g_dtd", l_rendering_dtd );
-    mesh.draw();
-    l_render_shader.end();
-
-    l_render.end();
-}
-
-
-
-void SPRT::execute()
-{
-    l_render.begin();
-
-    ofVboMesh mesh;
-
-    std::vector<glm::vec3> vertices =
-    {
-        { x0,     y0,     0 },
-        { x0 + w, y0,     0 },
-        { x0 + w, y0 + h, 0 },
-        { x0,     y0 + h, 0 }
-    };
-
-    if( code & 0x01 )
-    {
-        r0 = 0x80;
-        g0 = 0x80;
-        b0 = 0x80;
-    }
-
-    std::vector<ofFloatColor> colors =
-    {
-        { r0 / 128.0f, g0 / 128.0f, b0 / 128.0f, 1.0f },
-        { r0 / 128.0f, g0 / 128.0f, b0 / 128.0f, 1.0f },
-        { r0 / 128.0f, g0 / 128.0f, b0 / 128.0f, 1.0f },
-        { r0 / 128.0f, g0 / 128.0f, b0 / 128.0f, 1.0f }
-    };
-
-    std::vector<glm::vec3> normals =
-    {
-        { 0, 0, 0 },
-        { 0, 0, 0 },
-        { 0, 0, 0 },
-        { 0, 0, 0 }
-    };
-
-    std::vector<glm::vec2> texCoords =
-    {
-        { u0,     v0     },
-        { u0 + w, v0     },
-        { u0 + w, v0 + h },
-        { u0,     v0 + h }
-    };
-
-    mesh.clear();
-    mesh.setMode( OF_PRIMITIVE_TRIANGLE_FAN );
-    mesh.addVertices( vertices );
-    mesh.addColors( colors );
-    mesh.addNormals( normals );
-    mesh.addTexCoords( texCoords );
-
-    glm::mat4 projection = glm::ortho( 0.0f, l_render.getWidth(), 0.0f, l_render.getHeight(), -1.0f, 1.0f );
-
-    l_render_shader.begin();
-    l_render_shader.setUniformMatrix4f( "g_matrix", projection );
-    l_render_shader.setUniformTexture( "g_texture", l_render_texture, 0 );
-    l_render_shader.setUniformTexture( "g_background", l_render.getTexture(), 1 );
-    l_render_shader.setUniform2i( "g_clut", (clut & 0x3f) * 0x10, (clut & 0xffc0) >> 0x6 );
-    l_render_shader.setUniform2i( "g_tpage", (l_rendering_tpage << 0x6) & 0x3ff, (l_rendering_tpage << 0x4) & 0x100 );
-    l_render_shader.setUniform1i( "g_depth", (l_rendering_tpage >> 0x7) & 0x3 );
-    l_render_shader.setUniform1i( "g_transp",(code & 0x2) ? 1 : 0 );
-    l_render_shader.setUniform1i( "g_abr", (l_rendering_tpage >> 0x5) & 0x3 );
-    l_render_shader.setUniform1i( "g_dtd", 0 );
-    mesh.draw();
-    l_render_shader.end();
-
-    l_render.end();
-}
-
-
-
-void DR_MODE::execute()
-{
-    l_rendering_dtd = (code[0] & 0x200) ? 1 : 0;
-    l_rendering_tpage = code[0] & 0x9ff;
 }

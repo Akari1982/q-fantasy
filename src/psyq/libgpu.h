@@ -3,8 +3,18 @@
 #include "typedef.h"
 
 #include <array>
+#include <span>
 
 
+
+struct TIM_IMAGE
+{
+    u32 mode;
+    SRECT crect;
+    const void* caddr;
+    SRECT prect;
+    const void* paddr;
+};
 
 struct OTag
 {
@@ -56,6 +66,17 @@ struct SPRT : public OTag
     void execute();
 };
 
+struct SPRT_16 : public OTag
+{
+    u8 r0, g0, b0;
+    u8 code;
+    s16 x0, y0;
+    u8 u0, v0;
+    u16 clut;
+
+    void execute();
+};
+
 struct DR_MODE : public OTag
 {
     u32 code[2];
@@ -97,6 +118,13 @@ struct DRAWENV
 
 
 
+int PsyqOpenTim( std::vector<u8>::const_iterator ptr );
+TIM_IMAGE* PsyqReadTim( TIM_IMAGE* timimg );
+
+void PsyqLoadImage( SRECT* rect, const u8* data );
+void PsyqLoadImage( SRECT* rect, std::span<u8>::iterator data );
+u16 PsyqLoadTPage( const u8* data, int tp, int abr, int x, int y, int w, int h );
+
 s32 PsyqVSync( s32 mode );
 
 DISPENV* PsyqSetDefDispEnv( DISPENV* env, s32 x, s32 y, s32 w, s32 h );
@@ -134,7 +162,3 @@ void PsyqSetShadeTex( T* p, s32 tge )
     if( tge == 0 ) p->code &= ~0x1;
     else p->code |= 0x1;
 }
-
-
-
-extern std::array<u8, 2048 * 512> g_vram;

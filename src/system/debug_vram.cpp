@@ -1,5 +1,5 @@
 #include "debug_vram.h"
-#include "psyq/libgpu.h"
+#include "psyq/psxgpu.h"
 
 #include "ofxImGui.h"
 

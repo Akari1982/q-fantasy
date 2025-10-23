@@ -7,7 +7,6 @@
 #include "field/field.h"
 #include "psyq/libgte.h"
 #include "psyq/libspu.h"
-#include "psyq/tim.h"
 
 
 
@@ -31,9 +30,9 @@ void GameMain()
 
     EndingMainLogo();
 
-    GameInitKernel();
+    //GameInitKernel();
 
-    MenuNewGameMain();
+    //MenuNewGameMain();
 
     FieldMain();
 }
@@ -97,14 +96,14 @@ void GameInitKernel()
                 rect.y = READ_LE_S16( &temp[0xe] );
                 rect.w = READ_LE_S16( &temp[0x10] );
                 rect.h = READ_LE_S16( &temp[0x12] );
-                PsyqGpuLoadImage( &rect, &temp[0x14] );
+                PsyqLoadImage( &rect, &temp[0x14] );
             }
 
             rect.x = READ_LE_S16( &temp[offset + 0xc] );
             rect.y = READ_LE_S16( &temp[offset + 0xe] );
             rect.w = READ_LE_S16( &temp[offset + 0x10] );
             rect.h = READ_LE_S16( &temp[offset + 0x12] );
-            PsyqGpuLoadImage( &rect, &temp[offset + 0x14] );
+            PsyqLoadImage( &rect, &temp[offset + 0x14] );
         }
         else if( type == 0x1 )
         {
