@@ -124,6 +124,7 @@ TIM_IMAGE* PsyqReadTim( TIM_IMAGE* timimg );
 void PsyqLoadImage( SRECT* rect, const u8* data );
 void PsyqLoadImage( SRECT* rect, std::span<u8>::iterator data );
 u16 PsyqLoadTPage( const u8* data, int tp, int abr, int x, int y, int w, int h );
+void PsyqClearImage( SRECT* rect, u8 r, u8 g, u8 b );
 
 s32 PsyqVSync( s32 mode );
 

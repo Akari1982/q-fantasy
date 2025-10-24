@@ -3,9 +3,6 @@
 
 
 
-#define VRAM_W 2048
-#define VRAM_H 512
-
 std::array<u8, VRAM_W * VRAM_H> g_vram;
 ofTexture g_screen;
 ofFbo g_render;
@@ -13,18 +10,52 @@ ofTexture l_render_texture;
 ofShader l_render_shader;
 
 // rendering settings
-u32 l_rendering_dtd = 0;
-u16 l_rendering_tpage = 0;
 u32 g_rendering_draw_x = 0;
 u32 g_rendering_draw_y = 0;
 u32 g_rendering_disp_x = 0;
 u32 g_rendering_disp_y = 0;
+u16 g_rendering_tpage = 0;
+u32 g_rendering_dtd = 0;
 
 
 
-void GPUUpdateVram()
+void GPUUpdateRenderFromVram()
 {
-    // update vram from render buffer
+    int w = g_render.getWidth();
+    int h = g_render.getHeight();
+
+    ofTexture texture;
+    g_screen.allocate( w, h, GL_RGBA, false );
+
+    ofPixels pixels;
+    pixels.allocate( w, h, OF_PIXELS_RGBA );
+
+    for( int y = 0; y < h; ++y )
+    {
+        for( int x = 0; x < w; ++x )
+        {
+            int vram_x = g_rendering_draw_x + x;
+            int vram_y = g_rendering_draw_y + y;
+            u16 color = (g_vram[vram_y * VRAM_W + vram_x * 2 + 1] << 0x8) | g_vram[vram_y * VRAM_W + vram_x * 2 + 0];
+
+            u8 r = ((color >> 0x0) & 0x1f) << 3;
+            u8 g = ((color >> 0x5) & 0x1f) << 3;
+            u8 b = ((color >> 0xa) & 0x1f) << 3;
+
+            pixels.setColor( x, y, ofColor(r, g, b, 255) );
+        }
+    }
+
+    texture.loadData( pixels );
+    g_render.begin();
+    texture.draw( 0, 0 );
+    g_render.end();
+}
+
+
+
+void GPUUpdateVramFromRender()
+{
     ofTexture& texture = g_render.getTexture();
     ofPixels pixels;
     texture.readToPixels(pixels);
@@ -49,14 +80,23 @@ void GPUUpdateVram()
         }
     }
 
-    // update draw tex from vram
+    GPUUpdateTextureFromVram();
+}
+
+
+
+void GPUUpdateScreenFromVram()
+{
+    // if texture not yet allocated set to whole vram by default
     if( !g_screen.isAllocated() )
     {
         g_screen.allocate( VRAM_W / 2, VRAM_H, GL_RGBA8, false );
     }
 
-    w = g_screen.getWidth();
-    h = g_screen.getHeight();
+    int w = g_screen.getWidth();
+    int h = g_screen.getHeight();
+
+    ofPixels pixels;
     pixels.allocate( w, h, OF_PIXELS_RGBA );
 
     for( int y = 0; y < h; ++y )
@@ -67,17 +107,21 @@ void GPUUpdateVram()
             int vram_y = g_rendering_disp_y + y;
             u16 color = (g_vram[vram_y * VRAM_W + vram_x * 2 + 1] << 0x8) | g_vram[vram_y * VRAM_W + vram_x * 2 + 0];
 
-            u8 b = ((color >> 0xa) & 0x1f) << 3;
-            u8 g = ((color >> 0x5) & 0x1f) << 3;
             u8 r = ((color >> 0x0) & 0x1f) << 3;
+            u8 g = ((color >> 0x5) & 0x1f) << 3;
+            u8 b = ((color >> 0xa) & 0x1f) << 3;
 
             pixels.setColor( x, y, ofColor(r, g, b, 255) );
         }
     }
 
     g_screen.loadData( pixels );
+}
 
-    // update vram texture for rendering
+
+
+void GPUUpdateTextureFromVram()
+{
     if( !l_render_texture.isAllocated() )
     {
         l_render_shader.load( "../system/psx_render.vert", "../system/psx_render.frag" );
@@ -104,6 +148,7 @@ void GPUUpdateVram()
 
     const u16* src = reinterpret_cast<const u16*>(g_vram.data());
 
+    ofPixels pixels;
     pixels.allocate( VRAM_W, VRAM_H, OF_IMAGE_GRAYSCALE );
     memcpy( pixels.getData(), g_vram.data(), g_vram.size());
     l_render_texture.loadData( pixels.getData(), VRAM_W, VRAM_H, GL_RED_INTEGER, GL_UNSIGNED_BYTE );
@@ -144,9 +189,67 @@ void OTag::execute()
 void LINE_F2::execute()
 {
     g_render.begin();
-    ofSetColor( r0, g0, b0, (code & 0x2) ? 0x3f : 0xff );
+
+    ofVboMesh mesh;
+
+    std::vector<glm::vec3> vertices =
+    {
+        { x0, y0, 0 },
+        { x1, y1, 0 }
+    };
+
+    if( code & 0x01 )
+    {
+        r0 = 0x80;
+        g0 = 0x80;
+        b0 = 0x80;
+    }
+
+    std::vector<ofFloatColor> colors =
+    {
+        { r0 / 128.0f, g0 / 128.0f, b0 / 128.0f, 1.0f },
+        { r0 / 128.0f, g0 / 128.0f, b0 / 128.0f, 1.0f }
+    };
+
+    std::vector<glm::vec3> normals =
+    {
+        { 0, 0, 0 },
+        { 0, 0, 0 },
+        { 0, 0, 0 },
+        { 0, 0, 0 }
+    };
+
+    std::vector<glm::vec2> texCoords =
+    {
+        { 0, 0 },
+        { 1, 1 }
+    };
+
+    mesh.clear();
+    mesh.setMode( OF_PRIMITIVE_LINES );
+    mesh.addVertices( vertices );
+    mesh.addColors( colors );
+    mesh.addNormals( normals );
+    mesh.addTexCoords( texCoords );
+
+    glm::mat4 projection = glm::ortho( 0.0f, g_render.getWidth(), 0.0f, g_render.getHeight(), -1.0f, 1.0f );
+
     ofSetLineWidth( 1 );
-    ofDrawLine( glm::vec3( 0xa0 + x0, 0x78 + y0, 0 ), glm::vec3( 0xa0 + x1, 0x78 + y1, 0 ) );
+
+    l_render_shader.begin();
+    l_render_shader.setUniformMatrix4f( "g_matrix", projection );
+    l_render_shader.setUniformTexture( "g_texture", l_render_texture, 0 );
+    l_render_shader.setUniformTexture( "g_background", g_render.getTexture(), 1 );
+    l_render_shader.setUniform2i( "g_clut", 0, 0 );
+    l_render_shader.setUniform2i( "g_tpage", (g_rendering_tpage << 0x6) & 0x3ff, (g_rendering_tpage << 0x4) & 0x100 );
+    l_render_shader.setUniform1i( "g_depth", (g_rendering_tpage >> 0x7) & 0x3 );
+    l_render_shader.setUniform1i( "g_transp", (code & 0x2) ? 1 : 0 );
+    l_render_shader.setUniform1i( "g_textured", (code & 0x4) ? 1 : 0 );
+    l_render_shader.setUniform1i( "g_abr", (g_rendering_tpage >> 0x5) & 0x3 );
+    l_render_shader.setUniform1i( "g_dtd", 0 );
+    mesh.draw();
+    l_render_shader.end();
+
     g_render.end();
 }
 
@@ -165,6 +268,13 @@ void POLY_FT4::execute()
         { x3, y3, 0 },
         { x2, y2, 0 }
     };
+
+    if( code & 0x01 )
+    {
+        r0 = 0x80;
+        g0 = 0x80;
+        b0 = 0x80;
+    }
 
     std::vector<ofFloatColor> colors =
     {
@@ -206,9 +316,10 @@ void POLY_FT4::execute()
     l_render_shader.setUniform2i( "g_clut", (clut & 0x3f) * 0x10, (clut & 0xffc0) >> 0x6 );
     l_render_shader.setUniform2i( "g_tpage", (tpage << 0x6) & 0x3ff, (tpage << 0x4) & 0x100 );
     l_render_shader.setUniform1i( "g_depth", (tpage >> 0x7) & 0x3 );
-    l_render_shader.setUniform1i( "g_transp",(code & 0x2) ? 1 : 0 );
+    l_render_shader.setUniform1i( "g_transp", (code & 0x2) ? 1 : 0 );
+    l_render_shader.setUniform1i( "g_textured", (code & 0x4) ? 1 : 0 );
     l_render_shader.setUniform1i( "g_abr", (tpage >> 0x5) & 0x3 );
-    l_render_shader.setUniform1i( "g_dtd", l_rendering_dtd );
+    l_render_shader.setUniform1i( "g_dtd", g_rendering_dtd );
     mesh.draw();
     l_render_shader.end();
 
@@ -276,10 +387,11 @@ void SPRT::execute()
     l_render_shader.setUniformTexture( "g_texture", l_render_texture, 0 );
     l_render_shader.setUniformTexture( "g_background", g_render.getTexture(), 1 );
     l_render_shader.setUniform2i( "g_clut", (clut & 0x3f) * 0x10, (clut & 0xffc0) >> 0x6 );
-    l_render_shader.setUniform2i( "g_tpage", (l_rendering_tpage << 0x6) & 0x3ff, (l_rendering_tpage << 0x4) & 0x100 );
-    l_render_shader.setUniform1i( "g_depth", (l_rendering_tpage >> 0x7) & 0x3 );
-    l_render_shader.setUniform1i( "g_transp",(code & 0x2) ? 1 : 0 );
-    l_render_shader.setUniform1i( "g_abr", (l_rendering_tpage >> 0x5) & 0x3 );
+    l_render_shader.setUniform2i( "g_tpage", (g_rendering_tpage << 0x6) & 0x3ff, (g_rendering_tpage << 0x4) & 0x100 );
+    l_render_shader.setUniform1i( "g_depth", (g_rendering_tpage >> 0x7) & 0x3 );
+    l_render_shader.setUniform1i( "g_transp", (code & 0x2) ? 1 : 0 );
+    l_render_shader.setUniform1i( "g_textured", (code & 0x4) ? 1 : 0 );
+    l_render_shader.setUniform1i( "g_abr", (g_rendering_tpage >> 0x5) & 0x3 );
     l_render_shader.setUniform1i( "g_dtd", 0 );
     mesh.draw();
     l_render_shader.end();
@@ -291,6 +403,6 @@ void SPRT::execute()
 
 void DR_MODE::execute()
 {
-    l_rendering_dtd = (code[0] & 0x200) ? 1 : 0;
-    l_rendering_tpage = code[0] & 0x9ff;
+    g_rendering_dtd = (code[0] & 0x200) ? 1 : 0;
+    g_rendering_tpage = code[0] & 0x9ff;
 }

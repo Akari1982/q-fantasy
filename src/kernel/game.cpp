@@ -10,15 +10,9 @@
 
 
 
-DISPENV g_global_dispenv;
-DRAWENV g_global_drawenv;
-
-
-
 void GameInitBase();
 void GameInitKernel();
 void GameInitAkaoEngine();
-void GameInitDispEnvDrawEnv();
 
 
 
@@ -26,7 +20,7 @@ void GameMain()
 {
     GameInitBase();
     GameInitAkaoEngine();
-    GameInitDispEnvDrawEnv();
+    FieldInitEnv();
 
     EndingMainLogo();
 
@@ -110,17 +104,4 @@ void GameInitKernel()
             GZIPPackDecompressNextBlock( g_font_paddings );
         }
     }
-}
-
-
-
-void GameInitDispEnvDrawEnv()
-{
-    PsyqSetDefDispEnv( &g_global_dispenv, 0x0, 0x0, 0x140, 0xe0 );
-    PsyqSetDefDrawEnv( &g_global_drawenv, 0x0, 0x8, 0x140, 0xe0 );
-    g_global_drawenv.dtd = 1;
-    g_global_drawenv.isbg = 0;
-
-    PsyqPutDispEnv( &g_global_dispenv );
-    PsyqPutDrawEnv( &g_global_drawenv );
 }

@@ -27,8 +27,9 @@ struct FieldRenderData
 
 
 void FieldMain();
-
+void FieldInitEnv();
 
 
 extern u32 g_field_dat_base_addr;
 extern std::vector<u8> g_field_random;
+extern u16 g_field_rb;

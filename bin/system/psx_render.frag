@@ -6,6 +6,7 @@ uniform ivec2 g_tpage;
 uniform ivec2 g_clut;
 uniform int g_depth;
 uniform int g_transp;
+uniform int g_textured;
 uniform int g_abr;
 uniform int g_dtd;
 
@@ -143,33 +144,40 @@ void main()
 {
     vec4 final_color;
 
-    ivec2 texel_coord = ivec2(vTexCoord);
-
-    if( g_depth == 0 ) // 4-bit
+    if( g_textured == 1 )
     {
-        ivec2 vram_coord = ivec2(g_tpage.x * 2, g_tpage.y) + ivec2(texel_coord.x / 2, texel_coord.y);
-        uint texel = texelFetch( g_texture, vram_coord, 0 ).r;
+        ivec2 texel_coord = ivec2(vTexCoord);
 
-        if( (texel_coord.x & 1) == 0 )
+        if( g_depth == 0 ) // 4-bit
         {
-            final_color = get_g_clut_color( int(texel) & 0xf );
+            ivec2 vram_coord = ivec2(g_tpage.x * 2, g_tpage.y) + ivec2(texel_coord.x / 2, texel_coord.y);
+            uint texel = texelFetch( g_texture, vram_coord, 0 ).r;
+
+            if( (texel_coord.x & 1) == 0 )
+            {
+                final_color = get_g_clut_color( int(texel) & 0xf );
+            }
+            else
+            {
+                final_color = get_g_clut_color( int(texel) >> 4 );
+            }
         }
-        else
+        else if( g_depth == 1 ) // 8-bit
         {
-            final_color = get_g_clut_color( int(texel) >> 4 );
+            ivec2 vram_coord = ivec2(g_tpage.x * 2, g_tpage.y) + texel_coord;
+            uint texel = texelFetch( g_texture, vram_coord, 0 ).r;
+            final_color = get_g_clut_color( int(texel) );
+        }
+        else // 16-bit direct
+        {
+            ivec2 vramCoord = ivec2( g_tpage.x * 2, g_tpage.y ) + texel_coord;
+            int color = get_color_16bit( vramCoord );
+            final_color = psx_color_to_rgba( color );
         }
     }
-    else if( g_depth == 1 ) // 8-bit
+    else
     {
-        ivec2 vram_coord = ivec2(g_tpage.x * 2, g_tpage.y) + texel_coord;
-        uint texel = texelFetch( g_texture, vram_coord, 0 ).r;
-        final_color = get_g_clut_color( int(texel) );
-    }
-    else // 16-bit direct
-    {
-        ivec2 vramCoord = ivec2( g_tpage.x * 2, g_tpage.y ) + texel_coord;
-        int color = get_color_16bit( vramCoord );
-        final_color = psx_color_to_rgba( color );
+        final_color = vColor;
     }
 
     fragColor = final_color;

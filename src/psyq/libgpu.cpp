@@ -71,7 +71,7 @@ TIM_IMAGE* PsyqReadTim( TIM_IMAGE* timimg )
 
 void PsyqLoadImage( SRECT* rect, const u8* data )
 {
-    int vram_offset = rect->y * 2048 + rect->x * 2;
+    int vram_offset = rect->y * VRAM_W + rect->x * 2;
 
     for( int y = 0; y < rect->h; ++y )
     {
@@ -81,8 +81,10 @@ void PsyqLoadImage( SRECT* rect, const u8* data )
             *(vramIterator++) = *(data++);
             ++vram_offset;
         }
-        vram_offset += 2048 - rect->w * 2;
+        vram_offset += VRAM_W - rect->w * 2;
     }
+
+    GPUUpdateTextureFromVram();
 }
 
 
@@ -91,7 +93,7 @@ void PsyqLoadImage( SRECT* rect, std::span<u8>::iterator data )
 {
     for( int y = 0; y < rect->h; ++y )
     {
-        auto vram = g_vram.begin() + (rect->y + y) * 2048 + rect->x * 2;
+        auto vram = g_vram.begin() + (rect->y + y) * VRAM_W + rect->x * 2;
 
         for( int x = 0; x < (rect->w * 2); ++x )
         {
@@ -100,6 +102,8 @@ void PsyqLoadImage( SRECT* rect, std::span<u8>::iterator data )
             data += 1;
         }
     }
+
+    GPUUpdateTextureFromVram();
 }
 
 
@@ -122,11 +126,34 @@ u16 PsyqLoadTPage( const u8* data, int tp, int abr, int x, int y, int w, int h )
 
 
 
+void PsyqClearImage( SRECT* rect, u8 r, u8 g, u8 b )
+{
+    for( int y = 0; y < rect->h; ++y )
+    {
+        auto vram = g_vram.begin() + (rect->y + y) * VRAM_W + rect->x * 2;
+
+        for( int x = 0; x < rect->w * 2; ++x )
+        {
+            *vram = 0;
+            *vram |= ((g >> 0x3) >> 0x3) & 0x03;
+            *vram |= ((b >> 0x3) << 0x2) & 0x7c;
+            vram += 1;
+            *vram = 0;
+            *vram |= (r >> 0x3) & 0x1f;
+            *vram |= ((g >> 0x3) << 0x5) & 0xe0;
+        }
+    }
+
+    GPUUpdateTextureFromVram();
+}
+
+
+
 s32 PsyqVSync( s32 mode )
 {
-    GameRender();
+    GPUUpdateScreenFromVram();
 
-    GPUUpdateVram();
+    GameRender();
 
     return 1;
 }
@@ -176,73 +203,6 @@ DRAWENV* PsyqSetDefDrawEnv( DRAWENV* env, s32 x, s32 y, s32 w, s32 h )
 
 
 
-void PsyqSetDrawEnv( DR_ENV* dr_env, DRAWENV* env )
-{
-/*
-    A0 = h[env + 0]; // x top clip
-    A1 = h[env + 2]; // y top clip
-    system_gpu_set_drawing_area_top_left(); // create packet for clip
-    [dr_env + 4] = w(V0);
-
-    A0 = h[env + 0] + h[env + 4] - 1;
-    A1 = h[env + 2] + h[env + 6] - 1;
-    system_gpu_set_drawing_area_bottom_right(); // create packet for сlip
-    [dr_env + 8] = w(V0);
-
-    A0 = h[env + 8]; // offset x
-    A1 = h[env + a]; // offset y
-    system_gpu_set_drawing_offset(); // create packet for offset
-    [dr_env + c] = w(V0);
-
-    A0 = bu[env + 17]; // 0: drawing to display area is blocked, 1: drawing to display area is permitted
-    A1 = bu[env + 16]; // dithering processing flag. 0: off; 1: on
-    A2 = hu[env + 14]; // initial values of texture page
-    system_gpu_get_draw_mode_setting_command(); // create packet
-    [dr_env + 10] = w(V0);
-
-    A0 = env + c; // texture window rect
-    system_gpu_get_texture_window_setting_command(); // create packet
-    [dr_env + 14] = w(V0);
-
-    [dr_env + 18] = w(e6000000);
-
-    [dr_env + 3] = b(6); // number of 0x4 packets to gpu
-
-    if( bu[env + 18] != 0 )
-    {
-        rect_x = hu[env + 0];
-        rect_y = hu[env + 2];
-        rect_w = hu[env + 4];
-        rect_h = hu[env + 6];
-
-        m_width = h[80062с04] - 1;
-        m_height = h[80062c06] - 1;
-
-        rect_w = ( rect_w >= 0 ) ? ( ( m_width < rect_w ) ? m_width : rect_w ) : 0;
-        rect_h = ( rect_h >= 0 ) ? ( ( m_height < rect_h ) ? m_height : rect_h ) : 0;
-
-        if( ( rect_x & 3f ) || ( rect_w & 3f ) )
-        {
-            rect_x = rect_x - hu[env + 8];
-            rect_y = rect_y - hu[env + a];
-
-            [dr_env + 7 * 4] = w(60000000 | (bu[env + 1b] << 10) | (bu[env + 1a] << 8) | bu[env + 19]);
-            [dr_env + 8 * 4] = w((rect_y << 10) | rect_x);
-            [dr_env + 9 * 4] = w((rect_h << 10) | rect_w);
-        }
-        else
-        {
-            [dr_env + 7 * 4] = w(02000000 | (bu[env + 1b] << 10) | (bu[env + 1a] << 08); | bu[env + 19]);
-            [dr_env + 8 * 4] = w((rect_y << 10) | rect_x);
-            [dr_env + 9 * 4] = w((rect_h << 10) | rect_w);
-        }
-        [dr_env + 3] = b(9);
-    }
-*/
-}
-
-
-
 DISPENV* PsyqPutDispEnv( DISPENV* env )
 {
     if( (g_screen.getWidth() != env->disp.w) || (g_screen.getHeight() != env->disp.h) )
@@ -265,12 +225,15 @@ DRAWENV* PsyqPutDrawEnv( DRAWENV* env )
         g_render.allocate( env->clip.w, env->clip.h, GL_RGBA );
     }
 
+    g_rendering_tpage = env->tpage;
+    g_rendering_dtd = env->dtd;
     g_rendering_draw_x = env->clip.x;
     g_rendering_draw_y = env->clip.y;
 
-    g_render.begin();
-    ofClear( env->r0, env->g0, env->b0, 255 );
-    g_render.end();
+    if( env->isbg == 1 )
+    {
+        PsyqClearImage( &env->clip, env->r0, env->g0, env->b0 );
+    }
 
     return env;
 }
@@ -345,11 +308,15 @@ OTag* PsyqClearOTag( OTag* ot, s32 n )
 
 void PsyqDrawOTag( OTag* ot )
 {
+    GPUUpdateRenderFromVram();
+
     while( ot )
     {
         ot->execute();
         ot = ot->next;
     }
+
+    GPUUpdateVramFromRender();
 }
 
 

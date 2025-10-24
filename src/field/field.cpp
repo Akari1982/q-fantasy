@@ -11,21 +11,14 @@
 
 u32 g_field_dat_base_addr = 0x80114fe4;
 
+u16 g_field_rb = 0;
 FieldRenderData l_field_render_data[0x2];
 
 std::vector<u8> l_field_dat;
 std::vector<u8> l_field_mim;
 
-
-
-struct sBaseDrawOffset
-{
-    u32 x;
-    u32 y;
-};
-sBaseDrawOffset base_draw_offset;
-
-DRAWENV field_draw_env;
+DISPENV l_main_dispenv[0x2];
+DRAWENV l_main_drawenv[0x2];
 
 struct sWalkMesh
 {
@@ -76,13 +69,8 @@ void FieldLoadMimToVram();
 
 void FieldMain()
 {
-    PsyqSetDefDrawEnv( &field_draw_env, 0x0, 0x8, 0x140, 0xe0 );
-    field_draw_env.dtd = 1;
-    field_draw_env.isbg = 0;
-
     FieldLoadMimDatFiles();
     FieldLoadMimToVram();
-
     FieldMainLoop();
 }
 
@@ -90,9 +78,6 @@ void FieldMain()
 
 void FieldMainLoop()
 {
-    base_draw_offset.x = 0xa0;
-    base_draw_offset.y = 0x78;
-
     FieldBackgroundInitPoly( l_field_render_data[0].bg_1, l_field_render_data[0].bg_2, l_field_render_data[0].bg_anim, l_field_render_data[0].bg_dm );
     FieldBackgroundInitPoly( l_field_render_data[1].bg_1, l_field_render_data[1].bg_2, l_field_render_data[1].bg_anim, l_field_render_data[1].bg_dm );
 
@@ -130,7 +115,10 @@ void FieldMainLoop()
 
     while( true )
     {
-        FieldRenderData& render_data = l_field_render_data[0];
+        g_field_rb += 0x1;
+        g_field_rb &= 0x1;
+
+        FieldRenderData& render_data = l_field_render_data[g_field_rb];
 
         PsyqClearOTagR( render_data.ot_scene, 0x1000 );
 
@@ -224,10 +212,12 @@ void FieldMainLoop()
 
         PsyqVSync( 0x2 );
 
-        PsyqPutDispEnv( &g_global_dispenv );
-        PsyqPutDrawEnv( &field_draw_env );
+        PsyqPutDispEnv( &l_main_dispenv[g_field_rb] );
+        PsyqPutDrawEnv( &l_main_drawenv[g_field_rb] );
 
-        PsyqDrawOTag( render_data.ot_scene );
+        PsyqClearImage( &(l_main_drawenv[g_field_rb].clip), 0, 0xff, 0 );
+
+        PsyqDrawOTag( render_data.ot_scene + 0x1000 - 0x1 );
     }
 }
 
@@ -286,4 +276,23 @@ void FieldLoadMimToVram()
             READ_LE_U16( &l_field_mim[ofs + 0xa] )
         );
     }
+}
+
+
+
+void FieldInitEnv()
+{
+    PsyqSetDefDispEnv( &l_main_dispenv[0x0], 0, 0xe8, 0x140, 0xf0 );
+    PsyqSetDefDispEnv( &l_main_dispenv[0x1], 0,    0, 0x140, 0xf0 );
+
+    PsyqSetDefDrawEnv( &l_main_drawenv[0x0], 0, 0x8, 0x140, 0xe0 );
+    l_main_drawenv[0x0].dtd = 0x1;
+    l_main_drawenv[0x0].isbg = 0;
+
+    PsyqSetDefDrawEnv( &l_main_drawenv[0x1], 0, 0xf0, 0x140, 0xe0 );
+    l_main_drawenv[0x1].dtd = 0x1;
+    l_main_drawenv[0x1].isbg = 0;
+
+    PsyqPutDispEnv( &l_main_dispenv[0] );
+    PsyqPutDrawEnv( &l_main_drawenv[0] );
 }
