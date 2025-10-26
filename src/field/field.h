@@ -10,8 +10,10 @@
 
 struct FieldRenderData
 {
-    // rendering tags
+    // scene
     OTag ot_scene[0x1000]; // main scene
+    OTag ot_scene_drenv;
+    DR_ENV scene_drenv;
 
     // background
     SPRT_16 bg_1[0x9c4]; // poly 1st and 2nd layer
@@ -30,6 +32,7 @@ void FieldMain();
 void FieldInitEnv();
 
 
+extern std::vector<u8> g_field_dat;
 extern u32 g_field_dat_base_addr;
 extern std::vector<u8> g_field_random;
 extern u16 g_field_rb;

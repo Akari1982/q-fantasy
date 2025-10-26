@@ -7,6 +7,17 @@
 
 
 
+#define GPU_OTAG        0x00
+#define GPU_TERMINATE   0x01
+#define GPU_DR_MODE     0x02
+#define GPU_DR_ENV      0x03
+#define GPU_POLY_FT4    0x2c
+#define GPU_LINE_F2     0x40
+#define GPU_SPRT        0x64
+#define GPU_SPRT_16     0x7c
+
+
+
 struct TIM_IMAGE
 {
     u32 mode;
@@ -16,10 +27,34 @@ struct TIM_IMAGE
     const void* paddr;
 };
 
+struct DISPENV
+{
+    SRECT disp;
+    SRECT screen;
+    u8 isinter;
+    u8 isrgb24;
+    u8 pad0;
+    u8 pad1;
+};
+
+struct DRAWENV
+{
+    SRECT clip;
+    s16 ofs[2];
+    SRECT tw;
+    u16 tpage;
+    u8 dtd;
+    u8 dfe;
+    u8 isbg;
+    u8 r0;
+    u8 g0;
+    u8 b0;
+};
+
 struct OTag
 {
     OTag* next = nullptr;
-    u8 size = 0;
+    u8 type = GPU_OTAG;
 
     void execute();
 };
@@ -79,41 +114,19 @@ struct SPRT_16 : public OTag
 
 struct DR_MODE : public OTag
 {
-    u32 code[2];
+    u8 dfe;
+    u8 dtd;
+    u16 tpage;
+    SRECT tw;
 
     void execute();
 };
 
 struct DR_ENV : public OTag
 {
-    u32 code[15];
+    DRAWENV env;
 
     void execute();
-};
-
-struct DISPENV
-{
-    SRECT disp;
-    SRECT screen;
-    u8 isinter;
-    u8 isrgb24;
-    u8 pad0;
-    u8 pad1;
-};
-
-struct DRAWENV
-{
-    SRECT clip;
-    s16 ofs[ 2 ];
-    SRECT tw;
-    u16 tpage;
-    u8 dtd;
-    u8 dfe;
-    u8 isbg;
-    u8 r0;
-    u8 g0;
-    u8 b0;
-    DR_ENV dr_env;
 };
 
 
@@ -130,7 +143,7 @@ s32 PsyqVSync( s32 mode );
 
 DISPENV* PsyqSetDefDispEnv( DISPENV* env, s32 x, s32 y, s32 w, s32 h );
 DRAWENV* PsyqSetDefDrawEnv( DRAWENV* env, s32 x, s32 y, s32 w, s32 h );
-void PsyqSetDrawEnv( DR_ENV *dr_env, DRAWENV *env );
+void PsyqSetDrawEnv( DR_ENV* dr_env, DRAWENV* env );
 DISPENV* PsyqPutDispEnv( DISPENV* env );
 DRAWENV* PsyqPutDrawEnv( DRAWENV* env );
 
@@ -143,6 +156,7 @@ void PsyqDrawOTag( OTag* ot );
 void PsyqSetLineF2( LINE_F2* p );
 void PsyqSetPolyFT4( POLY_FT4* p );
 void PsyqSetSprt( SPRT* p );
+void PsyqSetSprt16( SPRT_16* p );
 
 void PsyqAddPrim( OTag* ot, OTag* p );
 void PsyqTermPrim( OTag* );

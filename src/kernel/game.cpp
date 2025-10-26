@@ -24,9 +24,8 @@ void GameMain()
 
     EndingMainLogo();
 
-    //GameInitKernel();
-
-    //MenuNewGameMain();
+    GameInitKernel();
+    MenuNewGameMain();
 
     FieldMain();
 }

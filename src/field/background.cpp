@@ -1,196 +1,164 @@
 #include "background.h"
+#include "field.h"
+
+
+
+u16 l_bg2_dm_start;
 
 
 
 void FieldBackgroundInitPoly( SPRT_16* p1, SPRT* p2, BgAnim* bg_anim, DR_MODE* dm )
 {
-/*
-    V0 = w[0x8009d848];
-    background = w[V0];
+    u32 count1 = 0;
 
-    count1 = 0;
-    count2 = 0;
-    g_bg2_dm_start = 0;
-    g_bg3_dm_start = 0;
+    l_bg2_dm_start = 0;
 
-    block1 = background + 10;
-    coords = background + w[background + 0];
-    tpage = background + w[background + 4];
-    coords2 = background + w[background + 8];
-    coords3 = background + w[background + c];
+    u32 bg_ofs = READ_LE_U32( &g_field_dat[ 0x8 ] ) - g_field_dat_base_addr;
+    u32 block1 = bg_ofs + 10;
+    u32 coords = bg_ofs + READ_LE_U32( &g_field_dat[bg_ofs + 0] );
+    u32 tpage = bg_ofs + READ_LE_U32( &g_field_dat[bg_ofs + 0x4] );
 
     // background static 1st layer
     while( true )
     {
-        if( h[block1] == 0x7fff )
+        if( READ_LE_U16( &g_field_dat[block1 + 0x0] ) == 0x7fff )
         {
             block1 += 0x2;
             break;
         }
-        else if( h[block1] == 0x7ffe )
+
+        if( READ_LE_U16( &g_field_dat[block1 + 0x0] ) == 0x7ffe )
         {
-            system_psyq_set_draw_mode( dm, 0, 1, hu[tpage], 0 );
-            dm += 1;
+            PsyqSetDrawMode( dm, 0, 0x1, READ_LE_U16( &g_field_dat[tpage] ), 0 );
+            dm += 0x1;
             tpage += 0x2;
-            g_bg2_dm_start += 1;
+            l_bg2_dm_start += 0x1;
         }
         else
         {
-            for( int i = h[block1 + 0x4]; i != 0; --i )
+            for( int i = READ_LE_U16( &g_field_dat[block1 + 0x4] ); i != 0; --i )
             {
-                SETLEN( p1, 0x3 );
+                PsyqSetSprt16( p1 );
+                PsyqSetShadeTex( p1, 0x1 );
+                PsyqSetSemiTrans( p1, 0 );
                 p1->r0 = 0x80;
                 p1->g0 = 0x80;
                 p1->b0 = 0x80;
-                p1->code = 0x7d; // Textured Rectangle, 16x16, opaque, raw-texture
-                p1->x0 = hu[coords + 0];
-                p1->y0 = hu[coords + 2];
-                p1->u0 = bu[coords + 4];
-                p1->v0 = bu[coords + 5];
-                p1->clut = hu[coords + 6];
-                p1 += 1;
+                p1->x0 = READ_LE_U16( &g_field_dat[coords + 0x0] );
+                p1->y0 = READ_LE_U16( &g_field_dat[coords + 0x2] );
+                p1->u0 = READ_LE_U8( &g_field_dat[coords + 0x4] );
+                p1->v0 = READ_LE_U8( &g_field_dat[coords + 0x5] );
+                p1->clut = READ_LE_U16( &g_field_dat[coords + 0x6] );
+                p1 += 0x1;
                 coords += 0x8;
-
-                bg_anim += 1;
-
-                count1 += 1;
+                bg_anim += 0x1;
+                count1 += 0x1;
             }
         }
-
         block1 += 0x6;
     }
 
-    g_bg2_dm_start = count1 - g_bg2_dm_start;
+    l_bg2_dm_start = count1 - l_bg2_dm_start;
+    u32 coords2 = bg_ofs + READ_LE_U32( &g_field_dat[bg_ofs + 0x8] );
 
     // background 2nd layer with depth
     while( true )
     {
-        if( h[block1] == 0x7fff )
+        if( READ_LE_U16( &g_field_dat[block1] ) == 0x7fff )
         {
             block1 += 0x2;
             break;
         }
 
-        for( int i = h[block1 + 0x4]; i != 0; --i )
+        for( int i = READ_LE_U16( &g_field_dat[block1 + 0x4] ); i != 0; --i )
         {
-            u16 tpage = hu[coords2 + 8];
-            system_psyq_set_draw_mode( dm, 0, 1, tpage, 0 );
-            dm += 1;
-            g_bg3_dm_start += 1;
+            PsyqSetDrawMode( dm, 0, 0x1, READ_LE_U16( &g_field_dat[coords2 + 0x8] ), 0 );
+            dm += 0x1;
 
-            SETLEN( p1, 0x3 );
-            [p1 + 4] = h(hu[coords2 + a]); // distance
+            PsyqSetSprt16( p1 );
+            PsyqSetShadeTex( p1, 0x1 );
+            PsyqSetSemiTrans( p1, (READ_LE_U16( &g_field_dat[coords2 + 0xc] ) & 0x80) ? 0x1 : 0 );
+
+            p1->r0 = READ_LE_U8( &g_field_dat[coords2 + 0xa] ); // this is depth used in render
+            p1->g0 = READ_LE_U16( &g_field_dat[coords2 + 0xb] ); // this is depth used in render
             p1->b0 = 0x80;
-            p1->code = ( hu[coords2 + c] & 0x80 ) ? 0x7f : 0x7d; // add transparency
-            p1->x0 = hu[coords2 + 0];
-            p1->y0 = hu[coords2 + 2];
-            p1->u0 = bu[coords2 + 4];
-            p1->v0 = bu[coords2 + 5];
-            p1->clut = hu[coords2 + 6];
-            p1 += 1;
+            p1->x0 = READ_LE_U16( &g_field_dat[coords2 + 0x0] );
+            p1->y0 = READ_LE_U16( &g_field_dat[coords2 + 0x2] );
+            p1->u0 = READ_LE_U8( &g_field_dat[coords2 + 0x4] );
+            p1->v0 = READ_LE_U8( &g_field_dat[coords2 + 0x5] );
+            p1->clut = READ_LE_U16( &g_field_dat[coords2 + 0x6] );
+            p1 += 0x1;
             coords2 += 0xe;
 
-            bg_anim->anim_id = bu[coords2 + c];
-            bg_anim->frame_id = bu[coords2 + d];
-            bg_anim += 1;
+            bg_anim->anim_id = READ_LE_U8( &g_field_dat[coords2 + 0xc] );
+            bg_anim->frame_id = READ_LE_U8( &g_field_dat[coords2 + 0xd] );
+            bg_anim += 0x1;
 
-            count1 += 1;
+            count1 += 0x1;
         }
-
         block1 += 0x6;
     }
+}
 
-    g_bg3_anim_start = count1;
 
-    // background dynamic 3rd layer
+
+void FieldBackgroundAddToRender( FieldRenderData& render_data )
+{
+    u32 bg_ofs = READ_LE_U32( &g_field_dat[ 0x8 ] ) - g_field_dat_base_addr;
+
+    u32 block1 = bg_ofs + 0x10;
+
+    // background static 1st layer
     while( true )
     {
-        if( h[block1] == 0x7fff )
+        if( READ_LE_U16( &g_field_dat[block1 + 0x0] ) == 0x7fff )
         {
             block1 += 0x2;
             break;
         }
-        else if( h[block1] == 0x7ffe )
+
+        if( READ_LE_U16( &g_field_dat[block1 + 0x0] ) == 0x7ffe )
         {
-            system_psyq_set_draw_mode( dm, 0, 1, hu[tpage], 0 );
-            dm += 1;
-            tpage += 2;
+            u16 dm_id = READ_LE_U16( &g_field_dat[block1 + 0x2] );
+            PsyqAddPrim( &render_data.ot_scene[0x1000 - 0x1], &render_data.bg_dm[dm_id] );
         }
         else
         {
-            [block1 + 0x2] = h(count2);
+            u16 bg_id = READ_LE_U16( &g_field_dat[block1 + 0x2] );
 
-            for( int i = h[block1 + 0x4]; i != 0; --i )
+            for( int i = READ_LE_U16( &g_field_dat[block1 + 0x4] ); i != 0; --i )
             {
-                SETLEN( p2, 0x4 );
-                p2->r0 = 0x80;
-                p2->g0 = 0x80;
-                p2->b0 = 0x80;
-                p2->code = ( bu[coords3 + 8] & 0x80 ) ? 0x67 : 0x65;
-                p2->x0 = hu[coords3 + 0];
-                p2->y0 = hu[coords3 + 2];
-                p2->u0 = bu[coords3 + 4];
-                p2->v0 = bu[coords3 + 5];
-                p2->clut = hu[coords3 + 6];
-                p2->w = 0x20;
-                p2->h = 0x20;
-                p2 += 1;
-                coords3 += 0xa;
-
-                bg_anim->anim_id = bu[coords3 + 8];
-                bg_anim->frame_id = bu[coords3 + 9];
-                bg_anim += 1;
-
-                count2 += 1;
+                PsyqAddPrim( &render_data.ot_scene[0x1000 - 0x1], &render_data.bg_1[bg_id] );
+                bg_id += 0x1;
             }
         }
-
         block1 += 0x6;
     }
 
-    // background dynamic 4th layer
+    // background 2nd layer with depth
     while( true )
     {
-        if( h[block1] == 0x7fff )
+        if( READ_LE_U16( &g_field_dat[block1 + 0x0] ) == 0x7fff )
         {
+            block1 += 0x2;
             break;
         }
-        else if( h[block1] == 0x7ffe )
+
+        u16 bg_id = READ_LE_U16( &g_field_dat[block1 + 0x2] );
+
+        for( int i = READ_LE_U16( &g_field_dat[block1 + 0x4] ); i != 0; --i )
         {
-            system_psyq_set_draw_mode( dm, 0, 1, hu[tpage], 0 );
-            dm += 1;
-            tpage += 2;
+            u8 anim_id = render_data.bg_anim[bg_id].anim_id & 0x3f;
+            u8 frame_id = render_data.bg_anim[bg_id].frame_id;
+
+            u16 depth = (render_data.bg_1[bg_id].g0 << 8) + (render_data.bg_1[bg_id].r0);
+            PsyqAddPrim( &render_data.ot_scene[depth], &render_data.bg_1[bg_id] );
+
+            u16 dm_id = bg_id - l_bg2_dm_start;
+            PsyqAddPrim( &render_data.ot_scene[depth], &render_data.bg_dm[dm_id] );
+
+            bg_id += 1;
         }
-        else
-        {
-            [block1 + 0x2] = h(count2);
-
-            for( int i = h[block1 + 0x4]; i != 0; --i )
-            {
-                SETLEN( p2, 0x4 );
-                p2->r0 = 0x80;
-                p2->g0 = 0x80;
-                p2->b0 = 0x80;
-                p2->code = ( bu[coords3 + 0x8] & 0x80 ) ? 0x67 : 0x65;
-                p2->x0 = hu[coords3 + 0];
-                p2->y0 = hu[coords3 + 2];
-                p2->u0 = bu[coords3 + 4];
-                p2->v0 = bu[coords3 + 5];
-                p2->clut = hu[coords3 + 6];
-                p2->w = 0x20;
-                p2->h = 0x20;
-                p2 += 1;
-                coords3 += 0xa;
-
-                bg_anim->anim_id = bu[coords3 + 8]; // animation
-                bg_anim->frame_id = bu[coords3 + 9]; // index
-                bg_anim += 1;
-
-                count2 += 1;
-            }
-        }
-
         block1 += 0x6;
     }
-*/
 }

@@ -14,11 +14,16 @@ u32 g_field_dat_base_addr = 0x80114fe4;
 u16 g_field_rb = 0;
 FieldRenderData l_field_render_data[0x2];
 
-std::vector<u8> l_field_dat;
+std::vector<u8> g_field_dat;
 std::vector<u8> l_field_mim;
 
 DISPENV l_main_dispenv[0x2];
 DRAWENV l_main_drawenv[0x2];
+
+DRAWENV l_drawenv[0xa];
+
+u16 l_field_ofs_x = 0;
+u16 l_field_ofs_y = 0;
 
 struct sWalkMesh
 {
@@ -64,11 +69,26 @@ void FieldMainLoop();
 void FieldUpdateDrawEnv();
 void FieldLoadMimDatFiles();
 void FieldLoadMimToVram();
+void FieldUpdateEnv();
 
 
 
 void FieldMain()
 {
+    PsyqSetDefDrawEnv( &l_drawenv[0], 0x0, 0x8, 0x140, 0xe0 );
+    l_drawenv[0].dtd = 0x1;
+    l_drawenv[0].isbg = 0;
+    PsyqSetDefDrawEnv( &l_drawenv[1], 0x0, 0xf0, 0x140, 0xe0 );
+    l_drawenv[1].dtd = 0x1;
+    l_drawenv[1].isbg = 0;
+
+    PsyqClearOTagR( &l_field_render_data[0].ot_scene_drenv, 0x1 );
+    PsyqClearOTagR( &l_field_render_data[1].ot_scene_drenv, 0x1 );
+    PsyqSetDrawEnv( &l_field_render_data[0].scene_drenv, &l_drawenv[0] );
+    PsyqSetDrawEnv( &l_field_render_data[1].scene_drenv, &l_drawenv[1] );
+    PsyqAddPrim( &l_field_render_data[0].ot_scene_drenv, &l_field_render_data[0].scene_drenv );
+    PsyqAddPrim( &l_field_render_data[1].ot_scene_drenv, &l_field_render_data[1].scene_drenv );
+
     FieldLoadMimDatFiles();
     FieldLoadMimToVram();
     FieldMainLoop();
@@ -78,6 +98,9 @@ void FieldMain()
 
 void FieldMainLoop()
 {
+    l_field_ofs_x = 0xa0;
+    l_field_ofs_y = 0x78;
+
     FieldBackgroundInitPoly( l_field_render_data[0].bg_1, l_field_render_data[0].bg_2, l_field_render_data[0].bg_anim, l_field_render_data[0].bg_dm );
     FieldBackgroundInitPoly( l_field_render_data[1].bg_1, l_field_render_data[1].bg_2, l_field_render_data[1].bg_anim, l_field_render_data[1].bg_dm );
 
@@ -87,8 +110,8 @@ void FieldMainLoop()
     //V0 = w[V0];
     //[80114458] = w(A0 + hu[V0] * 18); // walkmesh triangle access block
 
-    u32 walkmesh_addr = READ_LE_U32( &l_field_dat[ 0x4 ] ) - g_field_dat_base_addr;
-    u32 id_n = READ_LE_U32( &l_field_dat[ walkmesh_addr ] );
+    u32 walkmesh_addr = READ_LE_U32( &g_field_dat[ 0x4 ] ) - g_field_dat_base_addr;
+    u32 id_n = READ_LE_U32( &g_field_dat[ walkmesh_addr ] );
     walkmesh_addr += 0x4;
     u32 walkmesh_access_addr = walkmesh_addr + id_n * 0x18;
     printf( "Number of trianges in walkmesh: 0x%02x\n", id_n );
@@ -96,18 +119,18 @@ void FieldMainLoop()
     field_walkmesh_access.resize( id_n );
     for( int i = 0; i < id_n; ++i )
     {
-        field_walkmesh[ i ].p1.vx = READ_LE_S16( &l_field_dat[ walkmesh_addr + i * 0x18 + 0x0 ]  );
-        field_walkmesh[ i ].p1.vy = READ_LE_S16( &l_field_dat[ walkmesh_addr + i * 0x18 + 0x2 ]  );
-        field_walkmesh[ i ].p1.vz = READ_LE_S16( &l_field_dat[ walkmesh_addr + i * 0x18 + 0x4 ]  );
-        field_walkmesh[ i ].p2.vx = READ_LE_S16( &l_field_dat[ walkmesh_addr + i * 0x18 + 0x8 ]  );
-        field_walkmesh[ i ].p2.vy = READ_LE_S16( &l_field_dat[ walkmesh_addr + i * 0x18 + 0xa ]  );
-        field_walkmesh[ i ].p2.vz = READ_LE_S16( &l_field_dat[ walkmesh_addr + i * 0x18 + 0xc ]  );
-        field_walkmesh[ i ].p3.vx = READ_LE_S16( &l_field_dat[ walkmesh_addr + i * 0x18 + 0x10 ] );
-        field_walkmesh[ i ].p3.vy = READ_LE_S16( &l_field_dat[ walkmesh_addr + i * 0x18 + 0x12 ] );
-        field_walkmesh[ i ].p3.vz = READ_LE_S16( &l_field_dat[ walkmesh_addr + i * 0x18 + 0x14 ] );
-        field_walkmesh_access[ i ].p1 = READ_LE_U16( &l_field_dat[ walkmesh_access_addr + i * 0x6 + 0x0 ] );
-        field_walkmesh_access[ i ].p2 = READ_LE_U16( &l_field_dat[ walkmesh_access_addr + i * 0x6 + 0x2 ] );
-        field_walkmesh_access[ i ].p3 = READ_LE_U16( &l_field_dat[ walkmesh_access_addr + i * 0x6 + 0x4 ] );
+        field_walkmesh[ i ].p1.vx = READ_LE_S16( &g_field_dat[ walkmesh_addr + i * 0x18 + 0x0 ]  );
+        field_walkmesh[ i ].p1.vy = READ_LE_S16( &g_field_dat[ walkmesh_addr + i * 0x18 + 0x2 ]  );
+        field_walkmesh[ i ].p1.vz = READ_LE_S16( &g_field_dat[ walkmesh_addr + i * 0x18 + 0x4 ]  );
+        field_walkmesh[ i ].p2.vx = READ_LE_S16( &g_field_dat[ walkmesh_addr + i * 0x18 + 0x8 ]  );
+        field_walkmesh[ i ].p2.vy = READ_LE_S16( &g_field_dat[ walkmesh_addr + i * 0x18 + 0xa ]  );
+        field_walkmesh[ i ].p2.vz = READ_LE_S16( &g_field_dat[ walkmesh_addr + i * 0x18 + 0xc ]  );
+        field_walkmesh[ i ].p3.vx = READ_LE_S16( &g_field_dat[ walkmesh_addr + i * 0x18 + 0x10 ] );
+        field_walkmesh[ i ].p3.vy = READ_LE_S16( &g_field_dat[ walkmesh_addr + i * 0x18 + 0x12 ] );
+        field_walkmesh[ i ].p3.vz = READ_LE_S16( &g_field_dat[ walkmesh_addr + i * 0x18 + 0x14 ] );
+        field_walkmesh_access[ i ].p1 = READ_LE_U16( &g_field_dat[ walkmesh_access_addr + i * 0x6 + 0x0 ] );
+        field_walkmesh_access[ i ].p2 = READ_LE_U16( &g_field_dat[ walkmesh_access_addr + i * 0x6 + 0x2 ] );
+        field_walkmesh_access[ i ].p3 = READ_LE_U16( &g_field_dat[ walkmesh_access_addr + i * 0x6 + 0x4 ] );
     }
 
     FieldRainInit( &l_field_render_data[ 0 ] );
@@ -122,7 +145,7 @@ void FieldMainLoop()
 
         PsyqClearOTagR( render_data.ot_scene, 0x1000 );
 
-        FieldRainUpdate();
+        FieldUpdateEnv();
 
         MATRIX m;
 
@@ -158,8 +181,9 @@ void FieldMainLoop()
         SetGeomScreen( 0x2bf );
 */
 
-        // A1 = ot + 1749c; // rain packets
-        // A3 = ot + 17490; // draw_mode_packet
+        FieldBackgroundAddToRender( render_data );
+
+        FieldRainUpdate();
         FieldRainAddToRender( render_data.ot_scene, render_data.rain.data(), &m, &render_data.rain_dm );
 
         PsyqPushMatrix();
@@ -215,8 +239,9 @@ void FieldMainLoop()
         PsyqPutDispEnv( &l_main_dispenv[g_field_rb] );
         PsyqPutDrawEnv( &l_main_drawenv[g_field_rb] );
 
-        PsyqClearImage( &(l_main_drawenv[g_field_rb].clip), 0, 0xff, 0 );
+        PsyqClearImage( &(l_main_drawenv[g_field_rb].clip), 0, 0, 0 );
 
+        PsyqDrawOTag( &render_data.ot_scene_drenv );
         PsyqDrawOTag( render_data.ot_scene + 0x1000 - 0x1 );
     }
 }
@@ -232,7 +257,7 @@ void FieldUpdateDrawEnv()
 void FieldLoadMimDatFiles()
 {
     FileLZS( "FIELD/MD1STIN.MIM", l_field_mim );
-    FileLZS( "FIELD/MD1STIN.DAT", l_field_dat );
+    FileLZS( "FIELD/MD1STIN.DAT", g_field_dat );
 }
 
 
@@ -295,4 +320,25 @@ void FieldInitEnv()
 
     PsyqPutDispEnv( &l_main_dispenv[0] );
     PsyqPutDrawEnv( &l_main_drawenv[0] );
+}
+
+
+
+void FieldUpdateEnv()
+{
+    DRAWENV* drawenv1 = &l_drawenv[0x0];
+    DRAWENV* drawenv2 = &l_drawenv[0x1];
+
+    if( g_field_rb == 0 )
+    {
+        drawenv1->ofs[0] = l_field_ofs_x;
+        drawenv1->ofs[1] = l_field_ofs_y;
+        PsyqSetDrawEnv( &l_field_render_data[0x0].scene_drenv, drawenv1 );
+    }
+    else
+    {
+        drawenv2->ofs[0] = l_field_ofs_x;
+        drawenv2->ofs[1] = l_field_ofs_y + 0xe8;
+        PsyqSetDrawEnv( &l_field_render_data[0x1].scene_drenv, drawenv2 );
+    }
 }

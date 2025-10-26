@@ -31,7 +31,7 @@ void Application::setup()
 {
     ofSetLogLevel(OF_LOG_VERBOSE);
 
-    ofDisableArbTex();
+    GPUInit();
 
     gui.setup( nullptr, true, ImGuiConfigFlags_ViewportsEnable );
     // set imGui style
@@ -166,6 +166,8 @@ void Application::draw()
         if( ImGui::MenuItem( "Field", nullptr, &g_browser_field ) ) {}
         if( ImGui::MenuItem( "Ending", nullptr, &g_browser_ending ) ) {}
         if( ImGui::MenuItem( "Akao", nullptr, &g_browser_akao ) ) {}
+
+        ImGui::Text( "FPS: %s", ofToString( ofGetFrameRate(), 2) ); ImGui::SameLine( 0, 0 );
 
         float width = ImGui::GetWindowWidth();
         ImGui::SetCursorPosX( width - ImGui::CalcTextSize( "Vram" ).x - 10 );

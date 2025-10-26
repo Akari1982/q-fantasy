@@ -185,8 +185,8 @@ DRAWENV* PsyqSetDefDrawEnv( DRAWENV* env, s32 x, s32 y, s32 w, s32 h )
     env->clip.y = y;
     env->clip.w = w;
     env->clip.h = h;
-    env->ofs[ 0 ] = x;
-    env->ofs[ 1 ] = y;
+    env->ofs[0] = x;
+    env->ofs[1] = y;
     env->tw.x = 0;
     env->tw.y = 0;
     env->tw.w = 0;
@@ -199,6 +199,14 @@ DRAWENV* PsyqSetDefDrawEnv( DRAWENV* env, s32 x, s32 y, s32 w, s32 h )
     env->g0 = 0;
     env->b0 = 0;
     return env;
+}
+
+
+
+void PsyqSetDrawEnv( DR_ENV* dr_env, DRAWENV* env )
+{
+    dr_env->type = GPU_DR_ENV;
+    dr_env->env = *env;
 }
 
 
@@ -220,54 +228,22 @@ DISPENV* PsyqPutDispEnv( DISPENV* env )
 
 DRAWENV* PsyqPutDrawEnv( DRAWENV* env )
 {
-    if( (g_render.getWidth() != env->clip.w) || (g_render.getHeight() != env->clip.h) )
-    {
-        g_render.allocate( env->clip.w, env->clip.h, GL_RGBA );
-    }
-
-    g_rendering_tpage = env->tpage;
-    g_rendering_dtd = env->dtd;
-    g_rendering_draw_x = env->clip.x;
-    g_rendering_draw_y = env->clip.y;
-
-    if( env->isbg == 1 )
-    {
-        PsyqClearImage( &env->clip, env->r0, env->g0, env->b0 );
-    }
+    DR_ENV dr_env;
+    PsyqSetDrawEnv( &dr_env, env );
+    dr_env.execute();
 
     return env;
 }
 
 
 
-u32 get_mode( int dfe, int dtd, int tpage )
-{
-    u32 add_dtd = 0;
-    u32 add_dfe = 0;
-    if( dtd != 0 ) add_dtd = 0x200; // Dither 24bit to 15bit Dither Enabled
-    if( dfe != 0 ) add_dfe = 0x400; // Drawing to display area Allowed
-    return 0xe1000000 | add_dtd | add_dfe | (tpage & 0x9ff);
-}
-
-
-
-u32 get_tw( SRECT* tw )
-{
-    if( tw == nullptr ) return 0;
-    u32 off_x = tw->x >> 0x3;
-    u32 off_y = tw->y >> 0x3;
-    u32 mask_x = ((0 - tw->w) & 0xff) >> 0x3;
-    u32 mask_y = ((0 - tw->h) & 0xff) >> 0x3;
-    return 0xe2000000 | (off_y << 0xf) | (off_x << 0xa) | (mask_y << 0x5) | mask_x;
-}
-
-
-
 void PsyqSetDrawMode( DR_MODE* p, int dfe, int dtd, int tpage, SRECT* tw )
 {
-    p->size = 0x2;
-    p->code[0] = get_mode( dfe, dtd, tpage );
-    p->code[1] = get_tw( tw );
+    p->type = GPU_DR_MODE;
+    p->dfe = dfe;
+    p->dtd = dtd;
+    p->tpage = tpage;
+    if( tw != nullptr ) p->tw = *tw;
 }
 
 
@@ -279,7 +255,7 @@ OTag* PsyqClearOTagR( OTag* ot, s32 n )
     {
         ++current;
         current->next = current - 1;
-        current->size = 0;
+        current->type = GPU_OTAG;
     }
 
     PsyqTermPrim( ot );
@@ -296,7 +272,7 @@ OTag* PsyqClearOTag( OTag* ot, s32 n )
     {
         ++current;
         (current - 1)->next = current;
-        (current - 1)->size = 0;
+        (current - 1)->type = GPU_OTAG;
     }
 
     PsyqTermPrim( ot );
@@ -323,7 +299,7 @@ void PsyqDrawOTag( OTag* ot )
 
 void PsyqSetLineF2( LINE_F2* p )
 {
-    p->size = 0x3;
+    p->type = GPU_LINE_F2;
     p->code = 0x40;
 }
 
@@ -331,7 +307,7 @@ void PsyqSetLineF2( LINE_F2* p )
 
 void PsyqSetPolyFT4( POLY_FT4* p )
 {
-    p->size = 0x9;
+    p->type = GPU_POLY_FT4;
     p->code = 0x2c;
 }
 
@@ -340,10 +316,17 @@ void PsyqSetPolyFT4( POLY_FT4* p )
 
 void PsyqSetSprt( SPRT* p )
 {
-    p->size = 0x4;
+    p->type = GPU_SPRT;
     p->code = 0x64;
 }
 
+
+
+void PsyqSetSprt16( SPRT_16* p )
+{
+    p->type = GPU_SPRT_16;
+    p->code = 0x7c;
+}
 
 
 void PsyqAddPrim( OTag* ot, OTag* p )
@@ -357,7 +340,7 @@ void PsyqAddPrim( OTag* ot, OTag* p )
 void PsyqTermPrim( OTag* p )
 {
     p->next = nullptr;
-    p->size = 0;
+    p->type = GPU_TERMINATE;
 }
 
 

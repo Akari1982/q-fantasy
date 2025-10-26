@@ -4,19 +4,25 @@ Q-FFVII v0.01 (first steps) | 2026-12-??
 
 To Do
 ----------
-
-- Add walkmesh debug vizualization.
+- Add imgui control over fields.
+- Make loading of different fields.
+- Load matrixes from field dat directly.
 - Do imgui rain on/off switch.
-- Add enviroment settings.
-- Add line transparency (for rain).
 - Finalize screen rendering borders.
 - Implement start credits.
-- Unify music debug with sequence, sfx, instruments, SPU manipulation and so on.
 - Comment all AKAO music code.
-- Сделать корректное проигрывание трека сефирота.
 - Добавить дебаг доп инструментов параллельно с основными инструментами.
 - Починить непонятное потрескивание.
 - Засунуть SFX в таблицу для выравнивания.
+
+
+
+2025-10-26
+----------
+- Add enviroment settings.
+- Add line transparency (for rain).
+- Add walkmesh debug vizualization.
+- Unify music debug with sequence, sfx, instruments, SPU manipulation and so on.
 
 2025-09-12
 ----------

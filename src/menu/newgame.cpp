@@ -41,7 +41,7 @@ bool MenuNewGameUpdate( u32 frame )
     static int y = 0;
     if( g_buttons_1_repeated == BUTTON_UP ) y -= 0x5;
     if( g_buttons_1_repeated == BUTTON_DOWN ) y += 0x5;
-
+    if( g_buttons_1_repeated == BUTTON_CIRCLE ) l_newgame_state = NEWGAME_FINISH;
 
     MenuDrawCursor( l_newgame_center.vx - 0x12, l_newgame_center.vy + 0x6 + y );
 
