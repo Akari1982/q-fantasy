@@ -21,3 +21,8 @@ struct Rain
 void FieldRainInit( FieldRenderData* data );
 void FieldRainUpdate();
 void FieldRainAddToRender( OTag* ot, LINE_F2* rain, MATRIX* m, DR_MODE* dm );
+
+
+
+extern u8 g_rain_enable;
+extern u8 g_rain_force;

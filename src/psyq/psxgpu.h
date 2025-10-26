@@ -18,6 +18,7 @@ void GPUUpdateTextureFromVram();
 
 
 
+extern u32 g_rendering_disp_enable;
 extern u32 g_rendering_disp_x;
 extern u32 g_rendering_disp_y;
 

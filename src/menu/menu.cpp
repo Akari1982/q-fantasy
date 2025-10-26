@@ -133,7 +133,7 @@ void MenuCreateDrawenvDispenv( DRAWENV* drawenv, DISPENV* dispenv )
     PsyqPutDispEnv( dispenv );
     PsyqPutDrawEnv( drawenv );
 
-//    system_psyq_set_disp_mask( 0x1 );
+    PsyqSetDispMask( 0x1 );
 }
 
 

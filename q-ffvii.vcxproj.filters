@@ -142,6 +142,12 @@
     <ClCompile Include="src\field\rain.cpp">
       <Filter>src\field</Filter>
     </ClCompile>
+    <ClCompile Include="src\system\debug_field.cpp">
+      <Filter>src\system</Filter>
+    </ClCompile>
+    <ClCompile Include="src\field\event.cpp">
+      <Filter>src\field</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="third_party\ofxImGui\src\BaseEngine.h">
@@ -334,6 +340,12 @@
       <Filter>src\field</Filter>
     </ClInclude>
     <ClInclude Include="src\field\rain.h">
+      <Filter>src\field</Filter>
+    </ClInclude>
+    <ClInclude Include="src\system\debug_field.h">
+      <Filter>src\system</Filter>
+    </ClInclude>
+    <ClInclude Include="src\field\event.h">
       <Filter>src\field</Filter>
     </ClInclude>
   </ItemGroup>

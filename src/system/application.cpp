@@ -4,8 +4,10 @@
 #include "browser_ending.h"
 #include "browser_field.h"
 #include "browser_field_opcodes.h"
+#include "debug_field.h"
 #include "debug_vram.h"
 #include "kernel/buttons.h"
+#include "kernel/game.h"
 #include "psyq/psxgpu.h"
 
 
@@ -160,6 +162,8 @@ void Application::draw()
     BrowserEnding();
     BrowserAkao();
     DebugVram();
+
+    if( g_game_state == GAME_STATE_FIELD ) DebugField();
 
     if( ImGui::BeginMainMenuBar() )
     {

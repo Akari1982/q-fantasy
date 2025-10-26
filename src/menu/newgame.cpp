@@ -41,7 +41,11 @@ bool MenuNewGameUpdate( u32 frame )
     static int y = 0;
     if( g_buttons_1_repeated == BUTTON_UP ) y -= 0x5;
     if( g_buttons_1_repeated == BUTTON_DOWN ) y += 0x5;
-    if( g_buttons_1_repeated == BUTTON_CIRCLE ) l_newgame_state = NEWGAME_FINISH;
+    if( g_buttons_1_repeated == BUTTON_CIRCLE )
+    {
+        l_newgame_state = NEWGAME_FINISH;
+        return true;
+    }
 
     MenuDrawCursor( l_newgame_center.vx - 0x12, l_newgame_center.vy + 0x6 + y );
 
@@ -134,8 +138,8 @@ bool MenuNewGameMain()
 
     PsyqVSync( 0 );
 
-//    PsyqPutDispEnv( 0x801e3f00 );
-//    PsyqPutDrawEnv( 0x801e3e90 );
+    PsyqPutDispEnv( &l_newgame_dispenv[0x1] );
+    PsyqPutDrawEnv( &l_newgame_drawenv[0x1] );
 
 //    for( int i = 0; i < 0x3; ++i )
 //    {

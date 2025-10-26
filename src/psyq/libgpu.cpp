@@ -248,6 +248,13 @@ void PsyqSetDrawMode( DR_MODE* p, int dfe, int dtd, int tpage, SRECT* tw )
 
 
 
+void PsyqSetDispMask( int mask )
+{
+    g_rendering_disp_enable = (mask != 0) ? 0x1 : 0;
+}
+
+
+
 OTag* PsyqClearOTagR( OTag* ot, s32 n )
 {
     OTag* current = ot;

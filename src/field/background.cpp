@@ -13,7 +13,7 @@ void FieldBackgroundInitPoly( SPRT_16* p1, SPRT* p2, BgAnim* bg_anim, DR_MODE* d
 
     l_bg2_dm_start = 0;
 
-    u32 bg_ofs = READ_LE_U32( &g_field_dat[ 0x8 ] ) - g_field_dat_base_addr;
+    u32 bg_ofs = READ_LE_U32( &g_field_dat[0x8] ) - g_field_dat_base_addr;
     u32 block1 = bg_ofs + 10;
     u32 coords = bg_ofs + READ_LE_U32( &g_field_dat[bg_ofs + 0] );
     u32 tpage = bg_ofs + READ_LE_U32( &g_field_dat[bg_ofs + 0x4] );
@@ -104,7 +104,7 @@ void FieldBackgroundInitPoly( SPRT_16* p1, SPRT* p2, BgAnim* bg_anim, DR_MODE* d
 
 void FieldBackgroundAddToRender( FieldRenderData& render_data )
 {
-    u32 bg_ofs = READ_LE_U32( &g_field_dat[ 0x8 ] ) - g_field_dat_base_addr;
+    u32 bg_ofs = READ_LE_U32( &g_field_dat[0x8] ) - g_field_dat_base_addr;
 
     u32 block1 = bg_ofs + 0x10;
 

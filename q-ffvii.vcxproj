@@ -106,6 +106,7 @@
   <ItemGroup>
     <ClCompile Include="src\ending\ending.cpp" />
     <ClCompile Include="src\field\background.cpp" />
+    <ClCompile Include="src\field\event.cpp" />
     <ClCompile Include="src\field\field.cpp" />
     <ClCompile Include="src\field\rain.cpp" />
     <ClCompile Include="src\kernel\akao.cpp" />
@@ -132,6 +133,7 @@
     <ClCompile Include="src\system\browser_ending.cpp" />
     <ClCompile Include="src\system\browser_field.cpp" />
     <ClCompile Include="src\system\browser_field_opcodes.cpp" />
+    <ClCompile Include="src\system\debug_field.cpp" />
     <ClCompile Include="src\system\debug_vram.cpp" />
     <ClCompile Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_glfw.cpp" />
     <ClCompile Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_glfw_context_support.cpp" />
@@ -155,6 +157,7 @@
   <ItemGroup>
     <ClInclude Include="src\ending\ending.h" />
     <ClInclude Include="src\field\background.h" />
+    <ClInclude Include="src\field\event.h" />
     <ClInclude Include="src\field\field.h" />
     <ClInclude Include="src\field\field_list.h" />
     <ClInclude Include="src\field\rain.h" />
@@ -188,6 +191,7 @@
     <ClInclude Include="src\system\browser_ending.h" />
     <ClInclude Include="src\system\browser_field.h" />
     <ClInclude Include="src\system\browser_field_opcodes.h" />
+    <ClInclude Include="src\system\debug_field.h" />
     <ClInclude Include="src\system\debug_vram.h" />
     <ClInclude Include="src\system\icons_font.h" />
     <ClInclude Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_glfw.h" />

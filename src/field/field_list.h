@@ -1,4 +1,6 @@
-﻿std::string g_field_files[] =
+﻿#include "string"
+
+std::vector<std::string> g_field_files =
 {
     /*0x000*/ "DUMMY",
     /*0x001*/ "WM0",

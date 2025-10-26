@@ -3,6 +3,9 @@
 
 
 
+u8 g_rain_enable = 0;
+u8 g_rain_force = 0;
+
 std::array< Rain, 0x40 > l_rain;
 
 
@@ -36,32 +39,22 @@ void FieldRainUpdate()
     if( wait < 0x3 ) return;
     wait = 0;
 
-//    if( bu[0x8009c6e4 + 0xfa4 + 0x83] & 0x80 )
-//    {
-//        if( g_rain_force != 0xff ) g_rain_force += 1;
-//    }
-//    else if( g_rain_force != 0 )
-//    {
-//        g_rain_force -= 1;
-//    }
+    if( g_rain_enable & 0x80 )
+    {
+        if( g_rain_force != 0xff ) g_rain_force += 1;
+    }
+    else if( g_rain_force != 0 )
+    {
+        g_rain_force -= 1;
+    }
 
 //    pc_entity_id = h[0x800965e0]; // manual visible entity
-
-    // md1_stin
-    u32 x = 0xe31dbc;
-    u32 y = 0x6b46368;
-    u32 z = 0x136000;
-
-    // md1_1
-    //u32 x = 0x419000;
-    //u32 y = 0x190000;
-    //u32 z = 0x510000;
 
     for( int i = 0; i < l_rain.size(); ++i )
     {
         if( l_rain[ i ].wait == 0 )
         {
-            if( i < 0x40 /*( g_rain_force / 4 )*/ )
+            if( i < (g_rain_force / 0x4) )
             {
                 l_rain[ i ].wait = 0x7;
                 l_rain[ i ].render = true;
@@ -72,11 +65,11 @@ void FieldRainUpdate()
                 u8 rnd1 = g_field_random[ rnd_seed & 0xff ];
                 u8 rnd2 = g_field_random[ ( ( rnd_seed * 0x3 ) & 0xff)];
 
-                l_rain[ i ].p2.vx = (x >> 0xc) /*w[80074ea4 + entity_id * 84 + c] >> c) */ + rnd1 * 0xc - 0x600;
-                l_rain[ i ].p2.vy = (y >> 0xc) /*w[80074ea4 + entity_id * 84 + c] >> c) */ + rnd2 * 0xc - 0x600;
+                l_rain[ i ].p2.vx = /*w[80074ea4 + pc_entity_id * 84 + c] >> c) */ + rnd1 * 0xc - 0x600;
+                l_rain[ i ].p2.vy = /*w[80074ea4 + pc_entity_id * 84 + c] >> c) */ + rnd2 * 0xc - 0x600;
                 l_rain[ i ].p1 = l_rain[ i ].p2;
 
-                l_rain[ i ].z = (z >> 0xc) /*(w[80074ea4 + entity_id * 84 + 14] >> c) */ - 0x300;
+                l_rain[ i ].z = /*(w[80074ea4 + pc_entity_id * 84 + 14] >> c) */ - 0x300;
             }
             else
             {

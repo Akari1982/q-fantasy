@@ -4,11 +4,7 @@ Q-FFVII v0.01 (first steps) | 2026-12-??
 
 To Do
 ----------
-- Add imgui control over fields.
-- Make loading of different fields.
-- Load matrixes from field dat directly.
-- Do imgui rain on/off switch.
-- Finalize screen rendering borders.
+- Create logger warper and use it through game.
 - Implement start credits.
 - Comment all AKAO music code.
 - Добавить дебаг доп инструментов параллельно с основными инструментами.
@@ -19,6 +15,11 @@ To Do
 
 2025-10-26
 ----------
+- Add imgui control over fields.
+- Make loading of different fields.
+- Load matrixes from field dat directly.
+- Do imgui rain on/off switch.
+- Finalize screen rendering borders.
 - Add enviroment settings.
 - Add line transparency (for rain).
 - Add walkmesh debug vizualization.

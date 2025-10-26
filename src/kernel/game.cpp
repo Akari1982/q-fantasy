@@ -6,28 +6,63 @@
 #include "menu/newgame.h"
 #include "field/field.h"
 #include "psyq/libgte.h"
+#include "psyq/libgpu.h"
 #include "psyq/libspu.h"
+
+
+
+u16 g_game_state = GAME_STATE_NONE;
 
 
 
 void GameInitBase();
 void GameInitKernel();
 void GameInitAkaoEngine();
+void GameInitNewGame();
+void GameInitFieldFromSaveMap();
 
 
 
 void GameMain()
 {
     GameInitBase();
-    GameInitAkaoEngine();
-    FieldInitEnv();
 
     EndingMainLogo();
 
     GameInitKernel();
-    MenuNewGameMain();
 
-    FieldMain();
+    while( true )
+    {
+        GameInitAkaoEngine();
+
+        SRECT rect;
+        rect.x = 0;
+        rect.y = 0;
+        rect.w = 0x1e0;
+        rect.h = 0x1d8;
+        PsyqClearImage( &rect, 0, 0, 0 );
+
+        if( MenuNewGameMain() == 0x1 )
+        {
+            GameInitNewGame();
+        }
+
+        FieldInitEnv();
+
+        GameInitFieldFromSaveMap();
+
+        switch( g_game_state )
+        {
+            case GAME_STATE_FIELD:
+            {
+                FieldMain();
+            }
+        }
+
+        g_game_state = GAME_STATE_NONE; // hack
+
+        AkaoQuit();
+    }
 }
 
 
@@ -37,6 +72,7 @@ void GameInitBase()
     PsyqSpuInit();
     atexit( PsyqSpuQuit );
 
+    PsyqSetDispMask( 0 );
     PsyqInitGeom();
 }
 
@@ -103,4 +139,18 @@ void GameInitKernel()
             GZIPPackDecompressNextBlock( g_font_paddings );
         }
     }
+}
+
+
+
+void GameInitNewGame()
+{
+}
+
+
+void GameInitFieldFromSaveMap()
+{
+    g_game_state = GAME_STATE_FIELD;
+
+    g_field_map_id = 0x74;
 }

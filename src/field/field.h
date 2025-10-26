@@ -8,6 +8,25 @@
 
 
 
+#define FIELD_CMD_NONE 0x0
+#define FIELD_CMD_LOAD 0x1
+
+
+
+struct FieldControl
+{
+    u8 cmd = 0;
+    u16 map_id = 0;
+};
+
+struct FieldCamera
+{
+    MATRIX m;
+    u16 x;
+    u16 y;
+    s16 h;
+};
+
 struct FieldRenderData
 {
     // scene
@@ -32,7 +51,10 @@ void FieldMain();
 void FieldInitEnv();
 
 
+
+extern FieldControl g_field_control;
 extern std::vector<u8> g_field_dat;
 extern u32 g_field_dat_base_addr;
+extern u16 g_field_map_id;
 extern std::vector<u8> g_field_random;
 extern u16 g_field_rb;

@@ -12,6 +12,7 @@ ofTexture l_render_texture;
 ofShader l_render_shader;
 
 // rendering settings
+u32 g_rendering_disp_enable = 0;
 u32 g_rendering_disp_x = 0;
 u32 g_rendering_disp_y = 0;
 
@@ -35,6 +36,10 @@ void GPUInit()
 
     l_render_inn.allocate( VRAM_W / 2, VRAM_H, GL_RGBA, false );
     l_render.attachTexture( l_render_inn, GL_RGBA, 0 );
+
+    // allocate one pixel by default
+    // this wil reset later whe display enviroment will be set
+    g_screen.allocate( 1, 1, GL_RGBA8, false );
 
     GLuint texID;
     glGenTextures( 1, &texID );
@@ -120,12 +125,6 @@ void GPUUpdateVramFromRender()
 
 void GPUUpdateScreenFromVram()
 {
-    // if texture not yet allocated set to whole vram by default
-    if( !g_screen.isAllocated() )
-    {
-        g_screen.allocate( VRAM_W / 2, VRAM_H, GL_RGBA8, false );
-    }
-
     int w = g_screen.getWidth();
     int h = g_screen.getHeight();
 
@@ -136,15 +135,23 @@ void GPUUpdateScreenFromVram()
     {
         for( int x = 0; x < w; ++x )
         {
-            int vram_x = g_rendering_disp_x + x;
-            int vram_y = g_rendering_disp_y + y;
-            u16 color = (g_vram[vram_y * VRAM_W + vram_x * 2 + 1] << 0x8) | g_vram[vram_y * VRAM_W + vram_x * 2 + 0];
+            // update screen only if display was enabled
+            if( g_rendering_disp_enable == 0x1 )
+            {
+                int vram_x = g_rendering_disp_x + x;
+                int vram_y = g_rendering_disp_y + y;
+                u16 color = (g_vram[vram_y * VRAM_W + vram_x * 2 + 1] << 0x8) | g_vram[vram_y * VRAM_W + vram_x * 2 + 0];
 
-            u8 r = ((color >> 0x0) & 0x1f) << 3;
-            u8 g = ((color >> 0x5) & 0x1f) << 3;
-            u8 b = ((color >> 0xa) & 0x1f) << 3;
+                u8 r = ((color >> 0x0) & 0x1f) << 3;
+                u8 g = ((color >> 0x5) & 0x1f) << 3;
+                u8 b = ((color >> 0xa) & 0x1f) << 3;
 
-            pixels.setColor( x, y, ofColor(r, g, b, 255) );
+                pixels.setColor( x, y, ofColor(r, g, b, 255) );
+            }
+            else
+            {
+                pixels.setColor( x, y, ofColor(0, 0, 0, 255) );
+            }
         }
     }
 
