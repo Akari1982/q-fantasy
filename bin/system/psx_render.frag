@@ -199,7 +199,7 @@ void main()
         }
         else // 16-bit direct
         {
-            ivec2 vramCoord = ivec2( g_tpage.x * 2, g_tpage.y ) + texel_coord;
+            ivec2 vramCoord = ivec2( g_tpage.x * 2, g_tpage.y ) + ivec2(texel_coord.x * 2, texel_coord.y);
             int color = get_color_16bit( vramCoord );
             final_color = psx_color_to_rgba( color );
         }

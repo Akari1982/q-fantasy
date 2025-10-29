@@ -108,7 +108,7 @@ void FieldCorruptedFilesCheck()
      || (name == "TRAP")
      || (name == "WHITEBG1")
      || (name == "WHITEBG2")
-     || (name == "TUNNEL6") // DAT file is loading, but MIM seems to broken
+     || (name == "TUNNEL_6") // DAT file is loading, but MIM seems to broken
      || (name.compare( 0, 2, "WM" ) == 0)
      || (name == "XMVTES") )
     {
