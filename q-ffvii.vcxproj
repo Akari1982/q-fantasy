@@ -43,15 +43,15 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>bin\</OutDir>
-    <IntDir>bin\obj\$(Platform)\$(Configuration)\</IntDir>
+    <OutDir>ffvii\</OutDir>
+    <IntDir>ffvii\obj\$(Platform)\$(Configuration)\</IntDir>
     <TargetName>$(ProjectName)_debug</TargetName>
     <LinkIncremental>true</LinkIncremental>
     <GenerateManifest>true</GenerateManifest>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>bin\</OutDir>
-    <IntDir>bin\obj\$(Platform)\$(Configuration)\</IntDir>
+    <OutDir>ffvii\</OutDir>
+    <IntDir>ffvii\obj\$(Platform)\$(Configuration)\</IntDir>
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -61,7 +61,7 @@
       <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
-      <AdditionalIncludeDirectories>third_party\ofxImGui\src;third_party\ofxImGui\libs\imgui\src;third_party\ofxImGui\libs\imgui;%(AdditionalIncludeDirectories);src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>third_party\ofxImGui\src;third_party\ofxImGui\libs\imgui\src;third_party\ofxImGui\libs\imgui;%(AdditionalIncludeDirectories);src/ffvii;src</AdditionalIncludeDirectories>
       <CompileAs>CompileAsCpp</CompileAs>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <ObjectFileName>$(IntDir)\Build\%(RelativeDir)\$(Configuration)\</ObjectFileName>
@@ -75,6 +75,7 @@
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ForceFileOutput>MultiplyDefinedSymbolOnly</ForceFileOutput>
+      <AdditionalOptions>/NOEXP /NOIMPLIB %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent />
   </ItemDefinitionGroup>
@@ -84,7 +85,7 @@
       <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
-      <AdditionalIncludeDirectories>third_party\ofxImGui\src;third_party\ofxImGui\libs\imgui\src;third_party\ofxImGui\libs\imgui;%(AdditionalIncludeDirectories);src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>third_party\ofxImGui\src;third_party\ofxImGui\libs\imgui\src;third_party\ofxImGui\libs\imgui;%(AdditionalIncludeDirectories);src/ffvii;src</AdditionalIncludeDirectories>
       <CompileAs>CompileAsCpp</CompileAs>
       <ObjectFileName>$(IntDir)\Build\%(RelativeDir)\$(Configuration)\</ObjectFileName>
       <LanguageStandard>stdcpp20</LanguageStandard>
@@ -100,25 +101,33 @@
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ForceFileOutput>MultiplyDefinedSymbolOnly</ForceFileOutput>
+      <AdditionalOptions>/NOEXP /NOIMPLIB %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent />
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\ending\ending.cpp" />
-    <ClCompile Include="src\field\background.cpp" />
-    <ClCompile Include="src\field\event.cpp" />
-    <ClCompile Include="src\field\field.cpp" />
-    <ClCompile Include="src\field\rain.cpp" />
-    <ClCompile Include="src\kernel\akao.cpp" />
-    <ClCompile Include="src\kernel\buttons.cpp" />
-    <ClCompile Include="src\kernel\file.cpp" />
-    <ClCompile Include="src\kernel\game.cpp" />
+    <ClCompile Include="src\ffvii\debug\browser_akao.cpp" />
+    <ClCompile Include="src\ffvii\debug\browser_ending.cpp" />
+    <ClCompile Include="src\ffvii\debug\browser_field.cpp" />
+    <ClCompile Include="src\ffvii\debug\browser_field_opcodes.cpp" />
+    <ClCompile Include="src\ffvii\debug\debug.cpp" />
+    <ClCompile Include="src\ffvii\debug\debug_field.cpp" />
+    <ClCompile Include="src\ffvii\ending\ending.cpp" />
+    <ClCompile Include="src\ffvii\field\background.cpp" />
+    <ClCompile Include="src\ffvii\field\event.cpp" />
+    <ClCompile Include="src\ffvii\field\field.cpp" />
+    <ClCompile Include="src\ffvii\field\rain.cpp" />
+    <ClCompile Include="src\ffvii\kernel\akao.cpp" />
+    <ClCompile Include="src\ffvii\kernel\buttons.cpp" />
+    <ClCompile Include="src\ffvii\kernel\file.cpp" />
+    <ClCompile Include="src\ffvii\kernel\game.cpp" />
+    <ClCompile Include="src\ffvii\menu\menu.cpp" />
+    <ClCompile Include="src\ffvii\menu\newgame.cpp" />
     <ClCompile Include="src\main.cpp" />
-    <ClCompile Include="src\menu\menu.cpp" />
-    <ClCompile Include="src\menu\newgame.cpp" />
     <ClCompile Include="src\psyq\libapi.cpp" />
     <ClCompile Include="src\psyq\libgpu.cpp" />
     <ClCompile Include="src\psyq\libgte.cpp" />
+    <ClCompile Include="src\psyq\libpad.cpp" />
     <ClCompile Include="src\psyq\libspu.cpp" />
     <ClCompile Include="src\psyq\psxgpu.cpp" />
     <ClCompile Include="src\psyq\psxgte.cpp" />
@@ -129,11 +138,6 @@
     <ClCompile Include="src\psyq\psxspu\spu.cpp" />
     <ClCompile Include="src\psyq\typedef.cpp" />
     <ClCompile Include="src\system\application.cpp" />
-    <ClCompile Include="src\system\browser_akao.cpp" />
-    <ClCompile Include="src\system\browser_ending.cpp" />
-    <ClCompile Include="src\system\browser_field.cpp" />
-    <ClCompile Include="src\system\browser_field_opcodes.cpp" />
-    <ClCompile Include="src\system\debug_field.cpp" />
     <ClCompile Include="src\system\debug_vram.cpp" />
     <ClCompile Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_glfw.cpp" />
     <ClCompile Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_glfw_context_support.cpp" />
@@ -155,23 +159,30 @@
     <ClCompile Include="third_party\ofxImGui\src\ofxImGuiLoggerChannel.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\ending\ending.h" />
-    <ClInclude Include="src\field\background.h" />
-    <ClInclude Include="src\field\event.h" />
-    <ClInclude Include="src\field\field.h" />
-    <ClInclude Include="src\field\field_list.h" />
-    <ClInclude Include="src\field\rain.h" />
-    <ClInclude Include="src\kernel\akao.h" />
-    <ClInclude Include="src\kernel\akao_commands.h" />
-    <ClInclude Include="src\kernel\akao_opcodes.h" />
-    <ClInclude Include="src\kernel\buttons.h" />
-    <ClInclude Include="src\kernel\file.h" />
-    <ClInclude Include="src\kernel\game.h" />
-    <ClInclude Include="src\menu\menu.h" />
-    <ClInclude Include="src\menu\newgame.h" />
+    <ClInclude Include="src\ffvii\debug\browser_akao.h" />
+    <ClInclude Include="src\ffvii\debug\browser_ending.h" />
+    <ClInclude Include="src\ffvii\debug\browser_field.h" />
+    <ClInclude Include="src\ffvii\debug\browser_field_opcodes.h" />
+    <ClInclude Include="src\ffvii\debug\debug.h" />
+    <ClInclude Include="src\ffvii\debug\debug_field.h" />
+    <ClInclude Include="src\ffvii\ending\ending.h" />
+    <ClInclude Include="src\ffvii\field\background.h" />
+    <ClInclude Include="src\ffvii\field\event.h" />
+    <ClInclude Include="src\ffvii\field\field.h" />
+    <ClInclude Include="src\ffvii\field\field_list.h" />
+    <ClInclude Include="src\ffvii\field\rain.h" />
+    <ClInclude Include="src\ffvii\kernel\akao.h" />
+    <ClInclude Include="src\ffvii\kernel\akao_commands.h" />
+    <ClInclude Include="src\ffvii\kernel\akao_opcodes.h" />
+    <ClInclude Include="src\ffvii\kernel\buttons.h" />
+    <ClInclude Include="src\ffvii\kernel\file.h" />
+    <ClInclude Include="src\ffvii\kernel\game.h" />
+    <ClInclude Include="src\ffvii\menu\menu.h" />
+    <ClInclude Include="src\ffvii\menu\newgame.h" />
     <ClInclude Include="src\psyq\libapi.h" />
     <ClInclude Include="src\psyq\libgpu.h" />
     <ClInclude Include="src\psyq\libgte.h" />
+    <ClInclude Include="src\psyq\libpad.h" />
     <ClInclude Include="src\psyq\libspu.h" />
     <ClInclude Include="src\psyq\psxgpu.h" />
     <ClInclude Include="src\psyq\psxgte.h" />
@@ -187,11 +198,6 @@
     <ClInclude Include="src\psyq\psxspu\spu.h" />
     <ClInclude Include="src\psyq\typedef.h" />
     <ClInclude Include="src\system\application.h" />
-    <ClInclude Include="src\system\browser_akao.h" />
-    <ClInclude Include="src\system\browser_ending.h" />
-    <ClInclude Include="src\system\browser_field.h" />
-    <ClInclude Include="src\system\browser_field_opcodes.h" />
-    <ClInclude Include="src\system\debug_field.h" />
     <ClInclude Include="src\system\debug_vram.h" />
     <ClInclude Include="src\system\icons_font.h" />
     <ClInclude Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_glfw.h" />

@@ -1,0 +1,12 @@
+prefix=/d/a/apothecary/apothecary/out/openssl
+exec_prefix=/d/a/apothecary/apothecary/out/openssl
+libdir=/d/a/apothecary/apothecary/out/openssl/lib/vs/x64/
+includedir=/d/a/apothecary/apothecary/out/openssl/include
+
+Name: OpenSSL-libssl
+Description: Secure Sockets Layer and cryptography libraries
+Version: 3.4.1
+Requires.private: libcrypto
+Libs: -L${libdir} -lssl
+Libs.private:
+Cflags: -I${includedir}

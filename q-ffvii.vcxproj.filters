@@ -58,9 +58,6 @@
     <ClCompile Include="src\main.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="src\field\field.cpp">
-      <Filter>src\field</Filter>
-    </ClCompile>
     <ClCompile Include="src\psyq\libgpu.cpp">
       <Filter>src\psyq</Filter>
     </ClCompile>
@@ -94,59 +91,68 @@
     <ClCompile Include="src\psyq\psxspu\of_audio_stream.cpp">
       <Filter>src\psyq\psxspu</Filter>
     </ClCompile>
-    <ClCompile Include="src\kernel\akao.cpp">
-      <Filter>src\kernel</Filter>
-    </ClCompile>
     <ClCompile Include="src\system\application.cpp">
       <Filter>src\system</Filter>
-    </ClCompile>
-    <ClCompile Include="src\system\browser_akao.cpp">
-      <Filter>src\system</Filter>
-    </ClCompile>
-    <ClCompile Include="src\system\browser_field.cpp">
-      <Filter>src\system</Filter>
-    </ClCompile>
-    <ClCompile Include="src\system\browser_field_opcodes.cpp">
-      <Filter>src\system</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ending\ending.cpp">
-      <Filter>src\ending</Filter>
-    </ClCompile>
-    <ClCompile Include="src\system\browser_ending.cpp">
-      <Filter>src\system</Filter>
-    </ClCompile>
-    <ClCompile Include="src\kernel\file.cpp">
-      <Filter>src\kernel</Filter>
-    </ClCompile>
-    <ClCompile Include="src\kernel\game.cpp">
-      <Filter>src\kernel</Filter>
     </ClCompile>
     <ClCompile Include="src\system\debug_vram.cpp">
       <Filter>src\system</Filter>
     </ClCompile>
-    <ClCompile Include="src\menu\menu.cpp">
-      <Filter>src\menu</Filter>
-    </ClCompile>
-    <ClCompile Include="src\menu\newgame.cpp">
-      <Filter>src\menu</Filter>
-    </ClCompile>
-    <ClCompile Include="src\kernel\buttons.cpp">
-      <Filter>src\kernel</Filter>
-    </ClCompile>
     <ClCompile Include="src\psyq\psxgpu.cpp">
       <Filter>src\psyq</Filter>
     </ClCompile>
-    <ClCompile Include="src\field\background.cpp">
+    <ClCompile Include="src\ffvii\ending\ending.cpp">
+      <Filter>src\ending</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ffvii\field\background.cpp">
       <Filter>src\field</Filter>
     </ClCompile>
-    <ClCompile Include="src\field\rain.cpp">
+    <ClCompile Include="src\ffvii\field\event.cpp">
       <Filter>src\field</Filter>
     </ClCompile>
-    <ClCompile Include="src\system\debug_field.cpp">
-      <Filter>src\system</Filter>
-    </ClCompile>
-    <ClCompile Include="src\field\event.cpp">
+    <ClCompile Include="src\ffvii\field\field.cpp">
       <Filter>src\field</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ffvii\field\rain.cpp">
+      <Filter>src\field</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ffvii\kernel\akao.cpp">
+      <Filter>src\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ffvii\kernel\buttons.cpp">
+      <Filter>src\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ffvii\kernel\file.cpp">
+      <Filter>src\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ffvii\kernel\game.cpp">
+      <Filter>src\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ffvii\menu\menu.cpp">
+      <Filter>src\menu</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ffvii\menu\newgame.cpp">
+      <Filter>src\menu</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ffvii\debug\browser_akao.cpp">
+      <Filter>src\debug</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ffvii\debug\browser_ending.cpp">
+      <Filter>src\debug</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ffvii\debug\browser_field.cpp">
+      <Filter>src\debug</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ffvii\debug\browser_field_opcodes.cpp">
+      <Filter>src\debug</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ffvii\debug\debug_field.cpp">
+      <Filter>src\debug</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ffvii\debug\debug.cpp">
+      <Filter>src\debug</Filter>
+    </ClCompile>
+    <ClCompile Include="src\psyq\libpad.cpp">
+      <Filter>src\psyq</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -231,9 +237,6 @@
     <ClInclude Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_opengl3_loader.h">
       <Filter>third_party\ofxImGui\libs\imgui\backends</Filter>
     </ClInclude>
-    <ClInclude Include="src\field\field.h">
-      <Filter>src\field</Filter>
-    </ClInclude>
     <ClInclude Include="src\psyq\libgpu.h">
       <Filter>src\psyq</Filter>
     </ClInclude>
@@ -282,71 +285,80 @@
     <ClInclude Include="src\psyq\psxspu\common\types.h">
       <Filter>src\psyq\psxspu\common</Filter>
     </ClInclude>
-    <ClInclude Include="src\kernel\akao.h">
-      <Filter>src\kernel</Filter>
-    </ClInclude>
-    <ClInclude Include="src\kernel\akao_commands.h">
-      <Filter>src\kernel</Filter>
-    </ClInclude>
-    <ClInclude Include="src\kernel\akao_opcodes.h">
-      <Filter>src\kernel</Filter>
-    </ClInclude>
     <ClInclude Include="src\system\application.h">
       <Filter>src\system</Filter>
     </ClInclude>
     <ClInclude Include="src\system\icons_font.h">
       <Filter>src\system</Filter>
     </ClInclude>
-    <ClInclude Include="src\system\browser_akao.h">
-      <Filter>src\system</Filter>
-    </ClInclude>
-    <ClInclude Include="src\system\browser_field.h">
-      <Filter>src\system</Filter>
-    </ClInclude>
-    <ClInclude Include="src\field\field_list.h">
-      <Filter>src\field</Filter>
-    </ClInclude>
-    <ClInclude Include="src\system\browser_field_opcodes.h">
-      <Filter>src\system</Filter>
-    </ClInclude>
-    <ClInclude Include="src\ending\ending.h">
-      <Filter>src\ending</Filter>
-    </ClInclude>
-    <ClInclude Include="src\system\browser_ending.h">
-      <Filter>src\system</Filter>
-    </ClInclude>
-    <ClInclude Include="src\kernel\file.h">
-      <Filter>src\kernel</Filter>
-    </ClInclude>
-    <ClInclude Include="src\kernel\game.h">
-      <Filter>src\kernel</Filter>
-    </ClInclude>
     <ClInclude Include="src\system\debug_vram.h">
       <Filter>src\system</Filter>
-    </ClInclude>
-    <ClInclude Include="src\menu\menu.h">
-      <Filter>src\menu</Filter>
-    </ClInclude>
-    <ClInclude Include="src\menu\newgame.h">
-      <Filter>src\menu</Filter>
-    </ClInclude>
-    <ClInclude Include="src\kernel\buttons.h">
-      <Filter>src\kernel</Filter>
     </ClInclude>
     <ClInclude Include="src\psyq\psxgpu.h">
       <Filter>src\psyq</Filter>
     </ClInclude>
-    <ClInclude Include="src\field\background.h">
+    <ClInclude Include="src\ffvii\ending\ending.h">
+      <Filter>src\ending</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ffvii\field\background.h">
       <Filter>src\field</Filter>
     </ClInclude>
-    <ClInclude Include="src\field\rain.h">
+    <ClInclude Include="src\ffvii\field\event.h">
       <Filter>src\field</Filter>
     </ClInclude>
-    <ClInclude Include="src\system\debug_field.h">
-      <Filter>src\system</Filter>
-    </ClInclude>
-    <ClInclude Include="src\field\event.h">
+    <ClInclude Include="src\ffvii\field\field.h">
       <Filter>src\field</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ffvii\field\field_list.h">
+      <Filter>src\field</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ffvii\field\rain.h">
+      <Filter>src\field</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ffvii\kernel\akao.h">
+      <Filter>src\kernel</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ffvii\kernel\akao_commands.h">
+      <Filter>src\kernel</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ffvii\kernel\akao_opcodes.h">
+      <Filter>src\kernel</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ffvii\kernel\buttons.h">
+      <Filter>src\kernel</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ffvii\kernel\file.h">
+      <Filter>src\kernel</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ffvii\kernel\game.h">
+      <Filter>src\kernel</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ffvii\menu\menu.h">
+      <Filter>src\menu</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ffvii\menu\newgame.h">
+      <Filter>src\menu</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ffvii\debug\browser_akao.h">
+      <Filter>src\debug</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ffvii\debug\browser_ending.h">
+      <Filter>src\debug</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ffvii\debug\browser_field.h">
+      <Filter>src\debug</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ffvii\debug\browser_field_opcodes.h">
+      <Filter>src\debug</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ffvii\debug\debug_field.h">
+      <Filter>src\debug</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ffvii\debug\debug.h">
+      <Filter>src\debug</Filter>
+    </ClInclude>
+    <ClInclude Include="src\psyq\libpad.h">
+      <Filter>src\psyq</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -397,6 +409,9 @@
     </Filter>
     <Filter Include="src\menu">
       <UniqueIdentifier>{82ae3394-69af-4253-ba92-f42e3151c9eb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\debug">
+      <UniqueIdentifier>{726265c5-4bee-40c6-8028-42cf452f182f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Condition="'$(WindowsTargetPlatformVersion)'==''">
+    <LatestTargetPlatformVersion>$([Microsoft.Build.Utilities.ToolLocationHelper]::GetLatestSDKTargetPlatformVersion('Windows', '10.0'))</LatestTargetPlatformVersion>
+    <WindowsTargetPlatformVersion Condition="'$(WindowsTargetPlatformVersion)' == ''">10.0</WindowsTargetPlatformVersion>
+    <TargetPlatformVersion>$(WindowsTargetPlatformVersion)</TargetPlatformVersion>
+  </PropertyGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{0C672EB0-E0AC-44F3-ADCD-FDA29549867C}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>q-ffix</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project=".\third_party\of_v0.12.0_vs_release\libs\openFrameworksCompiled\project\vs\openFrameworksRelease.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project=".\third_party\of_v0.12.0_vs_release\libs\openFrameworksCompiled\project\vs\openFrameworksDebug.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>ffix\</OutDir>
+    <IntDir>ffix\obj\$(Platform)\$(Configuration)\</IntDir>
+    <TargetName>$(ProjectName)_debug</TargetName>
+    <LinkIncremental>true</LinkIncremental>
+    <GenerateManifest>true</GenerateManifest>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>ffix\</OutDir>
+    <IntDir>ffix\obj\$(Platform)\$(Configuration)\</IntDir>
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <AdditionalIncludeDirectories>third_party\ofxImGui\src;third_party\ofxImGui\libs\imgui\src;third_party\ofxImGui\libs\imgui;%(AdditionalIncludeDirectories);src/ffix;src</AdditionalIncludeDirectories>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <ObjectFileName>$(IntDir)\Build\%(RelativeDir)\$(Configuration)\</ObjectFileName>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalOptions>/Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+      <RandomizedBaseAddress>false</RandomizedBaseAddress>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <ForceFileOutput>MultiplyDefinedSymbolOnly</ForceFileOutput>
+      <AdditionalOptions>/NOEXP /NOIMPLIB %(AdditionalOptions)</AdditionalOptions>
+    </Link>
+    <PostBuildEvent />
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <AdditionalIncludeDirectories>third_party\ofxImGui\src;third_party\ofxImGui\libs\imgui\src;third_party\ofxImGui\libs\imgui;%(AdditionalIncludeDirectories);src/ffix;src</AdditionalIncludeDirectories>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <ObjectFileName>$(IntDir)\Build\%(RelativeDir)\$(Configuration)\</ObjectFileName>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalOptions>/Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <RandomizedBaseAddress>false</RandomizedBaseAddress>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <ForceFileOutput>MultiplyDefinedSymbolOnly</ForceFileOutput>
+      <AdditionalOptions>/NOEXP /NOIMPLIB %(AdditionalOptions)</AdditionalOptions>
+    </Link>
+    <PostBuildEvent />
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="src\ffix\debug\debug.cpp" />
+    <ClCompile Include="src\ffix\kernel\game.cpp" />
+    <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\psyq\libapi.cpp" />
+    <ClCompile Include="src\psyq\libgpu.cpp" />
+    <ClCompile Include="src\psyq\libgte.cpp" />
+    <ClCompile Include="src\psyq\libpad.cpp" />
+    <ClCompile Include="src\psyq\libspu.cpp" />
+    <ClCompile Include="src\psyq\psxgpu.cpp" />
+    <ClCompile Include="src\psyq\psxgte.cpp" />
+    <ClCompile Include="src\psyq\psxspu\audio_stream.cpp" />
+    <ClCompile Include="src\psyq\psxspu\common\gsvector.cpp" />
+    <ClCompile Include="src\psyq\psxspu\common\timer.cpp" />
+    <ClCompile Include="src\psyq\psxspu\of_audio_stream.cpp" />
+    <ClCompile Include="src\psyq\psxspu\spu.cpp" />
+    <ClCompile Include="src\psyq\typedef.cpp" />
+    <ClCompile Include="src\system\application.cpp" />
+    <ClCompile Include="src\system\debug_vram.cpp" />
+    <ClCompile Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_glfw.cpp" />
+    <ClCompile Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_glfw_context_support.cpp" />
+    <ClCompile Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_opengl2.cpp" />
+    <ClCompile Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_opengl3.cpp" />
+    <ClCompile Include="third_party\ofxImGui\libs\imgui\src\imgui.cpp" />
+    <ClCompile Include="third_party\ofxImGui\libs\imgui\src\imgui_demo.cpp" />
+    <ClCompile Include="third_party\ofxImGui\libs\imgui\src\imgui_draw.cpp" />
+    <ClCompile Include="third_party\ofxImGui\libs\imgui\src\imgui_tables.cpp" />
+    <ClCompile Include="third_party\ofxImGui\libs\imgui\src\imgui_widgets.cpp" />
+    <ClCompile Include="third_party\ofxImGui\src\BaseEngine.cpp" />
+    <ClCompile Include="third_party\ofxImGui\src\DefaultTheme.cpp" />
+    <ClCompile Include="third_party\ofxImGui\src\EngineGLFW.cpp" />
+    <ClCompile Include="third_party\ofxImGui\src\EngineOpenFrameworks.cpp" />
+    <ClCompile Include="third_party\ofxImGui\src\EngineOpenGLES.cpp" />
+    <ClCompile Include="third_party\ofxImGui\src\EngineVk.cpp" />
+    <ClCompile Include="third_party\ofxImGui\src\Gui.cpp" />
+    <ClCompile Include="third_party\ofxImGui\src\ImHelpers.cpp" />
+    <ClCompile Include="third_party\ofxImGui\src\ofxImGuiLoggerChannel.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\ffix\debug\debug.h" />
+    <ClInclude Include="src\ffix\kernel\game.h" />
+    <ClInclude Include="src\psyq\libapi.h" />
+    <ClInclude Include="src\psyq\libgpu.h" />
+    <ClInclude Include="src\psyq\libgte.h" />
+    <ClInclude Include="src\psyq\libpad.h" />
+    <ClInclude Include="src\psyq\libspu.h" />
+    <ClInclude Include="src\psyq\psxgpu.h" />
+    <ClInclude Include="src\psyq\psxgte.h" />
+    <ClInclude Include="src\psyq\psxspu\audio_stream.h" />
+    <ClInclude Include="src\psyq\psxspu\common\align.h" />
+    <ClInclude Include="src\psyq\psxspu\common\bitfield.h" />
+    <ClInclude Include="src\psyq\psxspu\common\bitutils.h" />
+    <ClInclude Include="src\psyq\psxspu\common\gsvector.h" />
+    <ClInclude Include="src\psyq\psxspu\common\gsvector_sse.h" />
+    <ClInclude Include="src\psyq\psxspu\common\intrin.h" />
+    <ClInclude Include="src\psyq\psxspu\common\timer.h" />
+    <ClInclude Include="src\psyq\psxspu\common\types.h" />
+    <ClInclude Include="src\psyq\psxspu\spu.h" />
+    <ClInclude Include="src\psyq\typedef.h" />
+    <ClInclude Include="src\system\application.h" />
+    <ClInclude Include="src\system\debug_vram.h" />
+    <ClInclude Include="src\system\icons_font.h" />
+    <ClInclude Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_glfw.h" />
+    <ClInclude Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_glfw_arc_support.h" />
+    <ClInclude Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_glfw_context_support.h" />
+    <ClInclude Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_opengl2.h" />
+    <ClInclude Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_opengl3.h" />
+    <ClInclude Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_opengl3_loader.h" />
+    <ClInclude Include="third_party\ofxImGui\libs\imgui\src\imgui.h" />
+    <ClInclude Include="third_party\ofxImGui\libs\imgui\src\imgui_internal.h" />
+    <ClInclude Include="third_party\ofxImGui\libs\imgui\src\imstb_rectpack.h" />
+    <ClInclude Include="third_party\ofxImGui\libs\imgui\src\imstb_textedit.h" />
+    <ClInclude Include="third_party\ofxImGui\libs\imgui\src\imstb_truetype.h" />
+    <ClInclude Include="third_party\ofxImGui\src\BaseEngine.h" />
+    <ClInclude Include="third_party\ofxImGui\src\BaseTheme.h" />
+    <ClInclude Include="third_party\ofxImGui\src\DefaultTheme.h" />
+    <ClInclude Include="third_party\ofxImGui\src\EngineGLFW.h" />
+    <ClInclude Include="third_party\ofxImGui\src\EngineOpenFrameworks.h" />
+    <ClInclude Include="third_party\ofxImGui\src\EngineOpenGLES.h" />
+    <ClInclude Include="third_party\ofxImGui\src\EngineVk.h" />
+    <ClInclude Include="third_party\ofxImGui\src\gles1CompatibilityHacks.h" />
+    <ClInclude Include="third_party\ofxImGui\src\glfwCompatibilityHacks.h" />
+    <ClInclude Include="third_party\ofxImGui\src\Gui.h" />
+    <ClInclude Include="third_party\ofxImGui\src\imconfig.h" />
+    <ClInclude Include="third_party\ofxImGui\src\ImHelpers.h" />
+    <ClInclude Include="third_party\ofxImGui\src\LinkedList.hpp" />
+    <ClInclude Include="third_party\ofxImGui\src\ofxImGui.h" />
+    <ClInclude Include="third_party\ofxImGui\src\ofxImGuiConstants.h" />
+    <ClInclude Include="third_party\ofxImGui\src\ofxImGuiLoggerChannel.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(OF_ROOT)\libs\openFrameworksCompiled\project\vs\openframeworksLib.vcxproj">
+      <Project>{5837595d-aca9-485c-8e76-729040ce4b0b}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="icon.rc">
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">/D_DEBUG %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>$(OF_ROOT)\libs\openFrameworksCompiled\project\vs</AdditionalIncludeDirectories>
+    </ResourceCompile>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ProjectExtensions>
+    <VisualStudio>
+      <UserProperties RESOURCE_FILE="icon.rc" />
+    </VisualStudio>
+  </ProjectExtensions>
+</Project>

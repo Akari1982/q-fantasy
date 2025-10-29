@@ -1,0 +1,12 @@
+prefix=/home/runner/work/apothecary/apothecary/out/brotli
+exec_prefix=/home/runner/work/apothecary/apothecary/out/brotli
+libdir=/home/runner/work/apothecary/apothecary/out/brotli/lib/emscripten/WASM
+includedir=/home/runner/work/apothecary/apothecary/out/brotli/include
+
+Name: libbrotlidec
+URL: https://github.com/google/brotli
+Description: Brotli decoder library
+Version: 1.1.0
+Libs: -L${libdir} -lbrotlidec
+Requires.private: libbrotlicommon >= 1.1.0
+Cflags: -I${includedir}

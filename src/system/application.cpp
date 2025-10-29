@@ -1,13 +1,8 @@
 #include "application.h"
 #include "icons_font.h"
-#include "browser_akao.h"
-#include "browser_ending.h"
-#include "browser_field.h"
-#include "browser_field_opcodes.h"
-#include "debug_field.h"
 #include "debug_vram.h"
-#include "kernel/buttons.h"
-#include "kernel/game.h"
+#include "debug/debug.h"
+#include "psyq/libpad.h"
 #include "psyq/psxgpu.h"
 
 
@@ -141,7 +136,7 @@ void Application::setup()
         io.Fonts->Build();
     }
 
-    FieldBrowserInitOpcode();
+    DebugInit();
 }
 
 
@@ -158,20 +153,11 @@ void Application::draw()
 
     gui.begin(); //required to call this at beginning
 
-    BrowserField();
-    BrowserEnding();
-    BrowserAkao();
-    DebugVram();
-
-    if( g_game_state == GAME_STATE_FIELD ) DebugField();
+    DebugUpdate();
 
     if( ImGui::BeginMainMenuBar() )
     {
-        if( ImGui::MenuItem( "Field", nullptr, &g_browser_field ) ) {}
-        if( ImGui::MenuItem( "Ending", nullptr, &g_browser_ending ) ) {}
-        if( ImGui::MenuItem( "Akao", nullptr, &g_browser_akao ) ) {}
-
-        ImGui::Text( "FPS: %s", ofToString( ofGetFrameRate(), 2) ); ImGui::SameLine( 0, 0 );
+        ImGui::Text( "FPS: %s", ofToString( ofGetFrameRate(), 2 ) );
 
         float width = ImGui::GetWindowWidth();
         ImGui::SetCursorPosX( width - ImGui::CalcTextSize( "Vram" ).x - 10 );
@@ -179,6 +165,8 @@ void Application::draw()
 
         ImGui::EndMainMenuBar();
     }
+
+    DebugVram();
 
     gui.end(); //required to call this at end
 }

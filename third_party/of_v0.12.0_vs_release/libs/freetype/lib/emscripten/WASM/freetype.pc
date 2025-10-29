@@ -1,0 +1,14 @@
+prefix=/home/runner/work/apothecary/apothecary/out/freetype
+exec_prefix=/home/runner/work/apothecary/apothecary/out/freetype
+libdir=/home/runner/work/apothecary/apothecary/out/freetype/lib/emscripten/WASM/
+includedir=/home/runner/work/apothecary/apothecary/out/freetype/include
+
+Name: FreeType 2
+URL: https://freetype.org
+Description: A free, high-quality, and portable font engine.
+Version: 26.2.20
+Requires:  zlib, libpng, libbrotlidec
+Requires.private: 
+Libs: -L${libdir} -lfreetype 
+Libs.private: 
+Cflags: -I${includedir}/freetype2

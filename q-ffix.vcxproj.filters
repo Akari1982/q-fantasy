@@ -1,0 +1,312 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="third_party\ofxImGui\src\BaseEngine.cpp">
+      <Filter>third_party\ofxImGui\src</Filter>
+    </ClCompile>
+    <ClCompile Include="third_party\ofxImGui\src\DefaultTheme.cpp">
+      <Filter>third_party\ofxImGui\src</Filter>
+    </ClCompile>
+    <ClCompile Include="third_party\ofxImGui\src\EngineGLFW.cpp">
+      <Filter>third_party\ofxImGui\src</Filter>
+    </ClCompile>
+    <ClCompile Include="third_party\ofxImGui\src\EngineOpenFrameworks.cpp">
+      <Filter>third_party\ofxImGui\src</Filter>
+    </ClCompile>
+    <ClCompile Include="third_party\ofxImGui\src\EngineOpenGLES.cpp">
+      <Filter>third_party\ofxImGui\src</Filter>
+    </ClCompile>
+    <ClCompile Include="third_party\ofxImGui\src\EngineVk.cpp">
+      <Filter>third_party\ofxImGui\src</Filter>
+    </ClCompile>
+    <ClCompile Include="third_party\ofxImGui\src\Gui.cpp">
+      <Filter>third_party\ofxImGui\src</Filter>
+    </ClCompile>
+    <ClCompile Include="third_party\ofxImGui\src\ImHelpers.cpp">
+      <Filter>third_party\ofxImGui\src</Filter>
+    </ClCompile>
+    <ClCompile Include="third_party\ofxImGui\src\ofxImGuiLoggerChannel.cpp">
+      <Filter>third_party\ofxImGui\src</Filter>
+    </ClCompile>
+    <ClCompile Include="third_party\ofxImGui\libs\imgui\src\imgui.cpp">
+      <Filter>third_party\ofxImGui\libs\imgui\src</Filter>
+    </ClCompile>
+    <ClCompile Include="third_party\ofxImGui\libs\imgui\src\imgui_demo.cpp">
+      <Filter>third_party\ofxImGui\libs\imgui\src</Filter>
+    </ClCompile>
+    <ClCompile Include="third_party\ofxImGui\libs\imgui\src\imgui_draw.cpp">
+      <Filter>third_party\ofxImGui\libs\imgui\src</Filter>
+    </ClCompile>
+    <ClCompile Include="third_party\ofxImGui\libs\imgui\src\imgui_tables.cpp">
+      <Filter>third_party\ofxImGui\libs\imgui\src</Filter>
+    </ClCompile>
+    <ClCompile Include="third_party\ofxImGui\libs\imgui\src\imgui_widgets.cpp">
+      <Filter>third_party\ofxImGui\libs\imgui\src</Filter>
+    </ClCompile>
+    <ClCompile Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_glfw.cpp">
+      <Filter>third_party\ofxImGui\libs\imgui\backends</Filter>
+    </ClCompile>
+    <ClCompile Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_glfw_context_support.cpp">
+      <Filter>third_party\ofxImGui\libs\imgui\backends</Filter>
+    </ClCompile>
+    <ClCompile Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_opengl2.cpp">
+      <Filter>third_party\ofxImGui\libs\imgui\backends</Filter>
+    </ClCompile>
+    <ClCompile Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_opengl3.cpp">
+      <Filter>third_party\ofxImGui\libs\imgui\backends</Filter>
+    </ClCompile>
+    <ClCompile Include="src\main.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\psyq\libgpu.cpp">
+      <Filter>src\psyq</Filter>
+    </ClCompile>
+    <ClCompile Include="src\psyq\libgte.cpp">
+      <Filter>src\psyq</Filter>
+    </ClCompile>
+    <ClCompile Include="src\psyq\psxgte.cpp">
+      <Filter>src\psyq</Filter>
+    </ClCompile>
+    <ClCompile Include="src\psyq\typedef.cpp">
+      <Filter>src\psyq</Filter>
+    </ClCompile>
+    <ClCompile Include="src\psyq\psxspu\spu.cpp">
+      <Filter>src\psyq\psxspu</Filter>
+    </ClCompile>
+    <ClCompile Include="src\psyq\libspu.cpp">
+      <Filter>src\psyq</Filter>
+    </ClCompile>
+    <ClCompile Include="src\psyq\libapi.cpp">
+      <Filter>src\psyq</Filter>
+    </ClCompile>
+    <ClCompile Include="src\psyq\psxspu\audio_stream.cpp">
+      <Filter>src\psyq\psxspu</Filter>
+    </ClCompile>
+    <ClCompile Include="src\psyq\psxspu\common\gsvector.cpp">
+      <Filter>src\psyq\psxspu\common</Filter>
+    </ClCompile>
+    <ClCompile Include="src\psyq\psxspu\common\timer.cpp">
+      <Filter>src\psyq\psxspu\common</Filter>
+    </ClCompile>
+    <ClCompile Include="src\psyq\psxspu\of_audio_stream.cpp">
+      <Filter>src\psyq\psxspu</Filter>
+    </ClCompile>
+    <ClCompile Include="src\system\application.cpp">
+      <Filter>src\system</Filter>
+    </ClCompile>
+    <ClCompile Include="src\system\debug_vram.cpp">
+      <Filter>src\system</Filter>
+    </ClCompile>
+    <ClCompile Include="src\psyq\psxgpu.cpp">
+      <Filter>src\psyq</Filter>
+    </ClCompile>
+    <ClCompile Include="src\psyq\libpad.cpp">
+      <Filter>src\psyq</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ffix\kernel\game.cpp">
+      <Filter>src\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ffix\debug\debug.cpp">
+      <Filter>src\debug</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="third_party\ofxImGui\src\BaseEngine.h">
+      <Filter>third_party\ofxImGui\src</Filter>
+    </ClInclude>
+    <ClInclude Include="third_party\ofxImGui\src\BaseTheme.h">
+      <Filter>third_party\ofxImGui\src</Filter>
+    </ClInclude>
+    <ClInclude Include="third_party\ofxImGui\src\DefaultTheme.h">
+      <Filter>third_party\ofxImGui\src</Filter>
+    </ClInclude>
+    <ClInclude Include="third_party\ofxImGui\src\EngineGLFW.h">
+      <Filter>third_party\ofxImGui\src</Filter>
+    </ClInclude>
+    <ClInclude Include="third_party\ofxImGui\src\EngineOpenFrameworks.h">
+      <Filter>third_party\ofxImGui\src</Filter>
+    </ClInclude>
+    <ClInclude Include="third_party\ofxImGui\src\EngineOpenGLES.h">
+      <Filter>third_party\ofxImGui\src</Filter>
+    </ClInclude>
+    <ClInclude Include="third_party\ofxImGui\src\EngineVk.h">
+      <Filter>third_party\ofxImGui\src</Filter>
+    </ClInclude>
+    <ClInclude Include="third_party\ofxImGui\src\gles1CompatibilityHacks.h">
+      <Filter>third_party\ofxImGui\src</Filter>
+    </ClInclude>
+    <ClInclude Include="third_party\ofxImGui\src\glfwCompatibilityHacks.h">
+      <Filter>third_party\ofxImGui\src</Filter>
+    </ClInclude>
+    <ClInclude Include="third_party\ofxImGui\src\Gui.h">
+      <Filter>third_party\ofxImGui\src</Filter>
+    </ClInclude>
+    <ClInclude Include="third_party\ofxImGui\src\imconfig.h">
+      <Filter>third_party\ofxImGui\src</Filter>
+    </ClInclude>
+    <ClInclude Include="third_party\ofxImGui\src\ImHelpers.h">
+      <Filter>third_party\ofxImGui\src</Filter>
+    </ClInclude>
+    <ClInclude Include="third_party\ofxImGui\src\LinkedList.hpp">
+      <Filter>third_party\ofxImGui\src</Filter>
+    </ClInclude>
+    <ClInclude Include="third_party\ofxImGui\src\ofxImGui.h">
+      <Filter>third_party\ofxImGui\src</Filter>
+    </ClInclude>
+    <ClInclude Include="third_party\ofxImGui\src\ofxImGuiConstants.h">
+      <Filter>third_party\ofxImGui\src</Filter>
+    </ClInclude>
+    <ClInclude Include="third_party\ofxImGui\src\ofxImGuiLoggerChannel.h">
+      <Filter>third_party\ofxImGui\src</Filter>
+    </ClInclude>
+    <ClInclude Include="third_party\ofxImGui\libs\imgui\src\imgui.h">
+      <Filter>third_party\ofxImGui\libs\imgui\src</Filter>
+    </ClInclude>
+    <ClInclude Include="third_party\ofxImGui\libs\imgui\src\imgui_internal.h">
+      <Filter>third_party\ofxImGui\libs\imgui\src</Filter>
+    </ClInclude>
+    <ClInclude Include="third_party\ofxImGui\libs\imgui\src\imstb_rectpack.h">
+      <Filter>third_party\ofxImGui\libs\imgui\src</Filter>
+    </ClInclude>
+    <ClInclude Include="third_party\ofxImGui\libs\imgui\src\imstb_textedit.h">
+      <Filter>third_party\ofxImGui\libs\imgui\src</Filter>
+    </ClInclude>
+    <ClInclude Include="third_party\ofxImGui\libs\imgui\src\imstb_truetype.h">
+      <Filter>third_party\ofxImGui\libs\imgui\src</Filter>
+    </ClInclude>
+    <ClInclude Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_glfw.h">
+      <Filter>third_party\ofxImGui\libs\imgui\backends</Filter>
+    </ClInclude>
+    <ClInclude Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_glfw_arc_support.h">
+      <Filter>third_party\ofxImGui\libs\imgui\backends</Filter>
+    </ClInclude>
+    <ClInclude Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_glfw_context_support.h">
+      <Filter>third_party\ofxImGui\libs\imgui\backends</Filter>
+    </ClInclude>
+    <ClInclude Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_opengl2.h">
+      <Filter>third_party\ofxImGui\libs\imgui\backends</Filter>
+    </ClInclude>
+    <ClInclude Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_opengl3.h">
+      <Filter>third_party\ofxImGui\libs\imgui\backends</Filter>
+    </ClInclude>
+    <ClInclude Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_opengl3_loader.h">
+      <Filter>third_party\ofxImGui\libs\imgui\backends</Filter>
+    </ClInclude>
+    <ClInclude Include="src\psyq\libgpu.h">
+      <Filter>src\psyq</Filter>
+    </ClInclude>
+    <ClInclude Include="src\psyq\libgte.h">
+      <Filter>src\psyq</Filter>
+    </ClInclude>
+    <ClInclude Include="src\psyq\psxgte.h">
+      <Filter>src\psyq</Filter>
+    </ClInclude>
+    <ClInclude Include="src\psyq\typedef.h">
+      <Filter>src\psyq</Filter>
+    </ClInclude>
+    <ClInclude Include="src\psyq\psxspu\spu.h">
+      <Filter>src\psyq\psxspu</Filter>
+    </ClInclude>
+    <ClInclude Include="src\psyq\libspu.h">
+      <Filter>src\psyq</Filter>
+    </ClInclude>
+    <ClInclude Include="src\psyq\libapi.h">
+      <Filter>src\psyq</Filter>
+    </ClInclude>
+    <ClInclude Include="src\psyq\psxspu\audio_stream.h">
+      <Filter>src\psyq\psxspu</Filter>
+    </ClInclude>
+    <ClInclude Include="src\psyq\psxspu\common\align.h">
+      <Filter>src\psyq\psxspu\common</Filter>
+    </ClInclude>
+    <ClInclude Include="src\psyq\psxspu\common\bitfield.h">
+      <Filter>src\psyq\psxspu\common</Filter>
+    </ClInclude>
+    <ClInclude Include="src\psyq\psxspu\common\bitutils.h">
+      <Filter>src\psyq\psxspu\common</Filter>
+    </ClInclude>
+    <ClInclude Include="src\psyq\psxspu\common\gsvector.h">
+      <Filter>src\psyq\psxspu\common</Filter>
+    </ClInclude>
+    <ClInclude Include="src\psyq\psxspu\common\gsvector_sse.h">
+      <Filter>src\psyq\psxspu\common</Filter>
+    </ClInclude>
+    <ClInclude Include="src\psyq\psxspu\common\intrin.h">
+      <Filter>src\psyq\psxspu\common</Filter>
+    </ClInclude>
+    <ClInclude Include="src\psyq\psxspu\common\timer.h">
+      <Filter>src\psyq\psxspu\common</Filter>
+    </ClInclude>
+    <ClInclude Include="src\psyq\psxspu\common\types.h">
+      <Filter>src\psyq\psxspu\common</Filter>
+    </ClInclude>
+    <ClInclude Include="src\system\application.h">
+      <Filter>src\system</Filter>
+    </ClInclude>
+    <ClInclude Include="src\system\icons_font.h">
+      <Filter>src\system</Filter>
+    </ClInclude>
+    <ClInclude Include="src\system\debug_vram.h">
+      <Filter>src\system</Filter>
+    </ClInclude>
+    <ClInclude Include="src\psyq\psxgpu.h">
+      <Filter>src\psyq</Filter>
+    </ClInclude>
+    <ClInclude Include="src\psyq\libpad.h">
+      <Filter>src\psyq</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ffix\kernel\game.h">
+      <Filter>src\kernel</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ffix\debug\debug.h">
+      <Filter>src\debug</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="third_party">
+      <UniqueIdentifier>{137c5c5a-7942-40c2-b3d6-417dc7fd4db7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="third_party\ofxImGui">
+      <UniqueIdentifier>{3ba63979-f991-4f25-bab2-3458ae361584}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="third_party\ofxImGui\src">
+      <UniqueIdentifier>{3de095b7-9d4b-442c-b3c4-e17c38998fd2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="third_party\ofxImGui\libs">
+      <UniqueIdentifier>{ed543b41-85ce-4843-98a5-1f4047488e36}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="third_party\ofxImGui\libs\imgui">
+      <UniqueIdentifier>{9edb4085-2526-468b-a07e-6daadd25b832}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="third_party\ofxImGui\libs\imgui\src">
+      <UniqueIdentifier>{d2b775e8-4f2f-4b50-9fe8-1c1a4d4b97a1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="third_party\ofxImGui\libs\imgui\backends">
+      <UniqueIdentifier>{e908f2dd-05cb-490a-a4c8-5d002f7c6703}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src">
+      <UniqueIdentifier>{a88dc27e-3d51-4e33-897b-c13748784e25}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\psyq">
+      <UniqueIdentifier>{26397680-8577-4c5a-81aa-49573c64bdd8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\system">
+      <UniqueIdentifier>{dbff4363-748e-4d41-ad49-bf0b2ee417cb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\psyq\psxspu">
+      <UniqueIdentifier>{da9abd21-9998-420e-bd58-61e04903d973}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\psyq\psxspu\common">
+      <UniqueIdentifier>{ec6290ca-9c76-427e-b192-2153300e9dee}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\kernel">
+      <UniqueIdentifier>{4c9b4ade-c377-499e-921d-48f73d803bc8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\debug">
+      <UniqueIdentifier>{96c5eecd-ee88-47d0-91ca-99f65c44e130}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="icon.rc" />
+  </ItemGroup>
+</Project>

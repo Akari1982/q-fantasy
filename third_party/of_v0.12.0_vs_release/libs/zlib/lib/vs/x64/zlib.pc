@@ -1,0 +1,13 @@
+prefix=/d/a/apothecary/apothecary/out/zlib
+exec_prefix=/d/a/apothecary/apothecary/out/zlib
+libdir=/d/a/apothecary/apothecary/out/zlib/lib/vs/x64/
+sharedlibdir=D:/a/apothecary/apothecary/build/zlib/build_vs_64/Release/lib
+includedir=/d/a/apothecary/apothecary/out/zlib/include
+
+Name: zlib
+Description: zlib compression library
+Version: 1.3.1
+
+Requires:
+Libs: -L${libdir} -L${sharedlibdir} -lz
+Cflags: -I${includedir}

@@ -1,0 +1,12 @@
+prefix=/home/runner/work/apothecary/apothecary/out/libpng
+exec_prefix=/home/runner/work/apothecary/apothecary/out/libpng
+libdir=/home/runner/work/apothecary/apothecary/out/libpng/lib/emscripten/WASM/
+includedir=/home/runner/work/apothecary/apothecary/out/libpng/include/libpng16
+
+Name: libpng
+Description: Loads and saves PNG files
+Version: 1.6.41
+Requires.private: zlib
+Libs: -L${libdir} -lpng16
+Libs.private: -lz -lm
+Cflags: -I${includedir}
