@@ -261,6 +261,9 @@
     <ClInclude Include="src\ffix\debug\debug.h">
       <Filter>src\debug</Filter>
     </ClInclude>
+    <ClInclude Include="src\system\logger.h">
+      <Filter>src\system</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="third_party">

@@ -7,10 +7,9 @@
 #include "kernel/file.h"
 #include "kernel/buttons.h"
 #include "psyq/libgte.h"
+#include "system/logger.h"
 
 #include <vector>
-#include <ofLog.h>
-#include <ofUtils.h>
 
 
 
@@ -112,7 +111,7 @@ void FieldCorruptedFilesCheck()
      || (name.compare( 0, 2, "WM" ) == 0)
      || (name == "XMVTES") )
     {
-        ofLog( OF_LOG_ERROR, "Field map \"" + name + "\" (0x" + ofToHex( g_field_map_id ) + ") corrupted. Replace it with \"DUMMY\" (0x0)" );
+        LOG_ERROR( "Field map \"%s\" (0x%x) corrupted. Replace it with \"DUMMY\" (0x0)", name.c_str(), g_field_map_id );
         g_field_map_id = 0;
     }
 }
@@ -195,7 +194,6 @@ void FieldMainLoop()
     u32 id_n = READ_LE_U32( &g_field_dat[ walkmesh_addr ] );
     walkmesh_addr += 0x4;
     u32 walkmesh_access_addr = walkmesh_addr + id_n * 0x18;
-    //printf( "Number of trianges in walkmesh: 0x%02x\n", id_n );
     field_walkmesh.resize( id_n );
     field_walkmesh_access.resize( id_n );
     for( int i = 0; i < id_n; ++i )

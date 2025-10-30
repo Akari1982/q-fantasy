@@ -1,6 +1,6 @@
-/ffix/data
+/ffix/data/
 /ffix/obj
-/ffvii/data
+/ffvii/data/
 /ffvii/obj
 /.vs
 /third_party/of_v0.12.0_vs_release/libs/openFrameworksCompiled/lib/vs

@@ -167,6 +167,7 @@
     <ClInclude Include="src\system\application.h" />
     <ClInclude Include="src\system\debug_vram.h" />
     <ClInclude Include="src\system\icons_font.h" />
+    <ClInclude Include="src\system\logger.h" />
     <ClInclude Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_glfw.h" />
     <ClInclude Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_glfw_arc_support.h" />
     <ClInclude Include="third_party\ofxImGui\libs\imgui\backends\imgui_impl_glfw_context_support.h" />

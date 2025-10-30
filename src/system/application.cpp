@@ -1,4 +1,5 @@
 #include "application.h"
+#include "logger.h"
 #include "icons_font.h"
 #include "debug_vram.h"
 #include "debug/debug.h"
@@ -26,7 +27,8 @@ void GameRender()
 
 void Application::setup()
 {
-    ofSetLogLevel(OF_LOG_VERBOSE);
+    ofSetLogLevel(OF_LOG_WARNING);
+    //ofSetLogLevel(OF_LOG_VERBOSE);
 
     GPUInit();
 
@@ -113,7 +115,7 @@ void Application::setup()
         ImGuiIO& io = ImGui::GetIO();
         ImFont* font = io.Fonts->AddFontFromFileTTF( "system/Roboto-Regular.ttf", 16.0f );
         //ImFont* font = io.Fonts->AddFontFromFileTTF( "system/RobotoMono-Regular.ttf", 17.0f );
-        if( !font ) ofLogError() << "ERROR: can't load font.";
+        if( !font ) LOG_ERROR( "ERROR: can't load font." );
         io.FontDefault = font;
         ImWchar icons_ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
         ImFontConfig icons_config;
@@ -121,7 +123,7 @@ void Application::setup()
         icons_config.PixelSnapH = true;
         if( !io.Fonts->AddFontFromFileTTF( "system/FontAwesome5-Free-Solid.otf", 14.0f, &icons_config, icons_ranges ) )
         {
-            ofLogError() << "ERROR: can't load font.";
+            LOG_ERROR( "ERROR: can't load font." );
         }
 
         ImWchar jp_ranges[] =

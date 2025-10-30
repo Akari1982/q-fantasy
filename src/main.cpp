@@ -14,6 +14,8 @@ int main()
 
     g_application = ofCreateWindow( settings );
 
+    g_application->setWindowTitle( "Q-Fantasy v0.01 \"First Steps\"" );
+
     ofRunApp( g_application, make_shared<Application>() );
 
     GameMain();

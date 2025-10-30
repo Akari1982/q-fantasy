@@ -360,6 +360,9 @@
     <ClInclude Include="src\psyq\libpad.h">
       <Filter>src\psyq</Filter>
     </ClInclude>
+    <ClInclude Include="src\system\logger.h">
+      <Filter>src\system</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="third_party">

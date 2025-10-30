@@ -1,4 +1,8 @@
-﻿typedef void (*AkaoOpcode) ( AkaoChannel* channel, AkaoConfig* config, u32 mask );
+﻿#include "system/logger.h"
+
+
+
+typedef void (*AkaoOpcode) ( AkaoChannel* channel, AkaoConfig* config, u32 mask );
 
 
 
@@ -555,7 +559,7 @@ void AkaoOpcode_bd_pan_lfo_depth( AkaoChannel* channel, AkaoConfig* config, u32 
 
 void AkaoOpcode_be_pan_lfo_off( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xbe" );
+    LOG_WARNING( "MISSING 0xbe" );
 
     /*
     channel->update_flags &= ~AKAO_UPDATE_PAN_LFO;
@@ -787,7 +791,7 @@ void AkaoOpcode_cd_legato_off( AkaoChannel* channel, AkaoConfig* config, u32 mas
 
 void AkaoOpcode_ce_noise_switch( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xce" );
+    LOG_WARNING( "MISSING 0xce" );
 
     u8* akao = channel->seq;
     channel->seq = akao + 0x1;
@@ -805,7 +809,7 @@ void AkaoOpcode_ce_noise_switch( AkaoChannel* channel, AkaoConfig* config, u32 m
 
 void AkaoOpcode_cf_noise_switch( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xcf" );
+    LOG_WARNING( "MISSING 0xcf" );
 
     u8* akao = channel->seq;
     channel->seq = akao + 0x1;
@@ -834,7 +838,7 @@ void AkaoOpcode_d1_full_length_off( AkaoChannel* channel, AkaoConfig* config, u3
 
 void AkaoOpcode_d2_frequency_modulation_switch( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xd2" );
+    LOG_WARNING( "MISSING 0xd2" );
 
     u8* akao = channel->seq;
     channel->seq = akao + 0x1;
@@ -852,7 +856,7 @@ void AkaoOpcode_d2_frequency_modulation_switch( AkaoChannel* channel, AkaoConfig
 
 void AkaoOpcode_d3_frequency_modulation_switch( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xd3" );
+    LOG_WARNING( "MISSING 0xd3" );
 
     u8* akao = channel->seq;
     channel->seq = akao + 0x1;
@@ -988,7 +992,7 @@ void AkaoOpcode_de_tremolo_depth_slide( AkaoChannel* channel, AkaoConfig* config
 
 void AkaoOpcode_df_pan_lfo_depth_slide( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xdf" );
+    LOG_WARNING( "MISSING 0xdf" );
 
     u8* akao = channel->seq;
     channel->seq = akao + 0x2;
@@ -1017,7 +1021,7 @@ void AkaoOpcode_e8_tempo( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 
 void AkaoOpcode_e9_tempo_slide( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xe9" );
+    LOG_WARNING( "MISSING 0xe9" );
 
     u8* akao = channel->seq;
     channel->seq = akao + 0x3;
@@ -1048,7 +1052,7 @@ void AkaoOpcode_ea_reverb_depth( AkaoChannel* channel, AkaoConfig* config, u32 m
 
 void AkaoOpcode_eb_reverb_depth_slide( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xeb" );
+    LOG_WARNING( "MISSING 0xeb" );
 
     u8* akao = channel->seq;
     channel->seq = akao + 0x3;
@@ -1094,7 +1098,7 @@ void AkaoOpcode_ee_jump( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 
 void AkaoOpcode_ef_jump_conditional( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xef" );
+    LOG_WARNING( "MISSING 0xef" );
 
     u8* akao = channel->seq;
     /*
@@ -1135,7 +1139,7 @@ void AkaoOpcode_f0_loop_jump_times( AkaoChannel* channel, AkaoConfig* config, u3
 
 void AkaoOpcode_f1_loop_break_times( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xf1" );
+    LOG_WARNING( "MISSING 0xf1" );
 
     u8* akao = channel->seq;
     /*
@@ -1199,7 +1203,7 @@ void AkaoOpcode_f2_load_instrument( AkaoChannel* channel, AkaoConfig* config, u3
 
 void AkaoOpcode_f3( AkaoChannel* channel, AkaoConfig* config, u32 mask )
 {
-    ofLog( OF_LOG_NOTICE, "MISSING 0xf3" );
+    LOG_WARNING( "MISSING 0xf3" );
 
     /*
     channel->type = AKAO_SOUND;

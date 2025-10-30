@@ -1,5 +1,6 @@
 #include "psxgpu.h"
 #include "libgpu.h"
+#include "system/logger.h"
 #include "ofGraphics.h"
 
 
@@ -209,7 +210,7 @@ void OTag::execute()
     }
     else
     {
-        ofLog( OF_LOG_ERROR, "Unsupported OTag: type = 0x" + ofToHex( type ) );
+        LOG_ERROR( "Unsupported OTag: type = 0x0x", type );
     }
 }
 

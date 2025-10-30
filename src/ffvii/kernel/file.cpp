@@ -2,6 +2,7 @@
 
 #include "ofMain.h"
 #include "zlib.h"
+#include "system/logger.h"
 
 
 
@@ -134,7 +135,7 @@ bool GZIPExtract( std::vector<u8>::const_iterator input, u32 size, std::vector<u
     // 16+MAX_WBITS - gzip support
     if( inflateInit2( &strm, 16 + MAX_WBITS ) != Z_OK )
     {
-        printf( "Can't initialize zlib.\n" );
+        LOG_ERROR( "Can't initialize zlib." );
         return false;
     }
 
@@ -159,7 +160,7 @@ bool GZIPExtract( std::vector<u8>::const_iterator input, u32 size, std::vector<u
     if( ret != Z_STREAM_END )
     {
         inflateEnd( &strm );
-        printf( "Unpacking error (code %d).\n", ret );
+        LOG_ERROR( "Unpacking error (code %d).", ret );
         return false;
     }
 
@@ -209,13 +210,13 @@ void FileBINGZIP( const std::string& name, std::vector<u8>& output )
 
 void FileRead( const std::string& name, std::vector<u8>& output )
 {
-    printf( "Load file: %s\n", name.c_str() );
+    LOG_INFO( "Load file: %s.", name.c_str() );
 
     FILE* file = fopen( ("data/" + name).c_str(), "rb" );
 
     if( file == NULL )
     {
-        printf( "Cant read file: %s\n", name.c_str() );
+        LOG_ERROR( "Can't read file: %s.", name.c_str() );
         return;
     }
 
@@ -232,13 +233,13 @@ void FileRead( const std::string& name, std::vector<u8>& output )
 
 void FileWrite( const std::string& name, std::vector<u8>& input )
 {
-    printf( "Write file: %s\n", name.c_str() );
+    LOG_INFO( "Write file: %s.", name.c_str() );
 
     FILE* file = fopen( name.c_str(), "wb" );
 
     if( file == NULL )
     {
-        printf( "Cant write file: %s\n", name.c_str() );
+        LOG_ERROR( "Can't write file: %s.", name.c_str() );
         return;
     }
 
