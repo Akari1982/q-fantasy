@@ -151,7 +151,27 @@ void Application::update()
 
 void Application::draw()
 {
-    g_screen.draw( 100, 100, 800, 600 );
+    static ofVboMesh mesh;
+    mesh.clear();
+    mesh.setMode( OF_PRIMITIVE_TRIANGLE_FAN );
+
+    mesh.addVertex( glm::vec3(100.0f, 100.0f, 0.0f) );
+    mesh.addVertex( glm::vec3(900.0f, 100.0f, 0.0f) );
+    mesh.addVertex( glm::vec3(900.0f, 700.0f, 0.0f) );
+    mesh.addVertex( glm::vec3(100.0f, 700.0f, 0.0f) );
+
+    mesh.addTexCoord( glm::vec2(g_rendering_disp_x,                      g_rendering_disp_y) );
+    mesh.addTexCoord( glm::vec2(g_rendering_disp_x + g_rendering_disp_w, g_rendering_disp_y) );
+    mesh.addTexCoord( glm::vec2(g_rendering_disp_x + g_rendering_disp_w, g_rendering_disp_y + g_rendering_disp_h) );
+    mesh.addTexCoord( glm::vec2(g_rendering_disp_x,                      g_rendering_disp_y + g_rendering_disp_h) );
+
+    glm::mat4 projection = glm::ortho(0.0f, (float)ofGetWidth(), (float)ofGetHeight(), 0.0f, -1.0f, 1.0f);
+
+    g_display_shader.begin();
+    g_display_shader.setUniformTexture( "tex0", g_vram_texture, 0 );
+    g_display_shader.setUniformMatrix4f( "g_matrix", projection );
+    mesh.draw();
+    g_display_shader.end();
 
     gui.begin(); //required to call this at beginning
 

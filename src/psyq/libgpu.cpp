@@ -71,39 +71,40 @@ TIM_IMAGE* PsyqReadTim( TIM_IMAGE* timimg )
 
 void PsyqLoadImage( SRECT* rect, const u8* data )
 {
-    int vram_offset = rect->y * VRAM_W + rect->x * 2;
+    int num_pixels = rect->w * rect->h;
+    std::vector<u16> temp_data_u16(num_pixels);
 
-    for( int y = 0; y < rect->h; ++y )
+    const u8* src = data;
+    for( int i = 0; i < num_pixels; ++i )
     {
-        auto vramIterator = g_vram.begin() + vram_offset;
-        for( int x = 0; x < (rect->w * 2); ++x )
-        {
-            *(vramIterator++) = *(data++);
-            ++vram_offset;
-        }
-        vram_offset += VRAM_W - rect->w * 2;
+        u8 low_byte = *(src++);
+        u8 high_byte = *(src++);
+        temp_data_u16[i] = (high_byte << 8) | low_byte;
     }
 
-    GPUUpdateTextureFromVram();
+    g_vram_texture.bind();
+    glTexSubImage2D( GL_TEXTURE_2D, 0, rect->x, rect->y, rect->w, rect->h, GL_RED_INTEGER, GL_UNSIGNED_SHORT, temp_data_u16.data() );
+    g_vram_texture.unbind();
 }
 
 
 
 void PsyqLoadImage( SRECT* rect, std::span<u8>::iterator data )
 {
-    for( int y = 0; y < rect->h; ++y )
-    {
-        auto vram = g_vram.begin() + (rect->y + y) * VRAM_W + rect->x * 2;
+    int num_pixels = rect->w * rect->h;
+    std::vector<u16> temp_data_u16(num_pixels);
 
-        for( int x = 0; x < (rect->w * 2); ++x )
-        {
-            *vram = READ_LE_U8( data );
-            vram += 1;
-            data += 1;
-        }
+    for( int i = 0; i < num_pixels; ++i )
+    {
+        u8 low_byte = READ_LE_U8( data + 0 );
+        u8 high_byte = READ_LE_U8( data + 1 );
+        temp_data_u16[i] = (static_cast<u16>(high_byte) << 8) | low_byte;
+        data += 2;
     }
 
-    GPUUpdateTextureFromVram();
+    g_vram_texture.bind();
+    glTexSubImage2D( GL_TEXTURE_2D, 0, rect->x, rect->y, rect->w, rect->h, GL_RED_INTEGER, GL_UNSIGNED_SHORT, temp_data_u16.data() );
+    g_vram_texture.unbind();
 }
 
 
@@ -128,31 +129,18 @@ u16 PsyqLoadTPage( const u8* data, int tp, int abr, int x, int y, int w, int h )
 
 void PsyqClearImage( SRECT* rect, u8 r, u8 g, u8 b )
 {
-    for( int y = 0; y < rect->h; ++y )
-    {
-        auto vram = g_vram.begin() + (rect->y + y) * VRAM_W + rect->x * 2;
-
-        for( int x = 0; x < rect->w * 2; ++x )
-        {
-            *vram = 0;
-            *vram |= ((g >> 0x3) >> 0x3) & 0x03;
-            *vram |= ((b >> 0x3) << 0x2) & 0x7c;
-            vram += 1;
-            *vram = 0;
-            *vram |= (r >> 0x3) & 0x1f;
-            *vram |= ((g >> 0x3) << 0x5) & 0xe0;
-        }
-    }
-
-    GPUUpdateTextureFromVram();
+    u16 clear_value = 0;
+    clear_value |= ((r >> 0x3) & 0x1f) << 0x0;
+    clear_value |= ((g >> 0x3) & 0x1f) << 0x5;
+    clear_value |= ((b >> 0x3) & 0x1f) << 0xa;
+    GLuint textureID = g_vram_texture.getTextureData().textureID;
+    glClearTexSubImage( textureID, 0, rect->x, rect->y, 0, rect->w, rect->h, 1, GL_RED_INTEGER, GL_UNSIGNED_SHORT, &clear_value );
 }
 
 
 
 s32 PsyqVSync( s32 mode )
 {
-    GPUUpdateScreenFromVram();
-
     GameRender();
 
     return 1;
@@ -213,14 +201,10 @@ void PsyqSetDrawEnv( DR_ENV* dr_env, DRAWENV* env )
 
 DISPENV* PsyqPutDispEnv( DISPENV* env )
 {
-    if( (g_screen.getWidth() != env->disp.w) || (g_screen.getHeight() != env->disp.h) )
-    {
-        g_screen.allocate( env->disp.w, env->disp.h, GL_RGBA8, false );
-    }
-
     g_rendering_disp_x = env->disp.x;
     g_rendering_disp_y = env->disp.y;
-
+    g_rendering_disp_w = env->disp.w;
+    g_rendering_disp_h = env->disp.h;
     return env;
 }
 
@@ -231,7 +215,6 @@ DRAWENV* PsyqPutDrawEnv( DRAWENV* env )
     DR_ENV dr_env;
     PsyqSetDrawEnv( &dr_env, env );
     dr_env.execute();
-
     return env;
 }
 
@@ -291,15 +274,11 @@ OTag* PsyqClearOTag( OTag* ot, s32 n )
 
 void PsyqDrawOTag( OTag* ot )
 {
-    GPUUpdateRenderFromVram();
-
     while( ot )
     {
         ot->execute();
         ot = ot->next;
     }
-
-    GPUUpdateVramFromRender();
 }
 
 
