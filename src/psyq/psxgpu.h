@@ -23,3 +23,5 @@ extern u32 g_rendering_disp_h;
 
 extern ofTexture g_vram_texture;
 extern ofShader g_display_shader;
+extern ofShader g_render_shader;
+extern GLuint g_fbo_id;

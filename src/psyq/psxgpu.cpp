@@ -7,8 +7,8 @@
 
 ofTexture g_vram_texture;
 ofShader g_display_shader;
-ofShader l_render_shader;
-GLuint l_fbo_id;
+ofShader g_render_shader;
+GLuint g_fbo_id;
 
 // rendering settings
 u32 g_rendering_disp_enable = 0;
@@ -50,8 +50,8 @@ void GPUInit()
     g_vram_texture.texData.bAllocated = true;
 
     // create framebuffer
-    glGenFramebuffers( 1, &l_fbo_id );
-    glBindFramebuffer( GL_FRAMEBUFFER, l_fbo_id );
+    glGenFramebuffers( 1, &g_fbo_id );
+    glBindFramebuffer( GL_FRAMEBUFFER, g_fbo_id );
  
     // attach vram to framebuffer
     glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex_id, 0 );
@@ -71,7 +71,7 @@ void GPUInit()
     glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 
     // load shaders to render polygons to GL_R16UI vram
-    l_render_shader.load( "../system/shader_render.vert", "../system/shader_render.frag" );
+    g_render_shader.load( "../system/shader_render.vert", "../system/shader_render.frag" );
 
     // load shader for rendering GL_R16UI vram
     g_display_shader.load( "../system/shader_display.vert", "../system/shader_display.frag" );
@@ -124,10 +124,6 @@ void OTag::execute()
 
 void LINE_F2::execute()
 {
-    glBindFramebuffer( GL_FRAMEBUFFER, l_fbo_id );
-    glViewport( 0, 0, VRAM_W, VRAM_H );
-    glDisable( GL_BLEND );
-
     static ofVboMesh mesh;
     mesh.clear();
     mesh.setMode( OF_PRIMITIVE_LINES );
@@ -142,31 +138,20 @@ void LINE_F2::execute()
 
     ofSetLineWidth( 1 );
 
-    glEnable( GL_SCISSOR_TEST );
-    l_render_shader.begin();
-    l_render_shader.setUniformMatrix4f( "g_matrix", projection );
-    l_render_shader.setUniformTexture( "g_texture", g_vram_texture, 0 );
-    l_render_shader.setUniform1i( "g_transp", (code & 0x2) ? 1 : 0 );
-    l_render_shader.setUniform1i( "g_colored", 1 );
-    l_render_shader.setUniform1i( "g_textured", 0 );
-    l_render_shader.setUniform1i( "g_abr", (l_tpage >> 0x5) & 0x3 );
-    l_render_shader.setUniform1i( "g_dtd", l_dtd );
+    g_render_shader.setUniformMatrix4f( "g_matrix", projection );
+    g_render_shader.setUniformTexture( "g_texture", g_vram_texture, 0 );
+    g_render_shader.setUniform1i( "g_transp", (code & 0x2) ? 1 : 0 );
+    g_render_shader.setUniform1i( "g_colored", 1 );
+    g_render_shader.setUniform1i( "g_textured", 0 );
+    g_render_shader.setUniform1i( "g_abr", (l_tpage >> 0x5) & 0x3 );
+    g_render_shader.setUniform1i( "g_dtd", l_dtd );
     mesh.draw();
-    l_render_shader.end();
-    glDisable( GL_SCISSOR_TEST );
-
-    glEnable( GL_BLEND );
-    glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 }
 
 
 
 void POLY_FT4::execute()
 {
-    glBindFramebuffer( GL_FRAMEBUFFER, l_fbo_id );
-    glViewport( 0, 0, VRAM_W, VRAM_H );
-    glDisable( GL_BLEND );
-
     static ofVboMesh mesh;
     mesh.clear();
     mesh.setMode( OF_PRIMITIVE_TRIANGLE_FAN );
@@ -188,34 +173,23 @@ void POLY_FT4::execute()
 
     glm::mat4 projection = glm::ortho(0.0f, (float)VRAM_W, 0.0f, (float)VRAM_H, -1.0f, 1.0f);
 
-    glEnable( GL_SCISSOR_TEST );
-    l_render_shader.begin();
-    l_render_shader.setUniformMatrix4f( "g_matrix", projection );
-    l_render_shader.setUniformTexture( "g_texture", g_vram_texture, 0 );
-    l_render_shader.setUniform2i( "g_clut", (clut & 0x3f) * 0x10, (clut & 0xffc0) >> 0x6 );
-    l_render_shader.setUniform2i( "g_tpage", (tpage << 0x6) & 0x3ff, (tpage << 0x4) & 0x100 );
-    l_render_shader.setUniform1i( "g_depth", (tpage >> 0x7) & 0x3 );
-    l_render_shader.setUniform1i( "g_transp", (code & 0x2) ? 1 : 0 );
-    l_render_shader.setUniform1i( "g_colored", (code & 0x1) ? 0 : 1 );
-    l_render_shader.setUniform1i( "g_textured", (code & 0x4) ? 1 : 0 );
-    l_render_shader.setUniform1i( "g_abr", (tpage >> 0x5) & 0x3 );
-    l_render_shader.setUniform1i( "g_dtd", l_dtd );
+    g_render_shader.setUniformMatrix4f( "g_matrix", projection );
+    g_render_shader.setUniformTexture( "g_texture", g_vram_texture, 0 );
+    g_render_shader.setUniform2i( "g_clut", (clut & 0x3f) * 0x10, (clut & 0xffc0) >> 0x6 );
+    g_render_shader.setUniform2i( "g_tpage", (tpage << 0x6) & 0x3ff, (tpage << 0x4) & 0x100 );
+    g_render_shader.setUniform1i( "g_depth", (tpage >> 0x7) & 0x3 );
+    g_render_shader.setUniform1i( "g_transp", (code & 0x2) ? 1 : 0 );
+    g_render_shader.setUniform1i( "g_colored", (code & 0x1) ? 0 : 1 );
+    g_render_shader.setUniform1i( "g_textured", (code & 0x4) ? 1 : 0 );
+    g_render_shader.setUniform1i( "g_abr", (tpage >> 0x5) & 0x3 );
+    g_render_shader.setUniform1i( "g_dtd", l_dtd );
     mesh.draw();
-    l_render_shader.end();
-    glDisable( GL_SCISSOR_TEST );
-
-    glEnable( GL_BLEND );
-    glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 }
 
 
 
 void SPRT::execute()
 {
-    glBindFramebuffer( GL_FRAMEBUFFER, l_fbo_id );
-    glViewport( 0, 0, VRAM_W, VRAM_H );
-    glDisable( GL_BLEND );
-
     static ofVboMesh mesh;
     mesh.clear();
     mesh.setMode( OF_PRIMITIVE_TRIANGLE_FAN );
@@ -237,34 +211,23 @@ void SPRT::execute()
 
     glm::mat4 projection = glm::ortho(0.0f, (float)VRAM_W, 0.0f, (float)VRAM_H, -1.0f, 1.0f);
 
-    glEnable( GL_SCISSOR_TEST );
-    l_render_shader.begin();
-    l_render_shader.setUniformMatrix4f( "g_matrix", projection );
-    l_render_shader.setUniformTexture( "g_texture", g_vram_texture, 0 );
-    l_render_shader.setUniform2i( "g_clut", (clut & 0x3f) * 0x10, (clut & 0xffc0) >> 0x6 );
-    l_render_shader.setUniform2i( "g_tpage", (l_tpage << 0x6) & 0x3ff, (l_tpage << 0x4) & 0x100 );
-    l_render_shader.setUniform1i( "g_depth", (l_tpage >> 0x7) & 0x3 );
-    l_render_shader.setUniform1i( "g_transp", (code & 0x2) ? 1 : 0 );
-    l_render_shader.setUniform1i( "g_colored", (code & 0x1) ? 0 : 1 );
-    l_render_shader.setUniform1i( "g_textured", (code & 0x4) ? 1 : 0 );
-    l_render_shader.setUniform1i( "g_abr", (l_tpage >> 0x5) & 0x3 );
-    l_render_shader.setUniform1i( "g_dtd", 0 );
+    g_render_shader.setUniformMatrix4f( "g_matrix", projection );
+    g_render_shader.setUniformTexture( "g_texture", g_vram_texture, 0 );
+    g_render_shader.setUniform2i( "g_clut", (clut & 0x3f) * 0x10, (clut & 0xffc0) >> 0x6 );
+    g_render_shader.setUniform2i( "g_tpage", (l_tpage << 0x6) & 0x3ff, (l_tpage << 0x4) & 0x100 );
+    g_render_shader.setUniform1i( "g_depth", (l_tpage >> 0x7) & 0x3 );
+    g_render_shader.setUniform1i( "g_transp", (code & 0x2) ? 1 : 0 );
+    g_render_shader.setUniform1i( "g_colored", (code & 0x1) ? 0 : 1 );
+    g_render_shader.setUniform1i( "g_textured", (code & 0x4) ? 1 : 0 );
+    g_render_shader.setUniform1i( "g_abr", (l_tpage >> 0x5) & 0x3 );
+    g_render_shader.setUniform1i( "g_dtd", 0 );
     mesh.draw();
-    l_render_shader.end();
-    glDisable( GL_SCISSOR_TEST );
-
-    glEnable( GL_BLEND );
-    glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 }
 
 
 
 void SPRT_16::execute()
 {
-    glBindFramebuffer( GL_FRAMEBUFFER, l_fbo_id );
-    glViewport( 0, 0, VRAM_W, VRAM_H );
-    glDisable( GL_BLEND );
-
     static ofVboMesh mesh;
     mesh.clear();
     mesh.setMode( OF_PRIMITIVE_TRIANGLE_FAN );
@@ -286,24 +249,17 @@ void SPRT_16::execute()
 
     glm::mat4 projection = glm::ortho(0.0f, (float)VRAM_W, 0.0f, (float)VRAM_H, -1.0f, 1.0f);
 
-    glEnable( GL_SCISSOR_TEST );
-    l_render_shader.begin();
-    l_render_shader.setUniformMatrix4f( "g_matrix", projection );
-    l_render_shader.setUniformTexture( "g_texture", g_vram_texture, 0 );
-    l_render_shader.setUniform2i( "g_clut", (clut & 0x3f) * 0x10, (clut & 0xffc0) >> 0x6 );
-    l_render_shader.setUniform2i( "g_tpage", (l_tpage << 0x6) & 0x3ff, (l_tpage << 0x4) & 0x100 );
-    l_render_shader.setUniform1i( "g_depth", (l_tpage >> 0x7) & 0x3 );
-    l_render_shader.setUniform1i( "g_transp", (code & 0x2) ? 1 : 0 );
-    l_render_shader.setUniform1i( "g_colored", (code & 0x1) ? 0 : 1 );
-    l_render_shader.setUniform1i( "g_textured", (code & 0x4) ? 1 : 0 );
-    l_render_shader.setUniform1i( "g_abr", (l_tpage >> 0x5) & 0x3 );
-    l_render_shader.setUniform1i( "g_dtd", 0 );
+    g_render_shader.setUniformMatrix4f( "g_matrix", projection );
+    g_render_shader.setUniformTexture( "g_texture", g_vram_texture, 0 );
+    g_render_shader.setUniform2i( "g_clut", (clut & 0x3f) * 0x10, (clut & 0xffc0) >> 0x6 );
+    g_render_shader.setUniform2i( "g_tpage", (l_tpage << 0x6) & 0x3ff, (l_tpage << 0x4) & 0x100 );
+    g_render_shader.setUniform1i( "g_depth", (l_tpage >> 0x7) & 0x3 );
+    g_render_shader.setUniform1i( "g_transp", (code & 0x2) ? 1 : 0 );
+    g_render_shader.setUniform1i( "g_colored", (code & 0x1) ? 0 : 1 );
+    g_render_shader.setUniform1i( "g_textured", (code & 0x4) ? 1 : 0 );
+    g_render_shader.setUniform1i( "g_abr", (l_tpage >> 0x5) & 0x3 );
+    g_render_shader.setUniform1i( "g_dtd", 0 );
     mesh.draw();
-    l_render_shader.end();
-    glDisable( GL_SCISSOR_TEST );
-
-    glEnable( GL_BLEND );
-    glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 }
 
 

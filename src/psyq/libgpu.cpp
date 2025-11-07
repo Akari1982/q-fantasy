@@ -274,11 +274,24 @@ OTag* PsyqClearOTag( OTag* ot, s32 n )
 
 void PsyqDrawOTag( OTag* ot )
 {
+    glBindFramebuffer( GL_FRAMEBUFFER, g_fbo_id );
+    glViewport( 0, 0, VRAM_W, VRAM_H );
+    glDisable( GL_BLEND );
+    glEnable( GL_SCISSOR_TEST );
+
+    g_render_shader.begin();
+
     while( ot )
     {
         ot->execute();
         ot = ot->next;
     }
+
+    g_render_shader.end();
+
+    glDisable( GL_SCISSOR_TEST );
+    glEnable( GL_BLEND );
+    glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 }
 
 
