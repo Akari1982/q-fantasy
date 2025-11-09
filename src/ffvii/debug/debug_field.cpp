@@ -1,7 +1,6 @@
 #include "debug_field.h"
 #include "system/icons_font.h"
 #include "field/field.h"
-#include "field/field_list.h"
 #include "field/rain.h"
 
 #include "ofxImGui.h"
@@ -35,8 +34,8 @@ void DebugField()
                 const bool is_selected = (g_field_map_id == i);
                 if( ImGui::Selectable( g_field_files[i].c_str(), is_selected ) )
                 {
-                    g_field_control.cmd = FIELD_CMD_LOAD;
-                    g_field_control.map_id = i;
+                    g_field_control.cmd = FIELD_CMD_MAP;
+                    g_field_control.arg = i;
                 }
 
                 if( is_selected ) ImGui::SetItemDefaultFocus();

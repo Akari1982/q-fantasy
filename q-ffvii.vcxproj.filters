@@ -154,6 +154,9 @@
     <ClCompile Include="src\psyq\libpad.cpp">
       <Filter>src\psyq</Filter>
     </ClCompile>
+    <ClCompile Include="src\ffvii\kernel\fade.cpp">
+      <Filter>src\kernel</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="third_party\ofxImGui\src\BaseEngine.h">
@@ -362,6 +365,9 @@
     </ClInclude>
     <ClInclude Include="src\system\logger.h">
       <Filter>src\system</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ffvii\kernel\fade.h">
+      <Filter>src\kernel</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

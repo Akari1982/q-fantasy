@@ -5,6 +5,7 @@
 #include "kernel/game.h"
 #include "kernel/akao.h"
 #include "kernel/file.h"
+#include "kernel/fade.h"
 #include "kernel/buttons.h"
 #include "psyq/libgte.h"
 #include "system/logger.h"
@@ -88,7 +89,7 @@ void FieldCorruptedFilesCheck()
 {
     std::string name = g_field_files[g_field_map_id];
 
-    if( (name == "BLACKBGA")
+    if ((name == "BLACKBGA")
      || (name == "BLACKBGF")
      || (name == "BLACKBGG")
      || (name == "BLIN69_2")
@@ -108,10 +109,10 @@ void FieldCorruptedFilesCheck()
      || (name == "WHITEBG1")
      || (name == "WHITEBG2")
      || (name == "TUNNEL_6") // DAT file is loading, but MIM seems to broken
-     || (name.compare( 0, 2, "WM" ) == 0)
-     || (name == "XMVTES") )
+     || (name.compare(0, 2, "WM") == 0)
+     || (name == "XMVTES"))
     {
-        LOG_ERROR( "Field map \"%s\" (0x%x) corrupted. Replace it with \"DUMMY\" (0x0)", name.c_str(), g_field_map_id );
+        LOG_ERROR("Field map \"%s\" (0x%x) corrupted. Replace it with \"DUMMY\" (0x0)", name.c_str(), g_field_map_id);
         g_field_map_id = 0;
     }
 }
@@ -120,28 +121,32 @@ void FieldCorruptedFilesCheck()
 
 void FieldMain()
 {
-    PsyqSetDefDrawEnv( &l_drawenv[0], 0x0, 0x8, 0x140, 0xe0 );
+    PsyqSetDefDrawEnv(&l_drawenv[0], 0x0, 0x8, 0x140, 0xe0);
     l_drawenv[0].dtd = 0x1;
     l_drawenv[0].isbg = 0;
-    PsyqSetDefDrawEnv( &l_drawenv[1], 0x0, 0xf0, 0x140, 0xe0 );
+    PsyqSetDefDrawEnv(&l_drawenv[1], 0x0, 0xf0, 0x140, 0xe0);
     l_drawenv[1].dtd = 0x1;
     l_drawenv[1].isbg = 0;
 
-    PsyqClearOTagR( &l_field_render_data[0].ot_scene_drenv, 0x1 );
-    PsyqClearOTagR( &l_field_render_data[1].ot_scene_drenv, 0x1 );
-    PsyqSetDrawEnv( &l_field_render_data[0].scene_drenv, &l_drawenv[0] );
-    PsyqSetDrawEnv( &l_field_render_data[1].scene_drenv, &l_drawenv[1] );
-    PsyqAddPrim( &l_field_render_data[0].ot_scene_drenv, &l_field_render_data[0].scene_drenv );
-    PsyqAddPrim( &l_field_render_data[1].ot_scene_drenv, &l_field_render_data[1].scene_drenv );
+    PsyqClearOTagR(&l_field_render_data[0].ot_scene_drenv, 0x1);
+    PsyqClearOTagR(&l_field_render_data[1].ot_scene_drenv, 0x1);
+    PsyqSetDrawEnv(&l_field_render_data[0].scene_drenv, &l_drawenv[0]);
+    PsyqSetDrawEnv(&l_field_render_data[1].scene_drenv, &l_drawenv[1]);
+    PsyqAddPrim(&l_field_render_data[0].ot_scene_drenv, &l_field_render_data[0].scene_drenv);
+    PsyqAddPrim(&l_field_render_data[1].ot_scene_drenv, &l_field_render_data[1].scene_drenv);
+
+    // It's not nessesary to call init every time field is loading
+    // but original code do it.
+    FadeInitPoly();
 
     SRECT rect;
     rect.x = 0;
     rect.y = 0;
     rect.w = 0x1e0;
     rect.h = 0x1d8;
-    PsyqClearImage( &rect, 0, 0, 0 );
+    PsyqClearImage(&rect, 0, 0, 0);
 
-    while( true )
+    while (true)
     {
         // Some files in FFVII are in some strange state. They not used in game
         // but they are in file list and has their own ID
@@ -158,21 +163,21 @@ void FieldMain()
 
         FieldMainLoop();
 
-        PsyqVSync( 0x1 );
+        PsyqVSync(0x1);
 
         l_main_dispenv[0x0].isrgb24 = 0;
         l_main_dispenv[0x1].isrgb24 = 0;
 
-        PsyqPutDispEnv( &l_main_dispenv[g_field_rb] );
-        PsyqPutDrawEnv( &l_main_drawenv[g_field_rb] );
+        PsyqPutDispEnv(&l_main_dispenv[g_field_rb]);
+        PsyqPutDrawEnv(&l_main_drawenv[g_field_rb]);
 
-        if( g_field_control.cmd == FIELD_CMD_LOAD )
+        if (g_field_control.cmd == FIELD_CMD_MAP)
         {
-            g_field_map_id = g_field_control.map_id;
+            g_field_map_id = g_field_control.arg;
 
-            if( (g_field_map_id > 0x0) && (g_field_map_id < 0x40) )
+            if ((g_field_map_id > 0x0) && (g_field_map_id < 0x40))
             {
-                PsyqVSync( 0 );
+                PsyqVSync(0);
                 return;
             }
         }
@@ -186,83 +191,83 @@ void FieldMainLoop()
     l_field_ofs_x = 0xa0;
     l_field_ofs_y = 0x78;
 
-    FieldBackgroundInitPoly( l_field_render_data[0].bg_1, l_field_render_data[0].bg_2, l_field_render_data[0].bg_anim, l_field_render_data[0].bg_dm );
-    FieldBackgroundInitPoly( l_field_render_data[1].bg_1, l_field_render_data[1].bg_2, l_field_render_data[1].bg_anim, l_field_render_data[1].bg_dm );
+    FieldBackgroundInitPoly(l_field_render_data[0].bg_1, l_field_render_data[0].bg_2, l_field_render_data[0].bg_anim, l_field_render_data[0].bg_dm);
+    FieldBackgroundInitPoly(l_field_render_data[1].bg_1, l_field_render_data[1].bg_2, l_field_render_data[1].bg_anim, l_field_render_data[1].bg_dm);
 
     // debug
-    u32 walkmesh_addr = READ_LE_U32( &g_field_dat[ 0x4 ] ) - g_field_dat_base_addr;
-    u32 id_n = READ_LE_U32( &g_field_dat[ walkmesh_addr ] );
+    u32 walkmesh_addr = READ_LE_U32(&g_field_dat[ 0x4 ]) - g_field_dat_base_addr;
+    u32 id_n = READ_LE_U32(&g_field_dat[ walkmesh_addr ]);
     walkmesh_addr += 0x4;
     u32 walkmesh_access_addr = walkmesh_addr + id_n * 0x18;
-    field_walkmesh.resize( id_n );
-    field_walkmesh_access.resize( id_n );
-    for( int i = 0; i < id_n; ++i )
+    field_walkmesh.resize(id_n);
+    field_walkmesh_access.resize(id_n);
+    for (u32 i = 0; i < id_n; ++i)
     {
-        field_walkmesh[ i ].p1.vx = READ_LE_S16( &g_field_dat[ walkmesh_addr + i * 0x18 + 0x0 ]  );
-        field_walkmesh[ i ].p1.vy = READ_LE_S16( &g_field_dat[ walkmesh_addr + i * 0x18 + 0x2 ]  );
-        field_walkmesh[ i ].p1.vz = READ_LE_S16( &g_field_dat[ walkmesh_addr + i * 0x18 + 0x4 ]  );
-        field_walkmesh[ i ].p2.vx = READ_LE_S16( &g_field_dat[ walkmesh_addr + i * 0x18 + 0x8 ]  );
-        field_walkmesh[ i ].p2.vy = READ_LE_S16( &g_field_dat[ walkmesh_addr + i * 0x18 + 0xa ]  );
-        field_walkmesh[ i ].p2.vz = READ_LE_S16( &g_field_dat[ walkmesh_addr + i * 0x18 + 0xc ]  );
-        field_walkmesh[ i ].p3.vx = READ_LE_S16( &g_field_dat[ walkmesh_addr + i * 0x18 + 0x10 ] );
-        field_walkmesh[ i ].p3.vy = READ_LE_S16( &g_field_dat[ walkmesh_addr + i * 0x18 + 0x12 ] );
-        field_walkmesh[ i ].p3.vz = READ_LE_S16( &g_field_dat[ walkmesh_addr + i * 0x18 + 0x14 ] );
-        field_walkmesh_access[ i ].p1 = READ_LE_U16( &g_field_dat[ walkmesh_access_addr + i * 0x6 + 0x0 ] );
-        field_walkmesh_access[ i ].p2 = READ_LE_U16( &g_field_dat[ walkmesh_access_addr + i * 0x6 + 0x2 ] );
-        field_walkmesh_access[ i ].p3 = READ_LE_U16( &g_field_dat[ walkmesh_access_addr + i * 0x6 + 0x4 ] );
+        field_walkmesh[ i ].p1.vx = READ_LE_S16(&g_field_dat[ walkmesh_addr + i * 0x18 + 0x0 ] );
+        field_walkmesh[ i ].p1.vy = READ_LE_S16(&g_field_dat[ walkmesh_addr + i * 0x18 + 0x2 ] );
+        field_walkmesh[ i ].p1.vz = READ_LE_S16(&g_field_dat[ walkmesh_addr + i * 0x18 + 0x4 ] );
+        field_walkmesh[ i ].p2.vx = READ_LE_S16(&g_field_dat[ walkmesh_addr + i * 0x18 + 0x8 ] );
+        field_walkmesh[ i ].p2.vy = READ_LE_S16(&g_field_dat[ walkmesh_addr + i * 0x18 + 0xa ] );
+        field_walkmesh[ i ].p2.vz = READ_LE_S16(&g_field_dat[ walkmesh_addr + i * 0x18 + 0xc ] );
+        field_walkmesh[ i ].p3.vx = READ_LE_S16(&g_field_dat[ walkmesh_addr + i * 0x18 + 0x10 ]);
+        field_walkmesh[ i ].p3.vy = READ_LE_S16(&g_field_dat[ walkmesh_addr + i * 0x18 + 0x12 ]);
+        field_walkmesh[ i ].p3.vz = READ_LE_S16(&g_field_dat[ walkmesh_addr + i * 0x18 + 0x14 ]);
+        field_walkmesh_access[ i ].p1 = READ_LE_U16(&g_field_dat[ walkmesh_access_addr + i * 0x6 + 0x0 ]);
+        field_walkmesh_access[ i ].p2 = READ_LE_U16(&g_field_dat[ walkmesh_access_addr + i * 0x6 + 0x2 ]);
+        field_walkmesh_access[ i ].p3 = READ_LE_U16(&g_field_dat[ walkmesh_access_addr + i * 0x6 + 0x4 ]);
     }
 
-    FieldRainInit( &l_field_render_data[ 0 ] );
-    FieldRainInit( &l_field_render_data[ 1 ] );
+    FieldRainInit(&l_field_render_data[ 0 ]);
+    FieldRainInit(&l_field_render_data[ 1 ]);
 
     bool first_frame = true;
 
-    while( true )
+    while (true)
     {
-        if( first_frame == false ) g_field_rb += 0x1;
+        if (first_frame == false) g_field_rb += 0x1;
         g_field_rb &= 0x1;
 
         FieldRenderData& render_data = l_field_render_data[g_field_rb];
 
-        PsyqClearOTagR( render_data.ot_scene, 0x1000 );
+        PsyqClearOTagR(render_data.ot_scene, 0x1000);
 
         FieldCameraAssign();
         FieldButtonsUpdate();
 
         FieldUpdateEnv();
 
-        if( g_field_control.cmd == FIELD_CMD_LOAD )
+        if (g_field_control.cmd == FIELD_CMD_MAP)
         {
             return;
         }
 
-        FieldBackgroundAddToRender( render_data );
+        FieldBackgroundAddToRender(render_data);
 
         FieldRainUpdate();
-        FieldRainAddToRender( render_data.ot_scene, render_data.rain.data(), &l_field_camera.m, &render_data.rain_dm );
+        FieldRainAddToRender(render_data.ot_scene, render_data.rain.data(), &l_field_camera.m, &render_data.rain_dm);
 
         // debug
         {
-            if( l_buttons_state == BUTTON_LEFT ) l_debug_ofs_x += 0x5;
-            if( l_buttons_state == BUTTON_RIGHT ) l_debug_ofs_x -= 0x5;
-            if( l_buttons_state == BUTTON_UP ) l_debug_ofs_y += 0x5;
-            if( l_buttons_state == BUTTON_DOWN ) l_debug_ofs_y -= 0x5;
+            if (l_buttons_state == BUTTON_LEFT) l_debug_ofs_x += 0x5;
+            if (l_buttons_state == BUTTON_RIGHT) l_debug_ofs_x -= 0x5;
+            if (l_buttons_state == BUTTON_UP) l_debug_ofs_y += 0x5;
+            if (l_buttons_state == BUTTON_DOWN) l_debug_ofs_y -= 0x5;
 
             PsyqPushMatrix();
-            PsyqSetRotMatrix( &l_field_camera.m );
-            PsyqSetTransMatrix( &l_field_camera.m );
+            PsyqSetRotMatrix(&l_field_camera.m);
+            PsyqSetTransMatrix(&l_field_camera.m);
             std::array< LINE_F2, 0x1000 > walkmesh_prim;
-            for( int i = 0; i < id_n; ++i )
+            for (u32 i = 0; i < id_n; ++i)
             {
                 u32 pt;
                 u32 flag;
                 DVECTOR sxy1, sxy2, sxy3;
-                PsyqRotTransPers( &field_walkmesh[ i ].p1, &sxy1, &pt, &flag );
-                PsyqRotTransPers( &field_walkmesh[ i ].p2, &sxy2, &pt, &flag );
-                PsyqRotTransPers( &field_walkmesh[ i ].p3, &sxy3, &pt, &flag );
+                PsyqRotTransPers(&field_walkmesh[ i ].p1, &sxy1, &pt, &flag);
+                PsyqRotTransPers(&field_walkmesh[ i ].p2, &sxy2, &pt, &flag);
+                PsyqRotTransPers(&field_walkmesh[ i ].p3, &sxy3, &pt, &flag);
 
-                PsyqSetLineF2( &walkmesh_prim[ i * 3 + 0 ] );
-                PsyqSetSemiTrans( &walkmesh_prim[ i * 3 + 0 ], 0 );
+                PsyqSetLineF2(&walkmesh_prim[ i * 3 + 0 ]);
+                PsyqSetSemiTrans(&walkmesh_prim[ i * 3 + 0 ], 0);
                 walkmesh_prim[ i * 3 + 0 ].r0 = 0x7f;
                 walkmesh_prim[ i * 3 + 0 ].g0 = 0x0;
                 walkmesh_prim[ i * 3 + 0 ].b0 = 0x0;
@@ -270,10 +275,10 @@ void FieldMainLoop()
                 walkmesh_prim[ i * 3 + 0 ].y0 = sxy1.vy;
                 walkmesh_prim[ i * 3 + 0 ].x1 = sxy2.vx;
                 walkmesh_prim[ i * 3 + 0 ].y1 = sxy2.vy;
-                PsyqAddPrim( &render_data.ot_scene[0], &walkmesh_prim[ i * 3 + 0 ] );
+                PsyqAddPrim(&render_data.ot_scene[0], &walkmesh_prim[ i * 3 + 0 ]);
 
-                PsyqSetLineF2( &walkmesh_prim[ i * 3 + 1 ] );
-                PsyqSetSemiTrans( &walkmesh_prim[ i * 3 + 1 ], 0 );
+                PsyqSetLineF2(&walkmesh_prim[ i * 3 + 1 ]);
+                PsyqSetSemiTrans(&walkmesh_prim[ i * 3 + 1 ], 0);
                 walkmesh_prim[ i * 3 + 1 ].r0 = 0x7f;
                 walkmesh_prim[ i * 3 + 1 ].g0 = 0x0;
                 walkmesh_prim[ i * 3 + 1 ].b0 = 0x0;
@@ -281,10 +286,10 @@ void FieldMainLoop()
                 walkmesh_prim[ i * 3 + 1 ].y0 = sxy1.vy;
                 walkmesh_prim[ i * 3 + 1 ].x1 = sxy3.vx;
                 walkmesh_prim[ i * 3 + 1 ].y1 = sxy3.vy;
-                PsyqAddPrim( &render_data.ot_scene[0], &walkmesh_prim[ i * 3 + 1 ] );
+                PsyqAddPrim(&render_data.ot_scene[0], &walkmesh_prim[ i * 3 + 1 ]);
 
-                PsyqSetLineF2( &walkmesh_prim[ i * 3 + 2 ] );
-                PsyqSetSemiTrans( &walkmesh_prim[ i * 3 + 2 ], 0 );
+                PsyqSetLineF2(&walkmesh_prim[ i * 3 + 2 ]);
+                PsyqSetSemiTrans(&walkmesh_prim[ i * 3 + 2 ], 0);
                 walkmesh_prim[ i * 3 + 2 ].r0 = 0x7f;
                 walkmesh_prim[ i * 3 + 2 ].g0 = 0x0;
                 walkmesh_prim[ i * 3 + 2 ].b0 = 0x0;
@@ -292,26 +297,26 @@ void FieldMainLoop()
                 walkmesh_prim[ i * 3 + 2 ].y0 = sxy2.vy;
                 walkmesh_prim[ i * 3 + 2 ].x1 = sxy3.vx;
                 walkmesh_prim[ i * 3 + 2 ].y1 = sxy3.vy;
-                PsyqAddPrim( &render_data.ot_scene[0], &walkmesh_prim[ i * 3 + 2 ] );
+                PsyqAddPrim(&render_data.ot_scene[0], &walkmesh_prim[ i * 3 + 2 ]);
             }
             PsyqPopMatrix();
         }
 
-        PsyqVSync( 0x2 );
+        PsyqVSync(0x2);
 
-        if( first_frame == true )
+        if (first_frame == true)
         {
             first_frame = false;
-            PsyqSetDispMask( 0x1 );
+            PsyqSetDispMask(0x1);
         }
 
-        PsyqPutDispEnv( &l_main_dispenv[g_field_rb] );
-        PsyqPutDrawEnv( &l_main_drawenv[g_field_rb] );
+        PsyqPutDispEnv(&l_main_dispenv[g_field_rb]);
+        PsyqPutDrawEnv(&l_main_drawenv[g_field_rb]);
 
-        PsyqClearImage( &(l_main_drawenv[g_field_rb].clip), 0, 0, 0 );
+        PsyqClearImage(&(l_main_drawenv[g_field_rb].clip), 0, 0, 0);
 
-        PsyqDrawOTag( &render_data.ot_scene_drenv );
-        PsyqDrawOTag( render_data.ot_scene + 0x1000 - 0x1 );
+        PsyqDrawOTag(&render_data.ot_scene_drenv);
+        PsyqDrawOTag(render_data.ot_scene + 0x1000 - 0x1);
     }
 }
 
@@ -325,9 +330,9 @@ void FieldUpdateDrawEnv()
 
 void FieldLoadMimDatFiles()
 {
-    FileLZS( "FIELD/" + g_field_files[g_field_map_id] + ".MIM", l_field_mim );
-    //FileWrite( "test.mim ", l_field_mim );
-    FileLZS( "FIELD/" + g_field_files[g_field_map_id] + ".DAT", g_field_dat );
+    FileLZS("FIELD/" + g_field_files[g_field_map_id] + ".MIM", l_field_mim);
+    //FileWrite("test.mim ", l_field_mim);
+    FileLZS("FIELD/" + g_field_files[g_field_map_id] + ".DAT", g_field_dat);
 }
 
 
@@ -342,34 +347,34 @@ void FieldLoadMimToVram()
     rect.y = 0x1e0;
     rect.w = 0x100;
     rect.h = 0x10;
-    PsyqLoadImage( &rect, &l_field_mim[ofs + 0xc] );
+    PsyqLoadImage(&rect, &l_field_mim[ofs + 0xc]);
 
     // load 1st image to vram
-    ofs += (READ_LE_U32( &l_field_mim[ofs + 0x0] ) >> 0x2) << 0x2;
+    ofs += (READ_LE_U32(&l_field_mim[ofs + 0x0]) >> 0x2) << 0x2;
     PsyqLoadTPage(
         &l_field_mim[ofs + 0xc],
         0x1,
         0,
-        READ_LE_U16( &l_field_mim[ofs + 0x4] ),
-        READ_LE_U16( &l_field_mim[ofs + 0x6] ),
-        READ_LE_U16( &l_field_mim[ofs + 0x8] ) * 0x2,
-        READ_LE_U16( &l_field_mim[ofs + 0xa] )
-    );
+        READ_LE_U16(&l_field_mim[ofs + 0x4]),
+        READ_LE_U16(&l_field_mim[ofs + 0x6]),
+        READ_LE_U16(&l_field_mim[ofs + 0x8]) * 0x2,
+        READ_LE_U16(&l_field_mim[ofs + 0xa])
+   );
 
     // load 2nd image to vram
-    ofs += (READ_LE_U32( &l_field_mim[ofs + 0x0] ) >> 0x2) << 0x2;
-    u32 next = READ_LE_U32( &l_field_mim[ofs + 0x0] );
-    if( next != 0 )
+    ofs += (READ_LE_U32(&l_field_mim[ofs + 0x0]) >> 0x2) << 0x2;
+    u32 next = READ_LE_U32(&l_field_mim[ofs + 0x0]);
+    if (next != 0)
     {
         PsyqLoadTPage(
             &l_field_mim[ofs + 0xc],
             0x1,
             0,
-            READ_LE_U16( &l_field_mim[ofs + 0x4] ),
-            READ_LE_U16( &l_field_mim[ofs + 0x6] ),
-            READ_LE_U16( &l_field_mim[ofs + 0x8] ) * 0x2,
-            READ_LE_U16( &l_field_mim[ofs + 0xa] )
-        );
+            READ_LE_U16(&l_field_mim[ofs + 0x4]),
+            READ_LE_U16(&l_field_mim[ofs + 0x6]),
+            READ_LE_U16(&l_field_mim[ofs + 0x8]) * 0x2,
+            READ_LE_U16(&l_field_mim[ofs + 0xa])
+       );
     }
 }
 
@@ -377,19 +382,19 @@ void FieldLoadMimToVram()
 
 void FieldInitEnv()
 {
-    PsyqSetDefDispEnv( &l_main_dispenv[0x0], 0, 0xe8, 0x140, 0xf0 );
-    PsyqSetDefDispEnv( &l_main_dispenv[0x1], 0,    0, 0x140, 0xf0 );
+    PsyqSetDefDispEnv(&l_main_dispenv[0x0], 0, 0xe8, 0x140, 0xf0);
+    PsyqSetDefDispEnv(&l_main_dispenv[0x1], 0,    0, 0x140, 0xf0);
 
-    PsyqSetDefDrawEnv( &l_main_drawenv[0x0], 0, 0x8, 0x140, 0xe0 );
+    PsyqSetDefDrawEnv(&l_main_drawenv[0x0], 0, 0x8, 0x140, 0xe0);
     l_main_drawenv[0x0].dtd = 0x1;
     l_main_drawenv[0x0].isbg = 0;
 
-    PsyqSetDefDrawEnv( &l_main_drawenv[0x1], 0, 0xf0, 0x140, 0xe0 );
+    PsyqSetDefDrawEnv(&l_main_drawenv[0x1], 0, 0xf0, 0x140, 0xe0);
     l_main_drawenv[0x1].dtd = 0x1;
     l_main_drawenv[0x1].isbg = 0;
 
-    PsyqPutDispEnv( &l_main_dispenv[0] );
-    PsyqPutDrawEnv( &l_main_drawenv[0] );
+    PsyqPutDispEnv(&l_main_dispenv[0]);
+    PsyqPutDrawEnv(&l_main_drawenv[0]);
 }
 
 
@@ -399,22 +404,22 @@ void FieldUpdateEnv()
     DRAWENV* drawenv1 = &l_drawenv[0x0];
     DRAWENV* drawenv2 = &l_drawenv[0x1];
 
-    PsyqSetGeomScreen( l_field_camera.h );
+    PsyqSetGeomScreen(l_field_camera.h);
 
     s16 ofsx = l_field_ofs_x - l_field_camera.x + l_debug_ofs_x;
     s16 ofsy = l_field_ofs_y + l_field_camera.y + l_debug_ofs_y;
 
-    if( g_field_rb == 0 )
+    if (g_field_rb == 0)
     {
         drawenv1->ofs[0] = ofsx;
         drawenv1->ofs[1] = ofsy;
-        PsyqSetDrawEnv( &l_field_render_data[0x0].scene_drenv, drawenv1 );
+        PsyqSetDrawEnv(&l_field_render_data[0x0].scene_drenv, drawenv1);
     }
     else
     {
         drawenv2->ofs[0] = ofsx;
         drawenv2->ofs[1] = ofsy + 0xe8;
-        PsyqSetDrawEnv( &l_field_render_data[0x1].scene_drenv, drawenv2 );
+        PsyqSetDrawEnv(&l_field_render_data[0x1].scene_drenv, drawenv2);
     }
 }
 
@@ -422,23 +427,23 @@ void FieldUpdateEnv()
 
 void FieldCameraAssign()
 {
-    u32 camera_ofs = READ_LE_U32( &g_field_dat[0xc] ) - g_field_dat_base_addr;
+    u32 camera_ofs = READ_LE_U32(&g_field_dat[0xc]) - g_field_dat_base_addr;
 
-    l_field_camera.m.m[0][0] = READ_LE_S16( &g_field_dat[camera_ofs + 0x0] );
-    l_field_camera.m.m[0][1] = READ_LE_S16( &g_field_dat[camera_ofs + 0x2] );
-    l_field_camera.m.m[0][2] = READ_LE_S16( &g_field_dat[camera_ofs + 0x4] );
-    l_field_camera.m.m[1][0] = READ_LE_S16( &g_field_dat[camera_ofs + 0x6] );
-    l_field_camera.m.m[1][1] = READ_LE_S16( &g_field_dat[camera_ofs + 0x8] );
-    l_field_camera.m.m[1][2] = READ_LE_S16( &g_field_dat[camera_ofs + 0xa] );
-    l_field_camera.m.m[2][0] = READ_LE_S16( &g_field_dat[camera_ofs + 0xc] );
-    l_field_camera.m.m[2][1] = READ_LE_S16( &g_field_dat[camera_ofs + 0xe] );
-    l_field_camera.m.m[2][2] = READ_LE_S16( &g_field_dat[camera_ofs + 0x10] );
-    l_field_camera.m.t[0] = READ_LE_S16( &g_field_dat[camera_ofs + 0x14] );
-    l_field_camera.m.t[1] = READ_LE_S16( &g_field_dat[camera_ofs + 0x18] );
-    l_field_camera.m.t[2] = READ_LE_S16( &g_field_dat[camera_ofs + 0x1c] );
-    l_field_camera.x = READ_LE_U16( &g_field_dat[camera_ofs + 0x20] );
-    l_field_camera.y = READ_LE_U16( &g_field_dat[camera_ofs + 0x22] );
-    l_field_camera.h = READ_LE_S16( &g_field_dat[camera_ofs + 0x24] );
+    l_field_camera.m.m[0][0] = READ_LE_S16(&g_field_dat[camera_ofs + 0x0]);
+    l_field_camera.m.m[0][1] = READ_LE_S16(&g_field_dat[camera_ofs + 0x2]);
+    l_field_camera.m.m[0][2] = READ_LE_S16(&g_field_dat[camera_ofs + 0x4]);
+    l_field_camera.m.m[1][0] = READ_LE_S16(&g_field_dat[camera_ofs + 0x6]);
+    l_field_camera.m.m[1][1] = READ_LE_S16(&g_field_dat[camera_ofs + 0x8]);
+    l_field_camera.m.m[1][2] = READ_LE_S16(&g_field_dat[camera_ofs + 0xa]);
+    l_field_camera.m.m[2][0] = READ_LE_S16(&g_field_dat[camera_ofs + 0xc]);
+    l_field_camera.m.m[2][1] = READ_LE_S16(&g_field_dat[camera_ofs + 0xe]);
+    l_field_camera.m.m[2][2] = READ_LE_S16(&g_field_dat[camera_ofs + 0x10]);
+    l_field_camera.m.t[0] = READ_LE_S16(&g_field_dat[camera_ofs + 0x14]);
+    l_field_camera.m.t[1] = READ_LE_S16(&g_field_dat[camera_ofs + 0x18]);
+    l_field_camera.m.t[2] = READ_LE_S16(&g_field_dat[camera_ofs + 0x1c]);
+    l_field_camera.x = READ_LE_U16(&g_field_dat[camera_ofs + 0x20]);
+    l_field_camera.y = READ_LE_U16(&g_field_dat[camera_ofs + 0x22]);
+    l_field_camera.h = READ_LE_S16(&g_field_dat[camera_ofs + 0x24]);
 }
 
 

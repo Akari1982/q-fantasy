@@ -11,7 +11,6 @@
 
 
 void GPUInit();
-void GPUUpdateScreenFromVram();
 
 
 

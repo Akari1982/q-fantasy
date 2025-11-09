@@ -10,57 +10,57 @@ std::vector<u8>::const_iterator l_gzip_data;
 
 
 
-u32 FileGetPackPointer( std::vector<u8>& file, u32 id )
+u32 FileGetPackPointer(std::vector<u8>& file, u32 id)
 {
-    return READ_LE_U32( &file[id * 0x4] );
+    return READ_LE_U32(&file[id * 0x4]);
 }
 
 
 
-void FileLZSExtract( std::vector<u8>& input, std::vector<u8>& output )
+void FileLZSExtract(std::vector<u8>& input, std::vector<u8>& output)
 {
-    u32 input_length = READ_LE_U32( &input[ 0 ] );
+    u32 input_length = READ_LE_U32(&input[0]);
 
     u32 extract_size = input_length + 0x100;
-    output.resize( extract_size );
+    output.resize(extract_size);
 
     int input_offset = 4;
     int output_offset = 0;
     u8 control_byte = 0;
     u8 control_bit = 0;
 
-    while( input_length != 0 )
+    while (input_length != 0)
     {
-        if( control_bit == 0 )
+        if (control_bit == 0)
         {
-            control_byte = input[ input_offset ];
+            control_byte = input[input_offset];
             control_bit = 8;
 
             input_offset += 0x1;
             input_length -= 0x1;
-            if( input_length == 0 ) break;
+            if (input_length == 0) break;
         }
 
-        if( control_byte & 1 )
+        if (control_byte & 1)
         {
-            output[ output_offset ] = input[ input_offset ];
+            output[output_offset] = input[input_offset];
 
             output_offset += 0x1;
             input_offset += 0x1;
             input_length -= 0x1;
-            if( input_length == 0 ) break;
+            if (input_length == 0) break;
 
-            if( output_offset == extract_size )
+            if (output_offset == extract_size)
             {
                 extract_size += 0x100;
-                output.resize( extract_size );
+                output.resize(extract_size);
             }
         }
         else
         {
-            u8 reference1 = input[ input_offset ];
+            u8 reference1 = input[input_offset];
             input_offset += 0x1;
-            u8 reference2 = input[ input_offset ];
+            u8 reference2 = input[input_offset];
             input_offset += 0x1;
 
             input_length -= 0x2;
@@ -70,41 +70,41 @@ void FileLZSExtract( std::vector<u8>& input, std::vector<u8>& output )
 
             int real_offset = output_offset - ((output_offset - 0x12 - reference_offset) & 0xfff);
 
-            for( int j = 0; j < reference_length; ++j )
+            for (int j = 0; j < reference_length; ++j)
             {
-                if( real_offset < 0 )
+                if (real_offset < 0)
                 {
-                    output[ output_offset ] = 0;
+                    output[output_offset] = 0;
                     output_offset += 0x1;
                 }
                 else
                 {
-                    output[ output_offset ] = output[ real_offset ];
+                    output[output_offset] = output[real_offset];
                     output_offset += 0x1;
                 }
 
-                if( output_offset == extract_size )
+                if (output_offset == extract_size)
                 {
                     extract_size += 0x100;
-                    output.resize( extract_size );
+                    output.resize(extract_size);
                 }
 
                 real_offset += 0x1;
             }
 
-            if( input_length == 0 ) break;
+            if (input_length == 0) break;
         }
 
         control_byte >>= 1;
         control_bit -= 0x1;
     }
 
-    output.resize( output_offset );
+    output.resize(output_offset);
 }
 
 
 
-void GZIPSetDataBlock( std::vector<u8>& data )
+void GZIPSetDataBlock(std::vector<u8>& data)
 {
     l_gzip_data = data.begin();
 }
@@ -113,19 +113,19 @@ void GZIPSetDataBlock( std::vector<u8>& data )
 
 u16 GZIPGetType()
 {
-    return ( READ_LE_U16( l_gzip_data + 0x0 ) != 0 ) ? READ_LE_U16( l_gzip_data + 0x4 ) : 0xffff;
+    return (READ_LE_U16(l_gzip_data + 0x0) != 0) ? READ_LE_U16(l_gzip_data + 0x4) : 0xffff;
 }
 
 
 
 u16 GZIPGetSize()
 {
-    return ( READ_LE_U16( l_gzip_data + 0x0 ) != 0 ) ? READ_LE_U16( l_gzip_data + 0x2 ) : 0;
+    return (READ_LE_U16(l_gzip_data + 0x0) != 0) ? READ_LE_U16(l_gzip_data + 0x2) : 0;
 }
 
 
 
-bool GZIPExtract( std::vector<u8>::const_iterator input, u32 size, std::vector<u8>& output )
+bool GZIPExtract(std::vector<u8>::const_iterator input, u32 size, std::vector<u8>& output)
 {
     // Setup z_stream for gzip unpack
     z_stream strm{};
@@ -133,116 +133,118 @@ bool GZIPExtract( std::vector<u8>::const_iterator input, u32 size, std::vector<u
     strm.avail_in = size;
 
     // 16+MAX_WBITS - gzip support
-    if( inflateInit2( &strm, 16 + MAX_WBITS ) != Z_OK )
+    if (inflateInit2(&strm, 16 + MAX_WBITS) != Z_OK)
     {
-        LOG_ERROR( "Can't initialize zlib." );
+        LOG_ERROR("Can't initialize zlib.");
         return false;
     }
 
     // Prepare buffer
-    output.resize( 1024 * 1024 ); // set up for 1Mb
+    output.resize(1024 * 1024); // set up for 1Mb
     strm.next_out = output.data();
     strm.avail_out = (u32)output.size();
 
     int ret;
-    while( ( ret = inflate( &strm, Z_NO_FLUSH ) ) == Z_OK )
+    while ((ret = inflate(&strm, Z_NO_FLUSH)) == Z_OK)
     {
-        if( strm.avail_out == 0 )
+        if (strm.avail_out == 0)
         {
             // increase buffer size
             size_t oldSize = output.size();
-            output.resize( oldSize * 2 );
+            output.resize(oldSize * 2);
             strm.next_out  = output.data() + oldSize;
             strm.avail_out = (u32)oldSize;
         }
     }
 
-    if( ret != Z_STREAM_END )
+    if (ret != Z_STREAM_END)
     {
-        inflateEnd( &strm );
-        LOG_ERROR( "Unpacking error (code %d).", ret );
+        inflateEnd(&strm);
+        LOG_ERROR("Unpacking error (code %d).", ret);
         return false;
     }
 
-    output.resize( strm.total_out );
+    output.resize(strm.total_out);
 
-    inflateEnd( &strm );
+    inflateEnd(&strm);
 
     return true;
 }
 
 
 
-void GZIPPackDecompressNextBlock( std::vector<u8>& output )
+void GZIPPackDecompressNextBlock(std::vector<u8>& output)
 {
-    u16 size = READ_LE_U16( l_gzip_data + 0x0 );
-    if( size != 0 )
+    u16 size = READ_LE_U16(l_gzip_data + 0x0);
+    if (size != 0)
     {
-        GZIPExtract( l_gzip_data + 0x6, size, output );
+        GZIPExtract(l_gzip_data + 0x6, size, output);
         l_gzip_data += 0x6 + size;
     }
 }
 
 
 
-void FileLZS( const std::string& name, std::vector<u8>& output )
+void FileLZS(const std::string& name, std::vector<u8>& output)
 {
     std::vector<u8> temp_dat;
-    FileRead( name, temp_dat );
-    FileLZSExtract( temp_dat, output );
+    FileRead(name, temp_dat);
+    FileLZSExtract(temp_dat, output);
 
-    //WriteFile( name + "_orig", temp_dat );
-    //WriteFile( name + "_extr", output );
+    //WriteFile(name + "_orig", temp_dat);
+    //WriteFile(name + "_extr", output);
 }
 
 
 
-void FileBINGZIP( const std::string& name, std::vector<u8>& output )
+void FileBINGZIP(const std::string& name, std::vector<u8>& output)
 {
     std::vector<u8> temp_dat;
-    FileRead( name, temp_dat );
+    FileRead(name, temp_dat);
     // remove first 0x8 byte (they are header data to clean working memory for executable)
-    if( temp_dat.size() >= 0x8 ) temp_dat.erase( temp_dat.begin(), temp_dat.begin() + 0x8 );
-    GZIPExtract( temp_dat.begin(), temp_dat.size(), output );
+    if (temp_dat.size() >= 0x8) temp_dat.erase(temp_dat.begin(), temp_dat.begin() + 0x8);
+    GZIPExtract(temp_dat.begin(), (u32)temp_dat.size(), output);
 }
 
 
 
-void FileRead( const std::string& name, std::vector<u8>& output )
+void FileRead(const std::string& name, std::vector<u8>& output)
 {
-    LOG_INFO( "Load file: %s.", name.c_str() );
+    LOG_INFO("Load file: %s.", name.c_str());
 
-    FILE* file = fopen( ("data/" + name).c_str(), "rb" );
+    FILE* file;
+    errno_t err = fopen_s(&file, ("data/" + name).c_str(), "rb");
 
-    if( file == NULL )
+    if (err != 0)
     {
-        LOG_ERROR( "Can't read file: %s.", name.c_str() );
+        LOG_ERROR("Can't read file: %s.", name.c_str());
         return;
     }
 
-    fseek( file, 0, SEEK_END );
-    u32 size = ftell( file );
-    output.resize( size );
+    fseek(file, 0, SEEK_END);
+    u32 size = ftell(file);
+    output.resize(size);
 
-    fseek( file, 0, SEEK_SET );
-    fread( &output[ 0 ], 1, size, file );
-    fclose( file );
+    fseek(file, 0, SEEK_SET);
+    fread(&output[0], 1, size, file);
+    fclose(file);
 }
 
 
 
-void FileWrite( const std::string& name, std::vector<u8>& input )
+void FileWrite(const std::string& name, std::vector<u8>& input)
 {
-    LOG_INFO( "Write file: %s.", name.c_str() );
+    LOG_INFO("Write file: %s.", name.c_str());
 
-    FILE* file = fopen( name.c_str(), "wb" );
+    FILE* file;
+    errno_t err = fopen_s(&file, name.c_str(), "wb");
 
-    if( file == NULL )
+    if (err != 0)
     {
-        LOG_ERROR( "Can't write file: %s.", name.c_str() );
+        LOG_ERROR("Can't write file: %s.", name.c_str());
         return;
     }
 
-    fwrite( &input[ 0 ], 1, input.size(), file );
-    fclose( file );
+    fwrite(&input[0], 1, input.size(), file);
+    fclose(file);
 }

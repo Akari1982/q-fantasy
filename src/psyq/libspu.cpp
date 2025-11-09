@@ -80,7 +80,7 @@ void SpuPlayer::audioOut( ofSoundBuffer & buffer )
 
     s16 temp[44100][2];
 
-    int numSamples = std::min<int>( 44100, buffer.getNumFrames() );
+    int numSamples = std::min<int>(44100, (int)buffer.getNumFrames());
 
     SPU::GeneratePendingSamples();
     dataStream->ReadFrames(reinterpret_cast<s16*>(temp), numSamples);

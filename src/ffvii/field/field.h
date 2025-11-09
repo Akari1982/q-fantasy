@@ -5,18 +5,19 @@
 #include "psyq/libgpu.h"
 
 #include <array>
+#include <string>
 
 
 
 #define FIELD_CMD_NONE 0x0
-#define FIELD_CMD_LOAD 0x1
+#define FIELD_CMD_MAP 0x1
 
 
 
 struct FieldControl
 {
     u8 cmd = 0;
-    u16 map_id = 0;
+    u16 arg = 0;
 };
 
 struct FieldCamera
@@ -51,7 +52,7 @@ void FieldMain();
 void FieldInitEnv();
 
 
-
+extern std::vector<std::string> g_field_files;
 extern FieldControl g_field_control;
 extern std::vector<u8> g_field_dat;
 extern u32 g_field_dat_base_addr;

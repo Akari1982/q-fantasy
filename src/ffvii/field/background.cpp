@@ -80,7 +80,7 @@ void FieldBackgroundInitPoly( SPRT_16* p1, SPRT* p2, BgAnim* bg_anim, DR_MODE* d
             PsyqSetSemiTrans( p1, (READ_LE_U16( &g_field_dat[coords2 + 0xc] ) & 0x80) ? 0x1 : 0 );
 
             p1->r0 = READ_LE_U8( &g_field_dat[coords2 + 0xa] ); // this is depth used in render
-            p1->g0 = READ_LE_U16( &g_field_dat[coords2 + 0xb] ); // this is depth used in render
+            p1->g0 = READ_LE_U8( &g_field_dat[coords2 + 0xb] ); // this is depth used in render
             p1->b0 = 0x80;
             p1->x0 = READ_LE_U16( &g_field_dat[coords2 + 0x0] );
             p1->y0 = READ_LE_U16( &g_field_dat[coords2 + 0x2] );

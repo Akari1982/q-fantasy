@@ -478,7 +478,7 @@ void SPU::CreateOutputStream()
 //           AudioStream::GetStretchModeName(g_settings.audio_stream_parameters.stretch_mode));
 
 //  Error error;
-  s_state.audio_stream = AudioStream::CreateStream( SAMPLE_RATE );
+  s_state.audio_stream = AudioStream::CreateStream(SAMPLE_RATE);
 //    AudioStream::CreateStream(g_settings.audio_backend, SAMPLE_RATE, g_settings.audio_stream_parameters,
 //                              g_settings.audio_driver.c_str(), g_settings.audio_output_device.c_str(), &error);
 //  if (!s_state.audio_stream)
@@ -1224,12 +1224,12 @@ void SPU::GeneratePendingSamples()
 void SPU::InternalGeneratePendingSamples()
 {
     // we need to generate all samples till this point because state of SPU is changed
-    static uint64_t time_prev = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::steady_clock::now().time_since_epoch() ).count();
-    uint64_t time_cur = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::steady_clock::now().time_since_epoch() ).count();
+    static uint64_t time_prev = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+    uint64_t time_cur = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
     uint64_t delta = time_cur - time_prev;
     double counter_freq = 33868800.0; // 33.8688 MHz
     uint64_t cpu_ticks  = (uint64_t)(delta * counter_freq / 1000000.0);
-    SPU::Execute( nullptr, cpu_ticks + s_state.ticks_carry, 0 );
+    SPU::Execute(nullptr, (TickCount)(cpu_ticks + s_state.ticks_carry), 0);
     time_prev = time_cur;
 }
 

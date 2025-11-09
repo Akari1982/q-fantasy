@@ -292,7 +292,7 @@ static void BrowserAkaoFillMusicInfo()
     {
         std::vector<u8> temp;
         FileRead( "MINI/CHOCOBO.DAT", temp );
-        for( size_t i = 0; i < 0x4; ++i )
+        for( u16 i = 0; i < 0x4; ++i )
         {
             std::vector<u8> snd;
 

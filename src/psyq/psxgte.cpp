@@ -337,7 +337,7 @@ int32_t BOUNDS(/*int44*/ int64_t value, int max_flag, int min_flag) {
 
 	if (value /*.negative_overflow()*/ < S64(-0x80000000000)) FLAG |= min_flag;
 
-	return gte_shift(value /*.value()*/, s_sf);
+	return (int32_t)gte_shift(value /*.value()*/, s_sf);
 }
 
 static uint32_t gte_divide(uint16_t numerator, uint16_t denominator) {
@@ -392,8 +392,8 @@ static int32_t Lm_B2(int32_t a, int lm) { return LIM(a, 0x7fff, -0x8000 * !lm, (
 static int32_t Lm_B3(int32_t a, int lm) { return LIM(a, 0x7fff, -0x8000 * !lm, (1 << 22)); }
 
 static int32_t Lm_B3_sf(int64_t value, int sf, int lm) {
-	int32_t value_sf = gte_shift(value, sf);
-	int32_t value_12 = gte_shift(value, 1);
+	int32_t value_sf = (int32_t)gte_shift(value, sf);
+	int32_t value_12 = (int32_t)gte_shift(value, 1);
 	int max = 0x7fff;
 	int min = 0;
 	if (lm == 0) min = -0x8000;
@@ -411,7 +411,7 @@ static int32_t Lm_B3_sf(int64_t value, int sf, int lm) {
 static int32_t Lm_C1(int32_t a) { return LIM(a, 0x00ff, 0x0000, (1 << 21)); }
 static int32_t Lm_C2(int32_t a) { return LIM(a, 0x00ff, 0x0000, (1 << 20)); }
 static int32_t Lm_C3(int32_t a) { return LIM(a, 0x00ff, 0x0000, (1 << 19)); }
-static int32_t Lm_D(int64_t a, int sf) { return LIM(gte_shift(a, sf), 0xffff, 0x0000, (1 << 31) | (1 << 18)); }
+static int32_t Lm_D(int64_t a, int sf) { return LIM((int32_t)gte_shift(a, sf), 0xffff, 0x0000, (1 << 31) | (1 << 18)); }
 
 static uint32_t Lm_E(uint32_t result) {
 	if (result == 0xffffffff) {
@@ -444,7 +444,7 @@ static int32_t Lm_G1(int64_t a) {
 		return -0x400;
 	}
 
-	return a;
+	return (int32_t)a;
 }
 
 static int32_t Lm_G2(int64_t a) {
@@ -458,7 +458,7 @@ static int32_t Lm_G2(int64_t a) {
 		return -0x400;
 	}
 
-	return a;
+	return (int32_t)a;
 }
 
 static int32_t Lm_G1_ia(int64_t a) {
@@ -466,7 +466,7 @@ static int32_t Lm_G1_ia(int64_t a) {
 
 	if (a < -0x4000000) return -0x4000000;
 
-	return a;
+	return (int32_t)a;
 }
 
 static int32_t Lm_G2_ia(int64_t a) {
@@ -474,12 +474,12 @@ static int32_t Lm_G2_ia(int64_t a) {
 
 	if (a < -0x4000000) return -0x4000000;
 
-	return a;
+	return (int32_t)a;
 }
 
 static int32_t Lm_H(int64_t value, int sf) {
 	int64_t value_sf = gte_shift(value, sf);
-	int32_t value_12 = gte_shift(value, 1);
+	int32_t value_12 = (int32_t)gte_shift(value, 1);
 	int max = 0x1000;
 	int min = 0x0000;
 
@@ -514,7 +514,7 @@ void RTPS(u32 function)
 	h_over_sz3 = Lm_E(gte_divide(H, SZ3));
 	SXY0 = SXY1;
 	SXY1 = SXY2;
-    int64_t f1 = F((int64_t)OFX + ((int64_t)IR1 * h_over_sz3) * (gWidescreen ? 0.75 : 1));
+    int64_t f1 = F((int64_t)OFX + (int64_t)(((int64_t)IR1 * h_over_sz3) * (gWidescreen ? 0.75 : 1)));
     int64_t f2 = F((int64_t)OFY + ((int64_t)IR2 * h_over_sz3));
 
 	SX2 = Lm_G1(f1 >> 16);
@@ -527,7 +527,7 @@ void RTPS(u32 function)
 #endif
 	// PGXP_RTPS(0, SXY2);
 
-	MAC0 = F((int64_t)DQB + ((int64_t)DQA * h_over_sz3));
+	MAC0 = (s32)F((int64_t)DQB + ((int64_t)DQA * h_over_sz3));
 	IR0 = Lm_H(s_mac0, 1);
 }
 
@@ -551,7 +551,7 @@ void RTPT(u32 function)
 		SXY0 = SXY1;
 		SXY1 = SXY2;
 		SX2 = Lm_G1(F((int64_t)OFX +
-			((int64_t)IR1 * h_over_sz3) * (gWidescreen ? 0.75 : 1)) >>
+			(int64_t)(((int64_t)IR1 * h_over_sz3) * (gWidescreen ? 0.75 : 1))) >>
 			16);
 		SY2 = Lm_G2(F((int64_t)OFY + ((int64_t)IR2 * h_over_sz3)) >> 16);
 
@@ -570,7 +570,7 @@ void RTPT(u32 function)
 		// PGXP_RTPS(v, SXY2);
 	}
 
-	MAC0 = F((int64_t)DQB + ((int64_t)DQA * h_over_sz3));
+	MAC0 = (s32)F((int64_t)DQB + ((int64_t)DQA * h_over_sz3));
 	IR0 = Lm_H(s_mac0, 1);
 }
 
@@ -618,13 +618,13 @@ void OP(u32 function)
 
 void AVSZ4(u32 function)
 {
-	MAC0 = F((int64_t)(ZSF4 * SZ0) + (ZSF4 * SZ1) + (ZSF4 * SZ2) + (ZSF4 * SZ3));
+	MAC0 = (s32)F((int64_t)(ZSF4 * SZ0) + (ZSF4 * SZ1) + (ZSF4 * SZ2) + (ZSF4 * SZ3));
 	OTZ = Lm_D(s_mac0, 1);
 }
 
 void AVSZ3(u32 function)
 {
-    MAC0 = F((int64_t)(ZSF3 * SZ1) + (ZSF3 * SZ2) + (ZSF3 * SZ3));
+    MAC0 = (s32)F((int64_t)(ZSF3 * SZ1) + (ZSF3 * SZ2) + (ZSF3 * SZ3));
     OTZ = Lm_D(s_mac0, 1);
 }
 
@@ -640,10 +640,10 @@ void SQR(u32 function)
 }
 
 float PGXP_NCLIP() {
-	float nclip = ((SX0 * SY1) + (SX1 * SY2) + (SX2 * SY0) - (SX0 * SY2) - (SX1 * SY0) - (SX2 * SY1));
+	float nclip = (float)((SX0 * SY1) + (SX1 * SY2) + (SX2 * SY0) - (SX0 * SY2) - (SX1 * SY0) - (SX2 * SY1));
 
 	// ensure fractional values are not incorrectly rounded to 0
-	float nclipAbs = fabs(nclip);
+	float nclipAbs = (float)fabs(nclip);
 	if ((0.1f < nclipAbs) && (nclipAbs < 1.f)) nclip += (nclip < 0.f ? -1 : 1);
 
 	// float AX = SX1 - SX0;
@@ -667,7 +667,7 @@ void NCLIP(u32 function)
 	/*if (PGXP_NLCIP_valid(SXY0, SXY1, SXY2))
 		MAC0 = F(PGXP_NCLIP());
 	else*/
-		MAC0 = F((int64_t)(SX0 * SY1) + (SX1 * SY2) + (SX2 * SY0) - (SX0 * SY2) - (SX1 * SY0) - (SX2 * SY1));
+		MAC0 = (s32)F((int64_t)(SX0 * SY1) + (SX1 * SY2) + (SX2 * SY0) - (SX0 * SY2) - (SX1 * SY0) - (SX2 * SY1));
 }
 
 

@@ -192,7 +192,7 @@ s16 MenuDrawSingleLetter( s16 x, s16 y, u8 color, u16 letter )
     u16 clut_x = 0;
     s16 tpage_x = 0;
     u16 set_start = 0;
-    u16 tex_y = 0;
+    u8 tex_y = 0;
 
     switch( (letter >> 0x8) )
     {
@@ -253,7 +253,7 @@ s16 MenuDrawSingleLetter( s16 x, s16 y, u8 color, u16 letter )
     u8 letter_w = g_font_paddings[glyph + set_start] & 0x1f;
 
     x += letter_pad;
-    u16 tex_x = (glyph % 0x15) * 0xc;
+    u8 tex_x = (glyph % 0x15) * 0xc;
     tex_y += (glyph / 0x15) * 0xc;
 
     auto poly = std::make_unique<SPRT>();

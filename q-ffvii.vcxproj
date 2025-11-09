@@ -102,6 +102,7 @@
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ForceFileOutput>MultiplyDefinedSymbolOnly</ForceFileOutput>
       <AdditionalOptions>/NOEXP /NOIMPLIB %(AdditionalOptions)</AdditionalOptions>
+      <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
     </Link>
     <PostBuildEvent />
   </ItemDefinitionGroup>
@@ -119,6 +120,7 @@
     <ClCompile Include="src\ffvii\field\rain.cpp" />
     <ClCompile Include="src\ffvii\kernel\akao.cpp" />
     <ClCompile Include="src\ffvii\kernel\buttons.cpp" />
+    <ClCompile Include="src\ffvii\kernel\fade.cpp" />
     <ClCompile Include="src\ffvii\kernel\file.cpp" />
     <ClCompile Include="src\ffvii\kernel\game.cpp" />
     <ClCompile Include="src\ffvii\menu\menu.cpp" />
@@ -175,6 +177,7 @@
     <ClInclude Include="src\ffvii\kernel\akao_commands.h" />
     <ClInclude Include="src\ffvii\kernel\akao_opcodes.h" />
     <ClInclude Include="src\ffvii\kernel\buttons.h" />
+    <ClInclude Include="src\ffvii\kernel\fade.h" />
     <ClInclude Include="src\ffvii\kernel\file.h" />
     <ClInclude Include="src\ffvii\kernel\game.h" />
     <ClInclude Include="src\ffvii\menu\menu.h" />
