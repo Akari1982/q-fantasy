@@ -223,6 +223,8 @@ AkaoOpcode akao_opcodes[] =
 // init inner data and structures, open new thread with main handler
 void AkaoInit( u8* instr_all, u8* instr_dat )
 {
+    atexit(AkaoQuit);
+
     g_akao_effects_all_seq = 0x1000;
 
     AkaoLoadInstr( instr_all, instr_dat );

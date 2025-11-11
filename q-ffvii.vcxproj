@@ -127,6 +127,7 @@
     <ClCompile Include="src\ffvii\menu\newgame.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\psyq\libapi.cpp" />
+    <ClCompile Include="src\psyq\libetc.cpp" />
     <ClCompile Include="src\psyq\libgpu.cpp" />
     <ClCompile Include="src\psyq\libgte.cpp" />
     <ClCompile Include="src\psyq\libpad.cpp" />
@@ -183,6 +184,7 @@
     <ClInclude Include="src\ffvii\menu\menu.h" />
     <ClInclude Include="src\ffvii\menu\newgame.h" />
     <ClInclude Include="src\psyq\libapi.h" />
+    <ClInclude Include="src\psyq\libetc.h" />
     <ClInclude Include="src\psyq\libgpu.h" />
     <ClInclude Include="src\psyq\libgte.h" />
     <ClInclude Include="src\psyq\libpad.h" />

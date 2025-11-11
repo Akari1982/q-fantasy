@@ -5,8 +5,6 @@
 
 std::vector<u8>::const_iterator l_current_tim;
 
-void (*l_vsync_callback)() = nullptr;
-
 
 
 int PsyqOpenTim(std::vector<u8>::const_iterator ptr)
@@ -145,16 +143,7 @@ s32 PsyqVSync(s32 mode)
 {
     GameRender();
 
-    l_vsync_callback();
-
     return 1;
-}
-
-
-
-void PsyqVsyncCallback(void (*func)())
-{
-    l_vsync_callback = func;
 }
 
 

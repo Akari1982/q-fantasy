@@ -11,6 +11,7 @@ struct FadePoly
 FadePoly l_fade[0x2];
 
 OTag g_fade_ot[0x2];
+u8 g_bg_fade_type = 0;
 
 
 

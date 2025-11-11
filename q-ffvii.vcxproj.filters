@@ -157,6 +157,9 @@
     <ClCompile Include="src\ffvii\kernel\fade.cpp">
       <Filter>src\kernel</Filter>
     </ClCompile>
+    <ClCompile Include="src\psyq\libetc.cpp">
+      <Filter>src\psyq</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="third_party\ofxImGui\src\BaseEngine.h">
@@ -368,6 +371,9 @@
     </ClInclude>
     <ClInclude Include="src\ffvii\kernel\fade.h">
       <Filter>src\kernel</Filter>
+    </ClInclude>
+    <ClInclude Include="src\psyq\libetc.h">
+      <Filter>src\psyq</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
