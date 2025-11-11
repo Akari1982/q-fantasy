@@ -139,12 +139,15 @@ void FieldMain()
     // but original code do it.
     FadeInitPoly();
 
-    SRECT rect;
-    rect.x = 0;
-    rect.y = 0;
-    rect.w = 0x1e0;
-    rect.h = 0x1d8;
-    PsyqClearImage(&rect, 0, 0, 0);
+    if ((g_game_state_prev != GAME_STATE_FIELD))
+    {
+        SRECT rect;
+        rect.x = 0;
+        rect.y = 0;
+        rect.w = 0x1e0;
+        rect.h = 0x1d8;
+        PsyqClearImage(&rect, 0, 0, 0);
+    }
 
     while (true)
     {
@@ -153,6 +156,21 @@ void FieldMain()
         // to prevent crush this is check for those files.
         // If try to load corrupt file it will be replaced with DUMMY map.
         FieldCorruptedFilesCheck();
+
+        // if prev state field or map
+        if (g_game_state_prev == GAME_STATE_FIELD)
+        {
+            if (hu[0x8009abf4 + 0x4c] == 0x0)
+            {
+                system_fade_copy_screen();
+
+                [0x8009abf4 + 0x4c] = h(0x3);
+                g_bg_fade_type = 0x3;
+                [0x8009abf4 + 0x4e] = h(0x0);
+                [0x8007e768] = h(0x0);
+                g_bg_render = BG_RENDER_FADE;
+            }
+        }
 
         FieldLoadMimDatFiles();
         FieldLoadMimToVram();

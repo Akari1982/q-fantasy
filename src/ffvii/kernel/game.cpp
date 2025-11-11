@@ -23,6 +23,7 @@
 u16 g_bg_render = BG_RENDER_NONE;
 
 u16 g_game_state = GAME_STATE_NONE;
+s16 g_game_state_prev = GAME_STATE_NONE;
 
 
 
@@ -63,17 +64,21 @@ void GameMain()
 
         GameInitFieldFromSaveMap();
 
-        switch (g_game_state)
+        g_game_state_prev = GAME_STATE_NONE;
+
+        bool restart = false;
+        while (restart == false)
         {
-            case GAME_STATE_FIELD:
+            switch (g_game_state)
             {
-                FieldMain();
+                case GAME_STATE_FIELD:
+                {
+                    FieldMain();
+                }
             }
+
+            //AkaoQuit();
         }
-
-        g_game_state = GAME_STATE_NONE; // hack
-
-        AkaoQuit();
     }
 }
 
@@ -164,6 +169,7 @@ void GameInitNewGame()
 void GameInitFieldFromSaveMap()
 {
     g_game_state = GAME_STATE_FIELD;
+    g_game_state_prev = GAME_STATE_FIELD;
 
     g_field_map_id = 0x74;
 }
