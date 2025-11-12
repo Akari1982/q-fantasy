@@ -139,9 +139,19 @@ void PsyqClearImage(SRECT* rect, u8 r, u8 g, u8 b)
 
 
 
+
+void PsyqMoveImage(SRECT* rect, int x, int y)
+{
+    g_vram_texture.bind();
+    glCopyTexSubImage2D(GL_TEXTURE_2D, 0, x, y, rect->x, rect->y, rect->w, rect->h);
+    g_vram_texture.unbind();
+}
+
+
+
 s32 PsyqVSync(s32 mode)
 {
-    GameRender();
+    AppUpdate();
 
     return 1;
 }

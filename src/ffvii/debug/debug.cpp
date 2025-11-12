@@ -22,7 +22,7 @@ void DebugUpdate()
     BrowserEnding();
     BrowserAkao();
 
-    if( g_game_state == GAME_STATE_FIELD ) DebugField();
+    if( g_gamestate == GAME_STATE_FIELD ) DebugField();
 
     if( ImGui::BeginMainMenuBar() )
     {

@@ -31,7 +31,7 @@ private:
 
 
 
-void GameRender();
+void AppUpdate();
 
 
 

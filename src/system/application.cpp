@@ -12,11 +12,11 @@ std::shared_ptr<ofAppBaseWindow> g_application;
 
 
 
-void GameRender()
+void AppUpdate()
 {
-    if( g_application->getWindowShouldClose() )
+    if (g_application->getWindowShouldClose())
     {
-        std::exit( EXIT_SUCCESS );
+        std::exit(EXIT_SUCCESS);
     }
 
     ofGetMainLoop()->loopOnce();
@@ -32,7 +32,7 @@ void Application::setup()
 
     GPUInit();
 
-    gui.setup( nullptr, true, ImGuiConfigFlags_ViewportsEnable );
+    gui.setup(nullptr, true, ImGuiConfigFlags_ViewportsEnable);
     // set imGui style
     {
         ImGui::StyleColorsDark();
@@ -43,19 +43,19 @@ void Application::setup()
         style->TabRounding = 4.0f;
         style->ScrollbarRounding = 1.6f;
         style->ScrollbarSize = 18.0f;
-        style->FramePadding = ImVec2( 3.0f, 3.0f );
+        style->FramePadding = ImVec2(3.0f, 3.0f);
         style->WindowBorderSize = 0.1f;
 
         ImVec4* colors = style->Colors;
 
-        colors[ImGuiCol_Text]                   = ImVec4( 1.00f, 1.00f, 1.00f, 1.00f );
-        colors[ImGuiCol_TextDisabled]           = ImVec4( 0.70f, 0.70f, 0.70f, 1.00f );
-        colors[ImGuiCol_WindowBg]               = ImVec4( 0.15f, 0.15f, 0.19f, 0.96f );
+        colors[ImGuiCol_Text]                   = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+        colors[ImGuiCol_TextDisabled]           = ImVec4(0.70f, 0.70f, 0.70f, 1.00f);
+        colors[ImGuiCol_WindowBg]               = ImVec4(0.15f, 0.15f, 0.19f, 0.96f);
 //        colors[ImGuiCol_ChildBg]                = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
 //        colors[ImGuiCol_PopupBg]                = ImVec4(0.08f, 0.08f, 0.08f, 0.94f);
 //        colors[ImGuiCol_Border]                 = ImVec4(0.43f, 0.43f, 0.50f, 0.50f);
 //        colors[ImGuiCol_BorderShadow]           = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-        colors[ImGuiCol_FrameBg]                = ImVec4( 0.35f, 0.35f, 0.35f, 0.54f );
+        colors[ImGuiCol_FrameBg]                = ImVec4(0.35f, 0.35f, 0.35f, 0.54f);
 //        colors[ImGuiCol_FrameBgHovered]         = ImVec4(0.26f, 0.59f, 0.98f, 0.40f);
 //        colors[ImGuiCol_FrameBgActive]          = ImVec4(0.26f, 0.59f, 0.98f, 0.67f);
 //        colors[ImGuiCol_TitleBg]                = ImVec4(0.04f, 0.04f, 0.04f, 1.00f);
@@ -63,9 +63,9 @@ void Application::setup()
 //        colors[ImGuiCol_TitleBgCollapsed]       = ImVec4(0.00f, 0.00f, 0.00f, 0.51f);
 //        colors[ImGuiCol_MenuBarBg]              = ImVec4(0.14f, 0.14f, 0.14f, 1.00f);
         colors[ImGuiCol_ScrollbarBg]            = ImVec4(0.15f, 0.15f, 0.15f, 0.53f);
-        colors[ImGuiCol_ScrollbarGrab]          = ImVec4( 0.45f, 0.45f, 0.45f, 1.00f );
-        colors[ImGuiCol_ScrollbarGrabHovered]   = ImVec4( 0.60f, 0.60f, 0.60f, 1.00f);
-        colors[ImGuiCol_ScrollbarGrabActive]    = ImVec4( 0.70f, 0.70f, 0.70f, 1.00f);
+        colors[ImGuiCol_ScrollbarGrab]          = ImVec4(0.45f, 0.45f, 0.45f, 1.00f);
+        colors[ImGuiCol_ScrollbarGrabHovered]   = ImVec4(0.60f, 0.60f, 0.60f, 1.00f);
+        colors[ImGuiCol_ScrollbarGrabActive]    = ImVec4(0.70f, 0.70f, 0.70f, 1.00f);
 //        colors[ImGuiCol_CheckMark]              = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
 //        colors[ImGuiCol_SliderGrab]             = ImVec4(0.24f, 0.52f, 0.88f, 1.00f);
 //        colors[ImGuiCol_SliderGrabActive]       = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
@@ -78,9 +78,9 @@ void Application::setup()
         colors[ImGuiCol_Separator]              = colors[ImGuiCol_Border];
 //        colors[ImGuiCol_SeparatorHovered]       = ImVec4(0.10f, 0.40f, 0.75f, 0.78f);
 //        colors[ImGuiCol_SeparatorActive]        = ImVec4(0.10f, 0.40f, 0.75f, 1.00f);
-        colors[ImGuiCol_ResizeGrip]             = ImVec4( 0.30f, 0.30f, 0.30f, 0.20f );
-        colors[ImGuiCol_ResizeGripHovered]      = ImVec4( 0.30f, 0.30f, 0.30f, 0.67f );
-        colors[ImGuiCol_ResizeGripActive]       = ImVec4( 0.30f, 0.30f, 0.30f, 0.95f );
+        colors[ImGuiCol_ResizeGrip]             = ImVec4(0.30f, 0.30f, 0.30f, 0.20f);
+        colors[ImGuiCol_ResizeGripHovered]      = ImVec4(0.30f, 0.30f, 0.30f, 0.67f);
+        colors[ImGuiCol_ResizeGripActive]       = ImVec4(0.30f, 0.30f, 0.30f, 0.95f);
         colors[ImGuiCol_InputTextCursor]        = colors[ImGuiCol_Text];
         colors[ImGuiCol_TabHovered]             = colors[ImGuiCol_HeaderHovered];
 //        colors[ImGuiCol_Tab]                    = ImLerp(colors[ImGuiCol_Header],       colors[ImGuiCol_TitleBgActive], 0.80f);
@@ -113,17 +113,17 @@ void Application::setup()
     // imGui fonts load and settings
     {
         ImGuiIO& io = ImGui::GetIO();
-        ImFont* font = io.Fonts->AddFontFromFileTTF( "system/Roboto-Regular.ttf", 16.0f );
-        //ImFont* font = io.Fonts->AddFontFromFileTTF( "system/RobotoMono-Regular.ttf", 17.0f );
-        if( !font ) LOG_ERROR( "ERROR: can't load font." );
+        ImFont* font = io.Fonts->AddFontFromFileTTF("system/Roboto-Regular.ttf", 16.0f);
+        //ImFont* font = io.Fonts->AddFontFromFileTTF("system/RobotoMono-Regular.ttf", 17.0f);
+        if (!font) LOG_ERROR("ERROR: can't load font.");
         io.FontDefault = font;
-        ImWchar icons_ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
+        ImWchar icons_ranges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
         ImFontConfig icons_config;
         icons_config.MergeMode = true;
         icons_config.PixelSnapH = true;
-        if( !io.Fonts->AddFontFromFileTTF( "system/FontAwesome5-Free-Solid.otf", 14.0f, &icons_config, icons_ranges ) )
+        if (!io.Fonts->AddFontFromFileTTF("system/FontAwesome5-Free-Solid.otf", 14.0f, &icons_config, icons_ranges))
         {
-            LOG_ERROR( "ERROR: can't load font." );
+            LOG_ERROR("ERROR: can't load font.");
         }
 
         ImWchar jp_ranges[] =
@@ -134,7 +134,7 @@ void Application::setup()
             0x4e00, 0x9faf, // Kanji (CJK Unified Ideographs)
             0,
         };
-        io.Fonts->AddFontFromFileTTF( "system/NotoSansCJKjp-Regular.otf", 18.0f, &icons_config, jp_ranges );
+        io.Fonts->AddFontFromFileTTF("system/NotoSansCJKjp-Regular.otf", 18.0f, &icons_config, jp_ranges);
         io.Fonts->Build();
     }
 
@@ -153,23 +153,23 @@ void Application::draw()
 {
     static ofVboMesh mesh;
     mesh.clear();
-    mesh.setMode( OF_PRIMITIVE_TRIANGLE_FAN );
+    mesh.setMode(OF_PRIMITIVE_TRIANGLE_FAN);
 
-    mesh.addVertex( glm::vec3(100.0f, 100.0f, 0.0f) );
-    mesh.addVertex( glm::vec3(900.0f, 100.0f, 0.0f) );
-    mesh.addVertex( glm::vec3(900.0f, 700.0f, 0.0f) );
-    mesh.addVertex( glm::vec3(100.0f, 700.0f, 0.0f) );
+    mesh.addVertex(glm::vec3(100.0f, 100.0f, 0.0f));
+    mesh.addVertex(glm::vec3(900.0f, 100.0f, 0.0f));
+    mesh.addVertex(glm::vec3(900.0f, 700.0f, 0.0f));
+    mesh.addVertex(glm::vec3(100.0f, 700.0f, 0.0f));
 
-    mesh.addTexCoord( glm::vec2(g_rendering_disp_x,                      g_rendering_disp_y) );
-    mesh.addTexCoord( glm::vec2(g_rendering_disp_x + g_rendering_disp_w, g_rendering_disp_y) );
-    mesh.addTexCoord( glm::vec2(g_rendering_disp_x + g_rendering_disp_w, g_rendering_disp_y + g_rendering_disp_h) );
-    mesh.addTexCoord( glm::vec2(g_rendering_disp_x,                      g_rendering_disp_y + g_rendering_disp_h) );
+    mesh.addTexCoord(glm::vec2(g_rendering_disp_x,                      g_rendering_disp_y));
+    mesh.addTexCoord(glm::vec2(g_rendering_disp_x + g_rendering_disp_w, g_rendering_disp_y));
+    mesh.addTexCoord(glm::vec2(g_rendering_disp_x + g_rendering_disp_w, g_rendering_disp_y + g_rendering_disp_h));
+    mesh.addTexCoord(glm::vec2(g_rendering_disp_x,                      g_rendering_disp_y + g_rendering_disp_h));
 
     glm::mat4 projection = glm::ortho(0.0f, (float)ofGetWidth(), (float)ofGetHeight(), 0.0f, -1.0f, 1.0f);
 
     g_display_shader.begin();
-    g_display_shader.setUniformTexture( "tex0", g_vram_texture, 0 );
-    g_display_shader.setUniformMatrix4f( "g_matrix", projection );
+    g_display_shader.setUniformTexture("tex0", g_vram_texture, 0);
+    g_display_shader.setUniformMatrix4f("g_matrix", projection);
     mesh.draw();
     g_display_shader.end();
 
@@ -177,13 +177,13 @@ void Application::draw()
 
     DebugUpdate();
 
-    if( ImGui::BeginMainMenuBar() )
+    if (ImGui::BeginMainMenuBar())
     {
-        ImGui::Text( "FPS: %s", ofToString( ofGetFrameRate(), 2 ) );
+        ImGui::Text("FPS: %s", ofToString(ofGetFrameRate(), 2));
 
         float width = ImGui::GetWindowWidth();
-        ImGui::SetCursorPosX( width - ImGui::CalcTextSize( "Vram" ).x - 10 );
-        if( ImGui::MenuItem( "Vram", nullptr, &g_debug_vram ) ) {}
+        ImGui::SetCursorPosX(width - ImGui::CalcTextSize("Vram").x - 10);
+        if (ImGui::MenuItem("Vram", nullptr, &g_debug_vram)) {}
 
         ImGui::EndMainMenuBar();
     }
@@ -195,10 +195,10 @@ void Application::draw()
 
 
 
-void Application::keyPressed( int key )
+void Application::keyPressed(int key)
 {
     u32 buttons = 0;
-    switch( key )
+    switch (key)
     {
         case OF_KEY_HOME:        buttons |= BUTTON_L2; break;
         case OF_KEY_PAGE_UP:     buttons |= BUTTON_R2; break;
@@ -216,15 +216,15 @@ void Application::keyPressed( int key )
         case OF_KEY_LEFT:        buttons |= BUTTON_LEFT; break;
     }
 
-    if( buttons != 0 ) ButtonsPressed1( buttons );
+    if (buttons != 0) ButtonsPressed1(buttons);
 }
 
 
 
-void Application::keyReleased( int key )
+void Application::keyReleased(int key)
 {
     u32 buttons = 0;
-    switch( key )
+    switch (key)
     {
         case OF_KEY_HOME:        buttons |= BUTTON_L2; break;
         case OF_KEY_PAGE_UP:     buttons |= BUTTON_R2; break;
@@ -242,17 +242,17 @@ void Application::keyReleased( int key )
         case OF_KEY_LEFT:        buttons |= BUTTON_LEFT; break;
     }
 
-    if( buttons != 0 ) ButtonsReleased1( buttons );
+    if (buttons != 0) ButtonsReleased1(buttons);
 }
 
 
 
-void Application::mouseMoved( int x, int y ) {}
-void Application::mouseDragged( int x, int y, int button ) {}
-void Application::mousePressed( int x, int y, int button ) {}
-void Application::mouseReleased( int x, int y, int button ) {}
-void Application::mouseEntered( int x, int y ) {}
-void Application::mouseExited( int x, int y ) {}
-void Application::windowResized( int w, int h ) {}
-void Application::gotMessage( ofMessage msg ) {}
-void Application::dragEvent( ofDragInfo dragInfo ){}
+void Application::mouseMoved(int x, int y) {}
+void Application::mouseDragged(int x, int y, int button) {}
+void Application::mousePressed(int x, int y, int button) {}
+void Application::mouseReleased(int x, int y, int button) {}
+void Application::mouseEntered(int x, int y) {}
+void Application::mouseExited(int x, int y) {}
+void Application::windowResized(int w, int h) {}
+void Application::gotMessage(ofMessage msg) {}
+void Application::dragEvent(ofDragInfo dragInfo){}

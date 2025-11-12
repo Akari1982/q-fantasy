@@ -1,5 +1,4 @@
 #include "akao.h"
-#include "fade.h"
 #include "file.h"
 #include "game.h"
 #include "ending/ending.h"
@@ -14,16 +13,10 @@
 
 
 
-#define BG_RENDER_NONE 0x0
-#define BG_RENDER_FADE 0x1
-#define BG_RENDER_BATTLE 0x2
-#define BG_RENDER_BATTLE_SWIRL 0x3
-#define BG_RENDER_BATTLE_RESULT 0x4
-
 u16 g_bg_render = BG_RENDER_NONE;
 
-u16 g_game_state = GAME_STATE_NONE;
-s16 g_game_state_prev = GAME_STATE_NONE;
+u16 g_gamestate = GAME_STATE_NONE;
+u16 g_gamestate_prev = GAME_STATE_NONE;
 
 
 
@@ -64,12 +57,12 @@ void GameMain()
 
         GameInitFieldFromSaveMap();
 
-        g_game_state_prev = GAME_STATE_NONE;
+        g_gamestate_prev = GAME_STATE_NONE;
 
         bool restart = false;
         while (restart == false)
         {
-            switch (g_game_state)
+            switch (g_gamestate)
             {
                 case GAME_STATE_FIELD:
                 {
@@ -168,29 +161,10 @@ void GameInitNewGame()
 
 void GameInitFieldFromSaveMap()
 {
-    g_game_state = GAME_STATE_FIELD;
-    g_game_state_prev = GAME_STATE_FIELD;
+    g_gamestate = GAME_STATE_FIELD;
+    g_gamestate_prev = GAME_STATE_FIELD;
 
     g_field_map_id = 0x74;
-}
-
-
-
-void GameBackgroundFadeRender()
-{
-    if (g_bg_fade_type != 0)
-    {
-        g_field_rb += 0x1;
-        g_field_rb &= 0x1;
-
-        LOG_WARNING("Fade Check");
-
-//        system_fade_bg_update();
-
-//        PsyqPutDispenv(&g_field_disp_env[g_field_rb]);
-//        PsyqPutDrawenv(&g_field_draw_env[g_field_rb]);
-//        PsyqDrawOTag(&g_fade_ot[g_field_rb]);
-    }
 }
 
 
@@ -199,6 +173,6 @@ void GameBackgroundRender()
 {
     switch (g_bg_render)
     {
-        case BG_RENDER_FADE: GameBackgroundFadeRender; break;
+        case BG_RENDER_FADE: FieldFadeBgDraw(); break;
     }
 }

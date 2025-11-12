@@ -1,6 +1,7 @@
 #pragma once
 
 #include "background.h"
+#include "fade.h"
 #include "psyq/typedef.h"
 #include "psyq/libgpu.h"
 
@@ -16,8 +17,25 @@
 
 struct FieldControl
 {
+    // command
     u8 cmd = 0;
     u16 arg = 0;
+
+    u8 disable_render;
+
+    // fade
+    u16 fade_type = FADE_TYPE_NONE;
+    s16 fade_steps;
+    u16 fade_step;
+    u8 fade_r;
+    u8 fade_g;
+    u8 fade_b;
+    u8 nfade_r_from;
+    u8 nfade_g_from;
+    u8 nfade_b_from;
+    u8 nfade_r_to;
+    u8 nfade_g_to;
+    u8 nfade_b_to;
 };
 
 struct FieldCamera
@@ -49,7 +67,9 @@ struct FieldRenderData
 
 
 void FieldMain();
+void FieldFadeBgDraw();
 void FieldInitEnv();
+
 
 
 extern std::vector<std::string> g_field_files;
