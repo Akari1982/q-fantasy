@@ -10,6 +10,9 @@ ofShader g_display_shader;
 ofShader g_render_shader;
 GLuint g_fbo_id;
 
+std::vector<std::unique_ptr<OTag>> g_draw;
+std::vector<OTag*> g_gpu_queue;
+
 // rendering settings
 u32 g_rendering_disp_enable = 0;
 u32 g_rendering_disp_x = 0;
@@ -80,15 +83,53 @@ void GPUInit()
 
 
 
+void GPUExecute()
+{
+    glBindFramebuffer(GL_FRAMEBUFFER, g_fbo_id);
+    glViewport(0, 0, VRAM_W, VRAM_H);
+    glDisable(GL_BLEND);
+    glEnable(GL_SCISSOR_TEST);
+
+    g_render_shader.begin();
+
+    for(int i = 0; i < g_gpu_queue.size(); ++i)
+    {
+        OTag* ot = g_gpu_queue[i];
+        while (ot)
+        {
+            ot->execute();
+            ot = ot->next;
+        }
+    }
+    g_gpu_queue.clear();
+    g_draw.clear();
+
+    g_render_shader.end();
+
+    glDisable(GL_SCISSOR_TEST);
+    glEnable(GL_BLEND);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+
+
 void OTag::execute()
 {
     if (type == GPU_OTAG)
     {
         return;
     }
-    else if (type == GPU_TERMINATE)
+    else if (type == GPU_VRAM_CLEAR)
     {
-        return;
+        ((VRAM_CLEAR*)this)->execute();
+    }
+    else if (type == GPU_VRAM_LOAD)
+    {
+        ((VRAM_LOAD*)this)->execute();
+    }
+    else if (type == GPU_VRAM_MOVE)
+    {
+        ((VRAM_MOVE*)this)->execute();
     }
     else if (type == GPU_POLY_FT4)
     {
@@ -118,9 +159,13 @@ void OTag::execute()
     {
         ((DR_ENV*)this)->execute();
     }
+    else if (type == GPU_TERMINATE)
+    {
+        return;
+    }
     else
     {
-        LOG_ERROR("Unsupported OTag: type = 0x0x", type);
+        LOG_ERROR("Unsupported OTag: type = 0x%02x", type);
     }
 }
 
@@ -316,6 +361,52 @@ void DR_ENV::execute()
 
     if (env.isbg == 1)
     {
-        PsyqClearImage(&env.clip, env.r0, env.g0, env.b0);
+        u16 clear_value = 0;
+        clear_value |= ((env.r0 >> 0x3) & 0x1f) << 0x0;
+        clear_value |= ((env.g0 >> 0x3) & 0x1f) << 0x5;
+        clear_value |= ((env.b0 >> 0x3) & 0x1f) << 0xa;
+        GLuint textureID = g_vram_texture.getTextureData().textureID;
+        glClearTexSubImage(textureID, 0, env.clip.x, env.clip.y, 0, env.clip.w, env.clip.h, 1, GL_RED_INTEGER, GL_UNSIGNED_SHORT, &clear_value);
     }
+}
+
+
+
+void VRAM_CLEAR::execute()
+{
+    u16 clear_value = 0;
+    clear_value |= ((r >> 0x3) & 0x1f) << 0x0;
+    clear_value |= ((g >> 0x3) & 0x1f) << 0x5;
+    clear_value |= ((b >> 0x3) & 0x1f) << 0xa;
+    GLuint textureID = g_vram_texture.getTextureData().textureID;
+    glClearTexSubImage(textureID, 0, rect.x, rect.y, 0, rect.w, rect.h, 1, GL_RED_INTEGER, GL_UNSIGNED_SHORT, &clear_value);
+}
+
+
+
+void VRAM_LOAD::execute()
+{
+    int num_pixels = rect.w * rect.h;
+    std::vector<u16> temp_data_u16(num_pixels);
+
+    const u8* src = data;
+    for (int i = 0; i < num_pixels; ++i)
+    {
+        u8 low_byte = *(src++);
+        u8 high_byte = *(src++);
+        temp_data_u16[i] = (high_byte << 8) | low_byte;
+    }
+
+    g_vram_texture.bind();
+    glTexSubImage2D(GL_TEXTURE_2D, 0, rect.x, rect.y, rect.w, rect.h, GL_RED_INTEGER, GL_UNSIGNED_SHORT, temp_data_u16.data());
+    g_vram_texture.unbind();
+}
+
+
+
+void VRAM_MOVE::execute()
+{
+    g_vram_texture.bind();
+    glCopyTexSubImage2D(GL_TEXTURE_2D, 0, x, y, rect.x, rect.y, rect.w, rect.h);
+    g_vram_texture.unbind();
 }

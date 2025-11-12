@@ -145,6 +145,7 @@ void Application::setup()
 
 void Application::update()
 {
+    GPUExecute();
 }
 
 

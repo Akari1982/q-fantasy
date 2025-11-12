@@ -154,7 +154,7 @@ void FadeStepsIncrease()
 
 
 
-s16 FadeColorInterpolate(s16 col_from, s16 col_to, s16 steps_cur, s16 steps_dst)
+u8 FadeColorInterpolate(s16 col_from, s16 col_to, s16 steps_cur, s16 steps_dst)
 {
     return col_from + ((col_to - col_from) * steps_cur) / steps_dst;
 }

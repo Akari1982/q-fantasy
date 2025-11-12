@@ -137,6 +137,7 @@ void GameInitKernel()
                 rect.w = READ_LE_S16(&temp[0x10]);
                 rect.h = READ_LE_S16(&temp[0x12]);
                 PsyqLoadImage(&rect, &temp[0x14]);
+                PsyqDrawSync(0);
             }
 
             rect.x = READ_LE_S16(&temp[offset + 0xc]);
@@ -144,6 +145,7 @@ void GameInitKernel()
             rect.w = READ_LE_S16(&temp[offset + 0x10]);
             rect.h = READ_LE_S16(&temp[offset + 0x12]);
             PsyqLoadImage(&rect, &temp[offset + 0x14]);
+            PsyqDrawSync(0);
         }
         else if (type == 0x1)
         {

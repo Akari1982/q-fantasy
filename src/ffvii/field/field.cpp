@@ -175,7 +175,8 @@ void FieldMain()
             FieldLoadMimDatFiles();
         }
 
-        while (g_bg_render != BG_RENDER_NONE) { PsyqVSync(0x1); }
+        while (g_bg_render != BG_RENDER_NONE) {}
+        while (PsyqDrawSync(0x1) != 0) {}
 
         // if prev state not 0xd menu set fade out
         if (g_gamestate_prev != 0xd)
@@ -199,6 +200,7 @@ void FieldMain()
 
         FieldMainLoop();
 
+        while (PsyqDrawSync(0x1) != 0) {}
         PsyqVSync(0x1);
 
         l_main_dispenv[0x0].isrgb24 = 0;
@@ -293,6 +295,8 @@ void FieldMainLoop()
         FieldRainAddToRender(render_data.ot_scene, render_data.rain.data(), &l_field_camera.m, &render_data.rain_dm);
 
         FadeUpdate();
+
+        while (PsyqDrawSync(0x1) != 0) {}
 
         // debug
         {
@@ -405,7 +409,6 @@ void FieldUpdateDrawEnv()
 void FieldLoadMimDatFiles()
 {
     FileLZS("FIELD/" + g_field_files[g_field_map_id] + ".MIM", l_field_mim);
-    //FileWrite("test.mim ", l_field_mim);
     FileLZS("FIELD/" + g_field_files[g_field_map_id] + ".DAT", g_field_dat);
 }
 
@@ -415,6 +418,8 @@ void FieldLoadMimToVram()
 {
     u32 ofs = 0;
 
+    PsyqDrawSync(0);
+
     // load palette to vram
     SRECT rect;
     rect.x = 0;
@@ -422,6 +427,7 @@ void FieldLoadMimToVram()
     rect.w = 0x100;
     rect.h = 0x10;
     PsyqLoadImage(&rect, &l_field_mim[ofs + 0xc]);
+    PsyqDrawSync(0);
 
     // load 1st image to vram
     ofs += (READ_LE_U32(&l_field_mim[ofs + 0x0]) >> 0x2) << 0x2;
@@ -433,7 +439,8 @@ void FieldLoadMimToVram()
         READ_LE_U16(&l_field_mim[ofs + 0x6]),
         READ_LE_U16(&l_field_mim[ofs + 0x8]) * 0x2,
         READ_LE_U16(&l_field_mim[ofs + 0xa])
-   );
+    );
+    PsyqDrawSync(0);
 
     // load 2nd image to vram
     ofs += (READ_LE_U32(&l_field_mim[ofs + 0x0]) >> 0x2) << 0x2;
@@ -448,7 +455,8 @@ void FieldLoadMimToVram()
             READ_LE_U16(&l_field_mim[ofs + 0x6]),
             READ_LE_U16(&l_field_mim[ofs + 0x8]) * 0x2,
             READ_LE_U16(&l_field_mim[ofs + 0xa])
-       );
+        );
+        PsyqDrawSync(0);
     }
 }
 

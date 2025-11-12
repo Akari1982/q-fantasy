@@ -82,6 +82,7 @@ void MenuLoadImage( std::vector<u8>::const_iterator ptr, s16 img_x, s16 img_y, s
             tim.crect.x = clut_x;
             tim.crect.y = clut_y;
             PsyqLoadImage( &tim.crect, (u8*)tim.caddr );
+            PsyqDrawSync(0);
         }
 
         if( tim.paddr != 0 )
@@ -89,6 +90,7 @@ void MenuLoadImage( std::vector<u8>::const_iterator ptr, s16 img_x, s16 img_y, s
             tim.prect.x = img_x;
             tim.prect.y = img_y;
             PsyqLoadImage( &tim.prect, (u8*)tim.paddr );
+            PsyqDrawSync(0);
         }
     }
 }

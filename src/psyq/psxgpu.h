@@ -9,8 +9,12 @@
 #define VRAM_H 512
 
 
+struct OTag;
+
+
 
 void GPUInit();
+void GPUExecute();
 
 
 
@@ -24,3 +28,6 @@ extern ofTexture g_vram_texture;
 extern ofShader g_display_shader;
 extern ofShader g_render_shader;
 extern GLuint g_fbo_id;
+
+extern std::vector<std::unique_ptr<OTag>> g_draw;
+extern std::vector<OTag*> g_gpu_queue;

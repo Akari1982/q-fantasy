@@ -69,47 +69,22 @@ TIM_IMAGE* PsyqReadTim(TIM_IMAGE* timimg)
 
 
 
-void PsyqLoadImage(SRECT* rect, const u8* data)
+void PsyqLoadImage(SRECT* rect, u8* data)
 {
-    int num_pixels = rect->w * rect->h;
-    std::vector<u16> temp_data_u16(num_pixels);
-
-    const u8* src = data;
-    for(int i = 0; i < num_pixels; ++i)
-    {
-        u8 low_byte = *(src++);
-        u8 high_byte = *(src++);
-        temp_data_u16[i] = (high_byte << 8) | low_byte;
-    }
-
-    g_vram_texture.bind();
-    glTexSubImage2D(GL_TEXTURE_2D, 0, rect->x, rect->y, rect->w, rect->h, GL_RED_INTEGER, GL_UNSIGNED_SHORT, temp_data_u16.data());
-    g_vram_texture.unbind();
+    auto draw = std::make_unique<VRAM_LOAD>();
+    draw->type = GPU_VRAM_LOAD;
+    draw->data = data;
+    draw->rect.x = rect->x;
+    draw->rect.y = rect->y;
+    draw->rect.w = rect->w;
+    draw->rect.h = rect->h;
+    g_gpu_queue.push_back(draw.get());
+    g_draw.emplace_back(std::move(draw));
 }
 
 
 
-void PsyqLoadImage(SRECT* rect, std::span<u8>::iterator data)
-{
-    int num_pixels = rect->w * rect->h;
-    std::vector<u16> temp_data_u16(num_pixels);
-
-    for(int i = 0; i < num_pixels; ++i)
-    {
-        u8 low_byte = READ_LE_U8(data + 0);
-        u8 high_byte = READ_LE_U8(data + 1);
-        temp_data_u16[i] = (static_cast<u16>(high_byte) << 8) | low_byte;
-        data += 2;
-    }
-
-    g_vram_texture.bind();
-    glTexSubImage2D(GL_TEXTURE_2D, 0, rect->x, rect->y, rect->w, rect->h, GL_RED_INTEGER, GL_UNSIGNED_SHORT, temp_data_u16.data());
-    g_vram_texture.unbind();
-}
-
-
-
-u16 PsyqLoadTPage(const u8* data, int tp, int abr, int x, int y, int w, int h)
+u16 PsyqLoadTPage(u8* data, int tp, int abr, int x, int y, int w, int h)
 {
     SRECT rect;
     rect.x = x;
@@ -129,22 +104,47 @@ u16 PsyqLoadTPage(const u8* data, int tp, int abr, int x, int y, int w, int h)
 
 void PsyqClearImage(SRECT* rect, u8 r, u8 g, u8 b)
 {
-    u16 clear_value = 0;
-    clear_value |= ((r >> 0x3) & 0x1f) << 0x0;
-    clear_value |= ((g >> 0x3) & 0x1f) << 0x5;
-    clear_value |= ((b >> 0x3) & 0x1f) << 0xa;
-    GLuint textureID = g_vram_texture.getTextureData().textureID;
-    glClearTexSubImage(textureID, 0, rect->x, rect->y, 0, rect->w, rect->h, 1, GL_RED_INTEGER, GL_UNSIGNED_SHORT, &clear_value);
+    auto draw = std::make_unique<VRAM_CLEAR>();
+    draw->type = GPU_VRAM_CLEAR;
+    draw->r = r;
+    draw->g = g;
+    draw->b = b;
+    draw->rect.x = rect->x;
+    draw->rect.y = rect->y;
+    draw->rect.w = rect->w;
+    draw->rect.h = rect->h;
+    g_gpu_queue.push_back(draw.get());
+    g_draw.emplace_back(std::move(draw));
 }
-
 
 
 
 void PsyqMoveImage(SRECT* rect, int x, int y)
 {
-    g_vram_texture.bind();
-    glCopyTexSubImage2D(GL_TEXTURE_2D, 0, x, y, rect->x, rect->y, rect->w, rect->h);
-    g_vram_texture.unbind();
+    auto draw = std::make_unique<VRAM_MOVE>();
+    draw->type = GPU_VRAM_MOVE;
+    draw->x = x;
+    draw->y = y;
+    draw->rect.x = rect->x;
+    draw->rect.y = rect->y;
+    draw->rect.w = rect->w;
+    draw->rect.h = rect->h;
+    g_gpu_queue.push_back(draw.get());
+    g_draw.emplace_back(std::move(draw));
+}
+
+
+
+s32 PsyqDrawSync(s32 mode)
+{
+    AppUpdate();
+
+    if (mode == 0)
+    {
+        while (g_gpu_queue.size() > 0) {}
+    }
+
+    return (s32)g_gpu_queue.size();
 }
 
 
@@ -251,7 +251,7 @@ void PsyqSetDispMask(int mask)
 OTag* PsyqClearOTagR(OTag* ot, s32 n)
 {
     OTag* current = ot;
-    for(int i = 0; i < n - 1; ++i)
+    for (int i = 0; i < n - 1; ++i)
     {
         ++current;
         current->next = current - 1;
@@ -268,7 +268,7 @@ OTag* PsyqClearOTagR(OTag* ot, s32 n)
 OTag* PsyqClearOTag(OTag* ot, s32 n)
 {
     OTag* current = ot;
-    for(int i = n - 1; i != 0; --i)
+    for (int i = n - 1; i != 0; --i)
     {
         ++current;
         (current - 1)->next = current;
@@ -284,24 +284,7 @@ OTag* PsyqClearOTag(OTag* ot, s32 n)
 
 void PsyqDrawOTag(OTag* ot)
 {
-    glBindFramebuffer(GL_FRAMEBUFFER, g_fbo_id);
-    glViewport(0, 0, VRAM_W, VRAM_H);
-    glDisable(GL_BLEND);
-    glEnable(GL_SCISSOR_TEST);
-
-    g_render_shader.begin();
-
-    while(ot)
-    {
-        ot->execute();
-        ot = ot->next;
-    }
-
-    g_render_shader.end();
-
-    glDisable(GL_SCISSOR_TEST);
-    glEnable(GL_BLEND);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    g_gpu_queue.push_back(ot);
 }
 
 
