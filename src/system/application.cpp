@@ -8,23 +8,6 @@
 
 
 
-std::shared_ptr<ofAppBaseWindow> g_application;
-
-
-
-void AppUpdate()
-{
-    if (g_application->getWindowShouldClose())
-    {
-        std::exit(EXIT_SUCCESS);
-    }
-
-    ofGetMainLoop()->loopOnce();
-    ofGetMainLoop()->pollEvents();
-}
-
-
-
 void Application::setup()
 {
     ofSetLogLevel(OF_LOG_WARNING);

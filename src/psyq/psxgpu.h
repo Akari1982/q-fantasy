@@ -31,3 +31,4 @@ extern GLuint g_fbo_id;
 
 extern std::vector<std::unique_ptr<OTag>> g_draw;
 extern std::vector<OTag*> g_gpu_queue;
+extern std::mutex g_gpu_mutex;

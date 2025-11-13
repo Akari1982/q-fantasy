@@ -12,6 +12,7 @@ GLuint g_fbo_id;
 
 std::vector<std::unique_ptr<OTag>> g_draw;
 std::vector<OTag*> g_gpu_queue;
+std::mutex g_gpu_mutex;
 
 // rendering settings
 u32 g_rendering_disp_enable = 0;
@@ -85,6 +86,8 @@ void GPUInit()
 
 void GPUExecute()
 {
+    std::lock_guard<std::mutex> lock(g_gpu_mutex);
+
     glBindFramebuffer(GL_FRAMEBUFFER, g_fbo_id);
     glViewport(0, 0, VRAM_W, VRAM_H);
     glDisable(GL_BLEND);

@@ -28,11 +28,3 @@ private:
     ofxImGui::Gui gui;
     ImVec4 backgroundColor;
 };
-
-
-
-void AppUpdate();
-
-
-
-extern std::shared_ptr<ofAppBaseWindow> g_application;

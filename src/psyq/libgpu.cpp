@@ -71,6 +71,8 @@ TIM_IMAGE* PsyqReadTim(TIM_IMAGE* timimg)
 
 void PsyqLoadImage(SRECT* rect, u8* data)
 {
+    std::lock_guard<std::mutex> lock(g_gpu_mutex);
+
     auto draw = std::make_unique<VRAM_LOAD>();
     draw->type = GPU_VRAM_LOAD;
     draw->data = data;
@@ -104,6 +106,8 @@ u16 PsyqLoadTPage(u8* data, int tp, int abr, int x, int y, int w, int h)
 
 void PsyqClearImage(SRECT* rect, u8 r, u8 g, u8 b)
 {
+    std::lock_guard<std::mutex> lock(g_gpu_mutex);
+
     auto draw = std::make_unique<VRAM_CLEAR>();
     draw->type = GPU_VRAM_CLEAR;
     draw->r = r;
@@ -121,6 +125,8 @@ void PsyqClearImage(SRECT* rect, u8 r, u8 g, u8 b)
 
 void PsyqMoveImage(SRECT* rect, int x, int y)
 {
+    std::lock_guard<std::mutex> lock(g_gpu_mutex);
+
     auto draw = std::make_unique<VRAM_MOVE>();
     draw->type = GPU_VRAM_MOVE;
     draw->x = x;
@@ -137,8 +143,6 @@ void PsyqMoveImage(SRECT* rect, int x, int y)
 
 s32 PsyqDrawSync(s32 mode)
 {
-    AppUpdate();
-
     if (mode == 0)
     {
         while (g_gpu_queue.size() > 0) {}
@@ -151,8 +155,6 @@ s32 PsyqDrawSync(s32 mode)
 
 s32 PsyqVSync(s32 mode)
 {
-    AppUpdate();
-
     return 1;
 }
 
@@ -222,9 +224,13 @@ DISPENV* PsyqPutDispEnv(DISPENV* env)
 
 DRAWENV* PsyqPutDrawEnv(DRAWENV* env)
 {
-    DR_ENV dr_env;
-    PsyqSetDrawEnv(&dr_env, env);
-    dr_env.execute();
+    std::lock_guard<std::mutex> lock(g_gpu_mutex);
+
+    auto draw = std::make_unique<DR_ENV>();
+    PsyqSetDrawEnv(draw.get(), env);
+    g_gpu_queue.push_back(draw.get());
+    g_draw.emplace_back(std::move(draw));
+
     return env;
 }
 
@@ -284,6 +290,8 @@ OTag* PsyqClearOTag(OTag* ot, s32 n)
 
 void PsyqDrawOTag(OTag* ot)
 {
+    std::lock_guard<std::mutex> lock(g_gpu_mutex);
+
     g_gpu_queue.push_back(ot);
 }
 
