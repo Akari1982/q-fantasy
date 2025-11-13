@@ -81,7 +81,7 @@ void PsyqLoadImage(SRECT* rect, u8* data)
     draw->rect.w = rect->w;
     draw->rect.h = rect->h;
     g_gpu_queue.push_back(draw.get());
-    g_draw.emplace_back(std::move(draw));
+    g_gpu_cmd.emplace_back(std::move(draw));
 }
 
 
@@ -118,7 +118,7 @@ void PsyqClearImage(SRECT* rect, u8 r, u8 g, u8 b)
     draw->rect.w = rect->w;
     draw->rect.h = rect->h;
     g_gpu_queue.push_back(draw.get());
-    g_draw.emplace_back(std::move(draw));
+    g_gpu_cmd.emplace_back(std::move(draw));
 }
 
 
@@ -136,16 +136,20 @@ void PsyqMoveImage(SRECT* rect, int x, int y)
     draw->rect.w = rect->w;
     draw->rect.h = rect->h;
     g_gpu_queue.push_back(draw.get());
-    g_draw.emplace_back(std::move(draw));
+    g_gpu_cmd.emplace_back(std::move(draw));
 }
 
 
 
 s32 PsyqDrawSync(s32 mode)
 {
+    std::unique_lock<std::mutex> lock(g_gpu_mutex);
+
     if (mode == 0)
     {
-        while (g_gpu_queue.size() > 0) {}
+        g_gpu_cv.wait(lock, [] {
+            return g_gpu_queue.size() == 0;
+        });
     }
 
     return (s32)g_gpu_queue.size();
@@ -213,10 +217,14 @@ void PsyqSetDrawEnv(DR_ENV* dr_env, DRAWENV* env)
 
 DISPENV* PsyqPutDispEnv(DISPENV* env)
 {
-    g_rendering_disp_x = env->disp.x;
-    g_rendering_disp_y = env->disp.y;
-    g_rendering_disp_w = env->disp.w;
-    g_rendering_disp_h = env->disp.h;
+    std::lock_guard<std::mutex> lock(g_gpu_mutex);
+
+    auto draw = std::make_unique<DISP_ENV>();
+    draw->type = GPU_DISP_ENV;
+    draw->env = *env;
+    g_gpu_queue.push_back(draw.get());
+    g_gpu_cmd.emplace_back(std::move(draw));
+
     return env;
 }
 
@@ -229,7 +237,7 @@ DRAWENV* PsyqPutDrawEnv(DRAWENV* env)
     auto draw = std::make_unique<DR_ENV>();
     PsyqSetDrawEnv(draw.get(), env);
     g_gpu_queue.push_back(draw.get());
-    g_draw.emplace_back(std::move(draw));
+    g_gpu_cmd.emplace_back(std::move(draw));
 
     return env;
 }
@@ -249,7 +257,13 @@ void PsyqSetDrawMode(DR_MODE* p, int dfe, int dtd, int tpage, SRECT* tw)
 
 void PsyqSetDispMask(int mask)
 {
-    g_rendering_disp_enable = (mask != 0) ? 0x1 : 0;
+    std::lock_guard<std::mutex> lock(g_gpu_mutex);
+
+    auto draw = std::make_unique<DISP_ENABLE>();
+    draw->type = GPU_DISP_ENABLE;
+    draw->enable = (mask != 0) ? true : false;
+    g_gpu_queue.push_back(draw.get());
+    g_gpu_cmd.emplace_back(std::move(draw));
 }
 
 

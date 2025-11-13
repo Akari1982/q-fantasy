@@ -7,15 +7,16 @@
 
 ofTexture g_vram_texture;
 ofShader g_display_shader;
-ofShader g_render_shader;
-GLuint g_fbo_id;
+ofShader l_render_shader;
+GLuint l_fbo_id;
 
-std::vector<std::unique_ptr<OTag>> g_draw;
+std::vector<std::unique_ptr<OTag>> g_gpu_cmd;
 std::vector<OTag*> g_gpu_queue;
 std::mutex g_gpu_mutex;
+std::condition_variable g_gpu_cv;
 
 // rendering settings
-u32 g_rendering_disp_enable = 0;
+bool g_rendering_disp_enable = false;
 u32 g_rendering_disp_x = 0;
 u32 g_rendering_disp_y = 0;
 u32 g_rendering_disp_w = 0;
@@ -54,8 +55,8 @@ void GPUInit()
     g_vram_texture.texData.bAllocated = true;
 
     // create framebuffer
-    glGenFramebuffers(1, &g_fbo_id);
-    glBindFramebuffer(GL_FRAMEBUFFER, g_fbo_id);
+    glGenFramebuffers(1, &l_fbo_id);
+    glBindFramebuffer(GL_FRAMEBUFFER, l_fbo_id);
  
     // attach vram to framebuffer
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex_id, 0);
@@ -75,7 +76,7 @@ void GPUInit()
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     // load shaders to render polygons to GL_R16UI vram
-    g_render_shader.load("../system/shader_render.vert", "../system/shader_render.frag");
+    l_render_shader.load("../system/shader_render.vert", "../system/shader_render.frag");
 
     // load shader for rendering GL_R16UI vram
     g_display_shader.load("../system/shader_display.vert", "../system/shader_display.frag");
@@ -86,14 +87,14 @@ void GPUInit()
 
 void GPUExecute()
 {
-    std::lock_guard<std::mutex> lock(g_gpu_mutex);
+    std::unique_lock<std::mutex> lock(g_gpu_mutex);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, g_fbo_id);
+    glBindFramebuffer(GL_FRAMEBUFFER, l_fbo_id);
     glViewport(0, 0, VRAM_W, VRAM_H);
     glDisable(GL_BLEND);
     glEnable(GL_SCISSOR_TEST);
 
-    g_render_shader.begin();
+    l_render_shader.begin();
 
     for(int i = 0; i < g_gpu_queue.size(); ++i)
     {
@@ -105,13 +106,15 @@ void GPUExecute()
         }
     }
     g_gpu_queue.clear();
-    g_draw.clear();
+    g_gpu_cmd.clear();
 
-    g_render_shader.end();
+    l_render_shader.end();
 
     glDisable(GL_SCISSOR_TEST);
     glEnable(GL_BLEND);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    g_gpu_cv.notify_all();
 }
 
 
@@ -162,6 +165,14 @@ void OTag::execute()
     {
         ((DR_ENV*)this)->execute();
     }
+    else if (type == GPU_DISP_ENV)
+    {
+        ((DISP_ENV*)this)->execute();
+    }
+    else if (type == GPU_DISP_ENABLE)
+    {
+        ((DISP_ENABLE*)this)->execute();
+    }
     else if (type == GPU_TERMINATE)
     {
         return;
@@ -190,13 +201,13 @@ void LINE_F2::execute()
 
     ofSetLineWidth(1);
 
-    g_render_shader.setUniformMatrix4f("g_matrix", projection);
-    g_render_shader.setUniformTexture("g_texture", g_vram_texture, 0);
-    g_render_shader.setUniform1i("g_transp", (code & 0x2) ? 1 : 0);
-    g_render_shader.setUniform1i("g_colored", 1);
-    g_render_shader.setUniform1i("g_textured", 0);
-    g_render_shader.setUniform1i("g_abr", (l_tpage >> 0x5) & 0x3);
-    g_render_shader.setUniform1i("g_dtd", l_dtd);
+    l_render_shader.setUniformMatrix4f("g_matrix", projection);
+    l_render_shader.setUniformTexture("g_texture", g_vram_texture, 0);
+    l_render_shader.setUniform1i("g_transp", (code & 0x2) ? 1 : 0);
+    l_render_shader.setUniform1i("g_colored", 1);
+    l_render_shader.setUniform1i("g_textured", 0);
+    l_render_shader.setUniform1i("g_abr", (l_tpage >> 0x5) & 0x3);
+    l_render_shader.setUniform1i("g_dtd", l_dtd);
     mesh.draw();
 }
 
@@ -225,16 +236,16 @@ void POLY_FT4::execute()
 
     glm::mat4 projection = glm::ortho(0.0f, (float)VRAM_W, 0.0f, (float)VRAM_H, -1.0f, 1.0f);
 
-    g_render_shader.setUniformMatrix4f("g_matrix", projection);
-    g_render_shader.setUniformTexture("g_texture", g_vram_texture, 0);
-    g_render_shader.setUniform2i("g_clut", (clut & 0x3f) * 0x10, (clut & 0xffc0) >> 0x6);
-    g_render_shader.setUniform2i("g_tpage", (tpage << 0x6) & 0x3ff, (tpage << 0x4) & 0x100);
-    g_render_shader.setUniform1i("g_depth", (tpage >> 0x7) & 0x3);
-    g_render_shader.setUniform1i("g_transp", (code & 0x2) ? 1 : 0);
-    g_render_shader.setUniform1i("g_colored", (code & 0x1) ? 0 : 1);
-    g_render_shader.setUniform1i("g_textured", (code & 0x4) ? 1 : 0);
-    g_render_shader.setUniform1i("g_abr", (tpage >> 0x5) & 0x3);
-    g_render_shader.setUniform1i("g_dtd", l_dtd);
+    l_render_shader.setUniformMatrix4f("g_matrix", projection);
+    l_render_shader.setUniformTexture("g_texture", g_vram_texture, 0);
+    l_render_shader.setUniform2i("g_clut", (clut & 0x3f) * 0x10, (clut & 0xffc0) >> 0x6);
+    l_render_shader.setUniform2i("g_tpage", (tpage << 0x6) & 0x3ff, (tpage << 0x4) & 0x100);
+    l_render_shader.setUniform1i("g_depth", (tpage >> 0x7) & 0x3);
+    l_render_shader.setUniform1i("g_transp", (code & 0x2) ? 1 : 0);
+    l_render_shader.setUniform1i("g_colored", (code & 0x1) ? 0 : 1);
+    l_render_shader.setUniform1i("g_textured", (code & 0x4) ? 1 : 0);
+    l_render_shader.setUniform1i("g_abr", (tpage >> 0x5) & 0x3);
+    l_render_shader.setUniform1i("g_dtd", l_dtd);
     mesh.draw();
 }
 
@@ -258,13 +269,13 @@ void TILE::execute()
 
     glm::mat4 projection = glm::ortho(0.0f, (float)VRAM_W, 0.0f, (float)VRAM_H, -1.0f, 1.0f);
 
-    g_render_shader.setUniformMatrix4f("g_matrix", projection);
-    g_render_shader.setUniformTexture("g_texture", g_vram_texture, 0);
-    g_render_shader.setUniform1i("g_transp", (code & 0x2) ? 1 : 0);
-    g_render_shader.setUniform1i("g_colored", (code & 0x1) ? 0 : 1);
-    g_render_shader.setUniform1i("g_textured", 0);
-    g_render_shader.setUniform1i("g_abr", (l_tpage >> 0x5) & 0x3);
-    g_render_shader.setUniform1i("g_dtd", 0);
+    l_render_shader.setUniformMatrix4f("g_matrix", projection);
+    l_render_shader.setUniformTexture("g_texture", g_vram_texture, 0);
+    l_render_shader.setUniform1i("g_transp", (code & 0x2) ? 1 : 0);
+    l_render_shader.setUniform1i("g_colored", (code & 0x1) ? 0 : 1);
+    l_render_shader.setUniform1i("g_textured", 0);
+    l_render_shader.setUniform1i("g_abr", (l_tpage >> 0x5) & 0x3);
+    l_render_shader.setUniform1i("g_dtd", 0);
     mesh.draw();
 }
 
@@ -293,16 +304,16 @@ void SPRT::execute()
 
     glm::mat4 projection = glm::ortho(0.0f, (float)VRAM_W, 0.0f, (float)VRAM_H, -1.0f, 1.0f);
 
-    g_render_shader.setUniformMatrix4f("g_matrix", projection);
-    g_render_shader.setUniformTexture("g_texture", g_vram_texture, 0);
-    g_render_shader.setUniform2i("g_clut", (clut & 0x3f) * 0x10, (clut & 0xffc0) >> 0x6);
-    g_render_shader.setUniform2i("g_tpage", (l_tpage << 0x6) & 0x3ff, (l_tpage << 0x4) & 0x100);
-    g_render_shader.setUniform1i("g_depth", (l_tpage >> 0x7) & 0x3);
-    g_render_shader.setUniform1i("g_transp", (code & 0x2) ? 1 : 0);
-    g_render_shader.setUniform1i("g_colored", (code & 0x1) ? 0 : 1);
-    g_render_shader.setUniform1i("g_textured", (code & 0x4) ? 1 : 0);
-    g_render_shader.setUniform1i("g_abr", (l_tpage >> 0x5) & 0x3);
-    g_render_shader.setUniform1i("g_dtd", 0);
+    l_render_shader.setUniformMatrix4f("g_matrix", projection);
+    l_render_shader.setUniformTexture("g_texture", g_vram_texture, 0);
+    l_render_shader.setUniform2i("g_clut", (clut & 0x3f) * 0x10, (clut & 0xffc0) >> 0x6);
+    l_render_shader.setUniform2i("g_tpage", (l_tpage << 0x6) & 0x3ff, (l_tpage << 0x4) & 0x100);
+    l_render_shader.setUniform1i("g_depth", (l_tpage >> 0x7) & 0x3);
+    l_render_shader.setUniform1i("g_transp", (code & 0x2) ? 1 : 0);
+    l_render_shader.setUniform1i("g_colored", (code & 0x1) ? 0 : 1);
+    l_render_shader.setUniform1i("g_textured", (code & 0x4) ? 1 : 0);
+    l_render_shader.setUniform1i("g_abr", (l_tpage >> 0x5) & 0x3);
+    l_render_shader.setUniform1i("g_dtd", 0);
     mesh.draw();
 }
 
@@ -331,16 +342,16 @@ void SPRT_16::execute()
 
     glm::mat4 projection = glm::ortho(0.0f, (float)VRAM_W, 0.0f, (float)VRAM_H, -1.0f, 1.0f);
 
-    g_render_shader.setUniformMatrix4f("g_matrix", projection);
-    g_render_shader.setUniformTexture("g_texture", g_vram_texture, 0);
-    g_render_shader.setUniform2i("g_clut", (clut & 0x3f) * 0x10, (clut & 0xffc0) >> 0x6);
-    g_render_shader.setUniform2i("g_tpage", (l_tpage << 0x6) & 0x3ff, (l_tpage << 0x4) & 0x100);
-    g_render_shader.setUniform1i("g_depth", (l_tpage >> 0x7) & 0x3);
-    g_render_shader.setUniform1i("g_transp", (code & 0x2) ? 1 : 0);
-    g_render_shader.setUniform1i("g_colored", (code & 0x1) ? 0 : 1);
-    g_render_shader.setUniform1i("g_textured", (code & 0x4) ? 1 : 0);
-    g_render_shader.setUniform1i("g_abr", (l_tpage >> 0x5) & 0x3);
-    g_render_shader.setUniform1i("g_dtd", 0);
+    l_render_shader.setUniformMatrix4f("g_matrix", projection);
+    l_render_shader.setUniformTexture("g_texture", g_vram_texture, 0);
+    l_render_shader.setUniform2i("g_clut", (clut & 0x3f) * 0x10, (clut & 0xffc0) >> 0x6);
+    l_render_shader.setUniform2i("g_tpage", (l_tpage << 0x6) & 0x3ff, (l_tpage << 0x4) & 0x100);
+    l_render_shader.setUniform1i("g_depth", (l_tpage >> 0x7) & 0x3);
+    l_render_shader.setUniform1i("g_transp", (code & 0x2) ? 1 : 0);
+    l_render_shader.setUniform1i("g_colored", (code & 0x1) ? 0 : 1);
+    l_render_shader.setUniform1i("g_textured", (code & 0x4) ? 1 : 0);
+    l_render_shader.setUniform1i("g_abr", (l_tpage >> 0x5) & 0x3);
+    l_render_shader.setUniform1i("g_dtd", 0);
     mesh.draw();
 }
 
@@ -371,6 +382,23 @@ void DR_ENV::execute()
         GLuint textureID = g_vram_texture.getTextureData().textureID;
         glClearTexSubImage(textureID, 0, env.clip.x, env.clip.y, 0, env.clip.w, env.clip.h, 1, GL_RED_INTEGER, GL_UNSIGNED_SHORT, &clear_value);
     }
+}
+
+
+
+void DISP_ENV::execute()
+{
+    g_rendering_disp_x = env.disp.x;
+    g_rendering_disp_y = env.disp.y;
+    g_rendering_disp_w = env.disp.w;
+    g_rendering_disp_h = env.disp.h;
+}
+
+
+
+void DISP_ENABLE::execute()
+{
+    g_rendering_disp_enable = enable;
 }
 
 

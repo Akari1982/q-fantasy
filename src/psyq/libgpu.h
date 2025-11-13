@@ -18,7 +18,9 @@
 #define GPU_SPRT_16     0x8
 #define GPU_DR_MODE     0x9
 #define GPU_DR_ENV      0xa
-#define GPU_TERMINATE   0xb
+#define GPU_DISP_ENV    0xb
+#define GPU_DISP_ENABLE 0xc
+#define GPU_TERMINATE   0xd
 
 struct TIM_IMAGE
 {
@@ -137,6 +139,20 @@ struct DR_MODE : public OTag
 struct DR_ENV : public OTag
 {
     DRAWENV env;
+
+    void execute();
+};
+
+struct DISP_ENV : public OTag
+{
+    DISPENV env;
+
+    void execute();
+};
+
+struct DISP_ENABLE : public OTag
+{
+    bool enable;
 
     void execute();
 };
