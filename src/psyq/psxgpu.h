@@ -33,3 +33,4 @@ extern std::vector<std::unique_ptr<OTag>> g_gpu_cmd;
 extern std::vector<OTag*> g_gpu_queue;
 extern std::mutex g_gpu_mutex;
 extern std::condition_variable g_gpu_cv;
+extern bool g_gpu_vsync;

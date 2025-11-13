@@ -62,11 +62,7 @@ void FadeInitPoly()
 
 void FadeCopyScreen()
 {
-    // move image from one disp area to another
-    //A0 = &g_field_disp_env[g_field_rb].disp;
-    //A1 = g_field_disp_env[(g_field_rb + 0x1) & 0x1].disp.x;
-    //A2 = g_field_disp_env[(g_field_rb + 0x1) & 0x1].disp.y;
-    //PsyqMoveImage();
+    PsyqMoveImage(&g_main_dispenv[g_field_rb].disp, g_main_dispenv[(g_field_rb + 0x1) & 0x1].disp.x, g_main_dispenv[(g_field_rb + 0x1) & 0x1].disp.y);
 }
 
 

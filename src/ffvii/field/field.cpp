@@ -24,7 +24,7 @@ u16 g_field_map_id = 0;
 u16 g_field_rb = 0;
 FieldRenderData l_field_render_data[0x2];
 FieldCamera l_field_camera;
-DISPENV l_main_dispenv[0x2];
+DISPENV g_main_dispenv[0x2];
 DRAWENV l_main_drawenv[0x2];
 DRAWENV l_drawenv[0xa];
 
@@ -181,12 +181,12 @@ void FieldMain()
         // if prev state not 0xd menu set fade out
         if (g_gamestate_prev != 0xd)
         {
-            g_field_control.fade_type = FADE_TYPE_DIS_GRAD_SUB;
-            g_field_control.fade_steps = 0x100;
-            g_field_control.fade_step = 0x10;
-            g_field_control.fade_r = 0x0;
-            g_field_control.fade_g = 0x0;
-            g_field_control.fade_b = 0x0;
+            //g_field_control.fade_type = FADE_TYPE_DIS_GRAD_SUB;
+            //g_field_control.fade_steps = 0x100;
+            //g_field_control.fade_step = 0x10;
+            //g_field_control.fade_r = 0x0;
+            //g_field_control.fade_g = 0x0;
+            //g_field_control.fade_b = 0x0;
         }
 
         if ((g_gamestate_prev != 0x5) && (g_gamestate_prev != 0xd)) // if was not nemu
@@ -203,10 +203,10 @@ void FieldMain()
         while (PsyqDrawSync(0x1) != 0) {}
         PsyqVSync(0x1);
 
-        l_main_dispenv[0x0].isrgb24 = 0;
-        l_main_dispenv[0x1].isrgb24 = 0;
+        g_main_dispenv[0x0].isrgb24 = 0;
+        g_main_dispenv[0x1].isrgb24 = 0;
 
-        PsyqPutDispEnv(&l_main_dispenv[g_field_rb]);
+        PsyqPutDispEnv(&g_main_dispenv[g_field_rb]);
         PsyqPutDrawEnv(&l_main_drawenv[g_field_rb]);
 
         g_gamestate_prev = GAME_STATE_FIELD;
@@ -362,7 +362,7 @@ void FieldMainLoop()
             PsyqSetDispMask(0x1);
         }
 
-        PsyqPutDispEnv(&l_main_dispenv[g_field_rb]);
+        PsyqPutDispEnv(&g_main_dispenv[g_field_rb]);
         PsyqPutDrawEnv(&l_main_drawenv[g_field_rb]);
 
         PsyqClearImage(&(l_main_drawenv[g_field_rb].clip), 0, 0, 0);
@@ -385,6 +385,7 @@ void FieldMainLoop()
 
 void FieldFadeBgDraw()
 {
+    LOG_WARNING("xzdfv");
     if (g_bg_fade_type != FADE_TYPE_NONE)
     {
         g_field_rb += 0x1;
@@ -392,7 +393,7 @@ void FieldFadeBgDraw()
 
         FadeBgUpdate();
 
-        PsyqPutDispEnv(&l_main_dispenv[g_field_rb]);
+        PsyqPutDispEnv(&g_main_dispenv[g_field_rb]);
         PsyqPutDrawEnv(&l_main_drawenv[g_field_rb]);
         PsyqDrawOTag(&g_fade_ot[g_field_rb]);
     }
@@ -464,8 +465,8 @@ void FieldLoadMimToVram()
 
 void FieldInitEnv()
 {
-    PsyqSetDefDispEnv(&l_main_dispenv[0x0], 0, 0xe8, 0x140, 0xf0);
-    PsyqSetDefDispEnv(&l_main_dispenv[0x1], 0,    0, 0x140, 0xf0);
+    PsyqSetDefDispEnv(&g_main_dispenv[0x0], 0, 0xe8, 0x140, 0xf0);
+    PsyqSetDefDispEnv(&g_main_dispenv[0x1], 0,    0, 0x140, 0xf0);
 
     PsyqSetDefDrawEnv(&l_main_drawenv[0x0], 0, 0x8, 0x140, 0xe0);
     l_main_drawenv[0x0].dtd = 0x1;
@@ -475,7 +476,7 @@ void FieldInitEnv()
     l_main_drawenv[0x1].dtd = 0x1;
     l_main_drawenv[0x1].isbg = 0;
 
-    PsyqPutDispEnv(&l_main_dispenv[0]);
+    PsyqPutDispEnv(&g_main_dispenv[0]);
     PsyqPutDrawEnv(&l_main_drawenv[0]);
 }
 

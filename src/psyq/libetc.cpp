@@ -1,5 +1,6 @@
 #include "libetc.h"
 #include "system/logger.h"
+#include "psyq/psxgpu.h"
 #include "ofUtils.h"
 #include <thread>
 
@@ -24,8 +25,9 @@ void ThreadMain()
         last_update_micros = now;
         counter_micros += delta;
 
-        if (counter_micros >= vsync_ntsc)
+        if ((counter_micros >= vsync_ntsc) && (g_gpu_vsync == true))
         {
+            g_gpu_vsync = false;
             counter_micros -= vsync_ntsc;
             if (l_vsync_callback) l_vsync_callback();
         }

@@ -79,3 +79,4 @@ extern u32 g_field_dat_base_addr;
 extern u16 g_field_map_id;
 extern std::vector<u8> g_field_random;
 extern u16 g_field_rb;
+extern DISPENV g_main_dispenv[0x2];

@@ -14,6 +14,7 @@ std::vector<std::unique_ptr<OTag>> g_gpu_cmd;
 std::vector<OTag*> g_gpu_queue;
 std::mutex g_gpu_mutex;
 std::condition_variable g_gpu_cv;
+bool g_gpu_vsync = false;
 
 // rendering settings
 bool g_rendering_disp_enable = false;
