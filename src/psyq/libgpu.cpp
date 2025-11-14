@@ -71,8 +71,6 @@ TIM_IMAGE* PsyqReadTim(TIM_IMAGE* timimg)
 
 void PsyqLoadImage(SRECT* rect, u8* data)
 {
-    std::lock_guard<std::mutex> lock(g_gpu_mutex);
-
     auto draw = std::make_unique<VRAM_LOAD>();
     draw->type = GPU_VRAM_LOAD;
     draw->data = data;
@@ -106,8 +104,6 @@ u16 PsyqLoadTPage(u8* data, int tp, int abr, int x, int y, int w, int h)
 
 void PsyqClearImage(SRECT* rect, u8 r, u8 g, u8 b)
 {
-    std::lock_guard<std::mutex> lock(g_gpu_mutex);
-
     auto draw = std::make_unique<VRAM_CLEAR>();
     draw->type = GPU_VRAM_CLEAR;
     draw->r = r;
@@ -125,8 +121,6 @@ void PsyqClearImage(SRECT* rect, u8 r, u8 g, u8 b)
 
 void PsyqMoveImage(SRECT* rect, int x, int y)
 {
-    std::lock_guard<std::mutex> lock(g_gpu_mutex);
-
     auto draw = std::make_unique<VRAM_MOVE>();
     draw->type = GPU_VRAM_MOVE;
     draw->x = x;
@@ -143,16 +137,9 @@ void PsyqMoveImage(SRECT* rect, int x, int y)
 
 s32 PsyqDrawSync(s32 mode)
 {
-    std::unique_lock<std::mutex> lock(g_gpu_mutex);
+    AppUpdate();
 
-    if (mode == 0)
-    {
-        g_gpu_cv.wait(lock, [] {
-            return g_gpu_queue.size() == 0;
-        });
-    }
-
-    return (s32)g_gpu_queue.size();
+    return g_gpu_queue.size();
 }
 
 
@@ -217,8 +204,6 @@ void PsyqSetDrawEnv(DR_ENV* dr_env, DRAWENV* env)
 
 DISPENV* PsyqPutDispEnv(DISPENV* env)
 {
-    std::lock_guard<std::mutex> lock(g_gpu_mutex);
-
     auto draw = std::make_unique<DISP_ENV>();
     draw->type = GPU_DISP_ENV;
     draw->env = *env;
@@ -232,8 +217,6 @@ DISPENV* PsyqPutDispEnv(DISPENV* env)
 
 DRAWENV* PsyqPutDrawEnv(DRAWENV* env)
 {
-    std::lock_guard<std::mutex> lock(g_gpu_mutex);
-
     auto draw = std::make_unique<DR_ENV>();
     PsyqSetDrawEnv(draw.get(), env);
     g_gpu_queue.push_back(draw.get());
@@ -257,8 +240,6 @@ void PsyqSetDrawMode(DR_MODE* p, int dfe, int dtd, int tpage, SRECT* tw)
 
 void PsyqSetDispMask(int mask)
 {
-    std::lock_guard<std::mutex> lock(g_gpu_mutex);
-
     auto draw = std::make_unique<DISP_ENABLE>();
     draw->type = GPU_DISP_ENABLE;
     draw->enable = (mask != 0) ? true : false;
@@ -304,8 +285,6 @@ OTag* PsyqClearOTag(OTag* ot, s32 n)
 
 void PsyqDrawOTag(OTag* ot)
 {
-    std::lock_guard<std::mutex> lock(g_gpu_mutex);
-
     g_gpu_queue.push_back(ot);
 }
 

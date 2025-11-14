@@ -154,9 +154,6 @@
     <ClCompile Include="src\psyq\libpad.cpp">
       <Filter>src\psyq</Filter>
     </ClCompile>
-    <ClCompile Include="src\psyq\libetc.cpp">
-      <Filter>src\psyq</Filter>
-    </ClCompile>
     <ClCompile Include="src\ffvii\field\fade.cpp">
       <Filter>src\field</Filter>
     </ClCompile>
@@ -368,9 +365,6 @@
     </ClInclude>
     <ClInclude Include="src\system\logger.h">
       <Filter>src\system</Filter>
-    </ClInclude>
-    <ClInclude Include="src\psyq\libetc.h">
-      <Filter>src\psyq</Filter>
     </ClInclude>
     <ClInclude Include="src\ffvii\field\fade.h">
       <Filter>src\field</Filter>

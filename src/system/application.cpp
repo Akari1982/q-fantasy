@@ -8,6 +8,19 @@
 
 
 
+void AppUpdate()
+{
+    if (ofGetCurrentWindow()->getWindowShouldClose())
+    {
+        std::exit(EXIT_SUCCESS);
+    }
+
+    ofGetMainLoop()->loopOnce();
+    ofGetMainLoop()->pollEvents();
+}
+
+
+
 void Application::setup()
 {
     ofSetLogLevel(OF_LOG_WARNING);
@@ -156,8 +169,6 @@ void Application::draw()
     g_display_shader.setUniformMatrix4f("g_matrix", projection);
     mesh.draw();
     g_display_shader.end();
-
-    g_gpu_vsync = true;
 
     gui.begin(); //required to call this at beginning
 

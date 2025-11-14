@@ -5,6 +5,10 @@
 
 
 
+void AppUpdate();
+
+
+
 class Application : public ofBaseApp
 {
 public:

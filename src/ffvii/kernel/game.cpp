@@ -7,7 +7,6 @@
 #include "field/field.h"
 #include "psyq/libgte.h"
 #include "psyq/libgpu.h"
-#include "psyq/libetc.h"
 #include "psyq/libspu.h"
 #include "system/logger.h"
 
