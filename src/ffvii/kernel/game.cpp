@@ -13,8 +13,6 @@
 
 
 
-u16 g_bg_render = BG_RENDER_NONE;
-
 u16 g_gamestate = GAME_STATE_NONE;
 u16 g_gamestate_prev = GAME_STATE_NONE;
 
@@ -25,7 +23,6 @@ void GameInitKernel();
 void GameInitAkaoEngine();
 void GameInitNewGame();
 void GameInitFieldFromSaveMap();
-void GameBackgroundRender();
 
 
 
@@ -79,11 +76,7 @@ void GameMain()
 
 void GameInitBase()
 {
-    PsyqStopCallback();
-    PsyqResetCallback();
     PsyqSpuInit();
-
-    PsyqVsyncCallback(GameBackgroundRender);
 
     PsyqSetDispMask(0);
     PsyqInitGeom();
@@ -167,14 +160,4 @@ void GameInitFieldFromSaveMap()
     g_gamestate_prev = GAME_STATE_FIELD;
 
     g_field_map_id = 0x74;
-}
-
-
-
-void GameBackgroundRender()
-{
-    switch (g_bg_render)
-    {
-        case BG_RENDER_FADE: FieldFadeBgDraw(); break;
-    }
 }

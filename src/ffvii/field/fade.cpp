@@ -15,7 +15,6 @@ struct FadePoly
 FadePoly l_fade[0x2];
 
 OTag g_fade_ot[0x2];
-u8 g_bg_fade_type = FADE_TYPE_NONE;
 
 
 
@@ -85,7 +84,7 @@ void FadeSetPolyMonochrome(u8 gray)
 
 
 
-void FadeSetPolyRGBGradual(u8 r, u8 g, u8 b)
+void FadeSetPolyRGBGradual(u16 r, u16 g, u16 b)
 {
     PsyqClearOTagR(&g_fade_ot[g_field_rb], 0x1);
 
@@ -180,40 +179,6 @@ void FadeSetPolyRGBInterpolate()
 
 
 
-void FadeBgUpdate()
-{
-    if (g_bg_fade_type == FADE_TYPE_BG_SLOW_SUB)
-    {
-        g_field_control.fade_steps += 0x1;
-
-        if (g_field_control.fade_steps == 0x22)
-        {
-            g_field_control.fade_type = FADE_TYPE_NONE;
-            g_bg_render = BG_RENDER_NONE;
-            g_bg_fade_type = FADE_TYPE_NONE;
-        }
-
-        FadeSetDrawMode(0x2);
-        FadeSetPolyMonochrome(0x10);
-    }
-    else // FADE_TYPE_BG_FAST_SUB
-    {
-        g_field_control.fade_steps += 0x1;
-
-        if (g_field_control.fade_steps == 0x12)
-        {
-            g_field_control.fade_type = FADE_TYPE_NONE;
-            g_bg_render = BG_RENDER_NONE;
-            g_bg_fade_type = FADE_TYPE_NONE;
-        }
-
-        FadeSetDrawMode(0x2);
-        FadeSetPolyMonochrome(0x20);
-    }
-}
-
-
-
 void FadeUpdate()
 {
     switch (g_field_control.fade_type)
@@ -250,7 +215,6 @@ void FadeUpdate()
             if (g_field_control.fade_steps == 0x22)
             {
                 g_field_control.fade_type = FADE_TYPE_NONE;
-                g_bg_render = BG_RENDER_NONE;
             }
             else
             {
@@ -337,7 +301,6 @@ void FadeUpdate()
             if (g_field_control.fade_steps == 0x12)
             {
                 g_field_control.fade_type = FADE_TYPE_NONE;
-                g_bg_render = BG_RENDER_NONE;
             }
             else
             {

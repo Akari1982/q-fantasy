@@ -121,6 +121,13 @@ void FieldCorruptedFilesCheck()
 
 void FieldMain()
 {
+    PsyqClearOTagR(&l_field_render_data[0].ot_fade_drawenv, 0x1);
+    PsyqClearOTagR(&l_field_render_data[1].ot_fade_drawenv, 0x1);
+    PsyqSetDrawEnv(&l_field_render_data[0].fade_drawenv, &l_main_drawenv[0]);
+    PsyqSetDrawEnv(&l_field_render_data[1].fade_drawenv, &l_main_drawenv[1]);
+    PsyqAddPrim(&l_field_render_data[0].ot_fade_drawenv, &l_field_render_data[0].fade_drawenv);
+    PsyqAddPrim(&l_field_render_data[1].ot_fade_drawenv, &l_field_render_data[1].fade_drawenv);
+
     PsyqSetDefDrawEnv(&l_drawenv[0], 0x0, 0x8, 0x140, 0xe0);
     l_drawenv[0].dtd = 0x1;
     l_drawenv[0].isbg = 0;
@@ -128,12 +135,12 @@ void FieldMain()
     l_drawenv[1].dtd = 0x1;
     l_drawenv[1].isbg = 0;
 
-    PsyqClearOTagR(&l_field_render_data[0].ot_scene_drenv, 0x1);
-    PsyqClearOTagR(&l_field_render_data[1].ot_scene_drenv, 0x1);
-    PsyqSetDrawEnv(&l_field_render_data[0].scene_drenv, &l_drawenv[0]);
-    PsyqSetDrawEnv(&l_field_render_data[1].scene_drenv, &l_drawenv[1]);
-    PsyqAddPrim(&l_field_render_data[0].ot_scene_drenv, &l_field_render_data[0].scene_drenv);
-    PsyqAddPrim(&l_field_render_data[1].ot_scene_drenv, &l_field_render_data[1].scene_drenv);
+    PsyqClearOTagR(&l_field_render_data[0].ot_scene_drawenv, 0x1);
+    PsyqClearOTagR(&l_field_render_data[1].ot_scene_drawenv, 0x1);
+    PsyqSetDrawEnv(&l_field_render_data[0].scene_drawenv, &l_drawenv[0]);
+    PsyqSetDrawEnv(&l_field_render_data[1].scene_drawenv, &l_drawenv[1]);
+    PsyqAddPrim(&l_field_render_data[0].ot_scene_drawenv, &l_field_render_data[0].scene_drawenv);
+    PsyqAddPrim(&l_field_render_data[1].ot_scene_drawenv, &l_field_render_data[1].scene_drawenv);
 
     // It's not nessesary to call init every time field is loading
     // but original code do it.
@@ -165,8 +172,6 @@ void FieldMain()
 
                 g_field_control.fade_type = FADE_TYPE_BG_SLOW_SUB;
                 g_field_control.fade_steps = 0;
-                g_bg_fade_type = FADE_TYPE_BG_SLOW_SUB;
-                g_bg_render = BG_RENDER_FADE;
             }
         }
 
@@ -175,18 +180,20 @@ void FieldMain()
             FieldLoadMimDatFiles();
         }
 
-        while (g_bg_render != BG_RENDER_NONE) {}
-        while (PsyqDrawSync(0x1) != 0) {}
+        // in real game background fade rendering processed in separate vsync thread
+        // there are few variables that enable or disable this update
+        while (g_field_control.fade_type != FADE_TYPE_NONE) FieldFadeBgDraw();
 
-        // if prev state not 0xd menu set fade out
+        PsyqDrawSync(0);
+
         if (g_gamestate_prev != 0xd)
         {
-            //g_field_control.fade_type = FADE_TYPE_DIS_GRAD_SUB;
-            //g_field_control.fade_steps = 0x100;
-            //g_field_control.fade_step = 0x10;
-            //g_field_control.fade_r = 0x0;
-            //g_field_control.fade_g = 0x0;
-            //g_field_control.fade_b = 0x0;
+            g_field_control.fade_type = FADE_TYPE_DIS_GRAD_SUB;
+            g_field_control.fade_steps = 0x100;
+            g_field_control.fade_step = 0x10;
+            g_field_control.fade_r = 0x0;
+            g_field_control.fade_g = 0x0;
+            g_field_control.fade_b = 0x0;
         }
 
         if ((g_gamestate_prev != 0x5) && (g_gamestate_prev != 0xd)) // if was not nemu
@@ -214,20 +221,6 @@ void FieldMain()
         if (g_field_control.cmd == FIELD_CMD_MAP)
         {
             g_field_map_id = g_field_control.arg;
-
-            if ((g_field_map_id > 0x0) && (g_field_map_id < 0x40))
-            {
-                g_gamestate = GAME_STATE_WORLDMAP;
-                FadeCopyScreen();
-
-                g_field_control.fade_type = FADE_TYPE_BG_SLOW_SUB;
-                g_field_control.fade_steps = 0;
-                g_bg_fade_type = FADE_TYPE_BG_SLOW_SUB;
-                g_bg_render = BG_RENDER_FADE;
-
-                PsyqVSync(0);
-                return;
-            }
         }
     }
 }
@@ -369,9 +362,9 @@ void FieldMainLoop()
 
         if (g_field_control.disable_render == 0)
         {
-            PsyqDrawOTag(&render_data.ot_scene_drenv);
+            PsyqDrawOTag(&render_data.ot_scene_drawenv);
             PsyqDrawOTag(render_data.ot_scene + 0x1000 - 0x1);
-            //PsyqDrawOTag(&render_data.ot_fade_drenv);
+            PsyqDrawOTag(&render_data.ot_fade_drawenv);
 
             if (g_field_control.fade_type != FADE_TYPE_NONE)
             {
@@ -385,18 +378,16 @@ void FieldMainLoop()
 
 void FieldFadeBgDraw()
 {
-    LOG_WARNING("xzdfv");
-    if (g_bg_fade_type != FADE_TYPE_NONE)
-    {
-        g_field_rb += 0x1;
-        g_field_rb &= 0x1;
+    g_field_rb += 0x1;
+    g_field_rb &= 0x1;
 
-        FadeBgUpdate();
+    FadeUpdate();
 
-        PsyqPutDispEnv(&g_main_dispenv[g_field_rb]);
-        PsyqPutDrawEnv(&l_main_drawenv[g_field_rb]);
-        PsyqDrawOTag(&g_fade_ot[g_field_rb]);
-    }
+    PsyqDrawSync(0);
+
+    PsyqPutDispEnv(&g_main_dispenv[g_field_rb]);
+    PsyqPutDrawEnv(&l_main_drawenv[g_field_rb]);
+    PsyqDrawOTag(&g_fade_ot[g_field_rb]);
 }
 
 
@@ -496,13 +487,13 @@ void FieldUpdateEnv()
     {
         drawenv1->ofs[0] = ofsx;
         drawenv1->ofs[1] = ofsy;
-        PsyqSetDrawEnv(&l_field_render_data[0x0].scene_drenv, drawenv1);
+        PsyqSetDrawEnv(&l_field_render_data[0x0].scene_drawenv, drawenv1);
     }
     else
     {
         drawenv2->ofs[0] = ofsx;
         drawenv2->ofs[1] = ofsy + 0xe8;
-        PsyqSetDrawEnv(&l_field_render_data[0x1].scene_drenv, drawenv2);
+        PsyqSetDrawEnv(&l_field_render_data[0x1].scene_drawenv, drawenv2);
     }
 }
 

@@ -50,8 +50,10 @@ struct FieldRenderData
 {
     // scene
     OTag ot_scene[0x1000]; // main scene
-    OTag ot_scene_drenv;
-    DR_ENV scene_drenv;
+    OTag ot_scene_drawenv;
+    DR_ENV scene_drawenv;
+    OTag ot_fade_drawenv;
+    DR_ENV fade_drawenv;
 
     // background
     SPRT_16 bg_1[0x9c4]; // poly 1st and 2nd layer
