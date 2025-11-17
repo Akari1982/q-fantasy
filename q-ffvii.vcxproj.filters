@@ -157,6 +157,9 @@
     <ClCompile Include="src\ffvii\field\fade.cpp">
       <Filter>src\field</Filter>
     </ClCompile>
+    <ClCompile Include="src\ffvii\battle\swirl.cpp">
+      <Filter>src\battle</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="third_party\ofxImGui\src\BaseEngine.h">
@@ -369,6 +372,9 @@
     <ClInclude Include="src\ffvii\field\fade.h">
       <Filter>src\field</Filter>
     </ClInclude>
+    <ClInclude Include="src\ffvii\battle\swirl.h">
+      <Filter>src\battle</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="third_party">
@@ -421,6 +427,9 @@
     </Filter>
     <Filter Include="src\debug">
       <UniqueIdentifier>{726265c5-4bee-40c6-8028-42cf452f182f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\battle">
+      <UniqueIdentifier>{e2a58bfd-2b10-4bc3-8d72-2ba3eb0614fe}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

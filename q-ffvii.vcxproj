@@ -107,6 +107,7 @@
     <PostBuildEvent />
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\ffvii\battle\swirl.cpp" />
     <ClCompile Include="src\ffvii\debug\browser_akao.cpp" />
     <ClCompile Include="src\ffvii\debug\browser_ending.cpp" />
     <ClCompile Include="src\ffvii\debug\browser_field.cpp" />
@@ -161,6 +162,7 @@
     <ClCompile Include="third_party\ofxImGui\src\ofxImGuiLoggerChannel.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\ffvii\battle\swirl.h" />
     <ClInclude Include="src\ffvii\debug\browser_akao.h" />
     <ClInclude Include="src\ffvii\debug\browser_ending.h" />
     <ClInclude Include="src\ffvii\debug\browser_field.h" />

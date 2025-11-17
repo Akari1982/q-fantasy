@@ -11,7 +11,10 @@ void PsyqPushMatrix();
 
 void PsyqSetRotMatrix( const MATRIX* m );
 void PsyqSetTransMatrix( const MATRIX* m );
-void PsyqSetGeomOffset
+void PsyqSetGeomOffset(s32 ofx, s32 ofy);
 void PsyqSetGeomScreen( s32 );
+
+MATRIX* PsyqRotMatrix(SVECTOR* r, MATRIX* m);
+MATRIX* PsyqScaleMatrix(MATRIX* m, VECTOR* v);
 
 s32 PsyqRotTransPers( SVECTOR* v0, DVECTOR* sxy, u32* p, u32* flag );
