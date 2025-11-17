@@ -3,4 +3,4 @@
 
 
 void SwirlInit();
-void SwirlRender();
+bool SwirlRender();

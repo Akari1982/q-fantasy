@@ -10,6 +10,8 @@
 #include "psyq/libgte.h"
 #include "system/logger.h"
 
+#include "battle/swirl.h"
+
 #include <vector>
 
 
@@ -172,6 +174,9 @@ void FieldMain()
 
                 g_field_control.fade_type = FADE_TYPE_BG_SLOW_SUB;
                 g_field_control.fade_steps = 0;
+
+                SwirlInit();
+                while (SwirlRender() != false) {};
             }
         }
 

@@ -139,7 +139,7 @@ s32 PsyqDrawSync(s32 mode)
 {
     AppUpdate();
 
-    return g_gpu_queue.size();
+    return (s32)g_gpu_queue.size();
 }
 
 

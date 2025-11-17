@@ -1,4 +1,5 @@
 #include "swirl.h"
+#include "field/field.h"
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"
 
@@ -52,11 +53,6 @@ void SwirlUpdate()
                 swirl.poly[x][y].b0 = l_swirl_col;
                 swirl.poly[x][y].code = l_swirl[rb].poly[0][0].code;
             }
-        }
-
-        if (l_swirl_step >= 0x4f)
-        {
-            //g_bg_render = BG_RENDER_NONE;
         }
     }
     else
@@ -114,7 +110,7 @@ void SwirlUpdate()
 
 
 
-void SwirlRender()
+bool SwirlRender()
 {
     l_swirl_is_render += 0x1;
 
@@ -123,14 +119,16 @@ void SwirlRender()
         PsyqDrawOTag(&l_swirl_ot);
         SwirlUpdate();
     }
+
+    if (l_swirl_step >= 0x4f) return false;
+
+    return true;
 }
 
 
 
 void SwirlInit()
 {
-    //g_bg_render = BG_RENDER_NONE;
-
     PsyqVSync(0);
 
     //PsyqGetDispenv(&l_swirl_dispenv);
@@ -153,7 +151,7 @@ void SwirlInit()
     l_swirl_is_render = 0;
 
     // if current screen 0 then we copy it's content to screen 1
-//    if (g_field_rb == 0)
+    if (g_field_rb == 0)
     {
         SRECT rect;
         rect.x = 0;
@@ -244,7 +242,7 @@ void SwirlInit()
         }
     }
 
-    //func14a00(&l_swirl[0x1], &l_swirl[0x0], 0xaf4); // copy to second buffer
+    memcpy(&l_swirl[0x1], &l_swirl[0x0], 0xaf4);
 
     SwirlUpdate();
 
