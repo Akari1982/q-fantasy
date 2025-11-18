@@ -28,7 +28,12 @@ u32 l_swirl_col;
 
 void SwirlUpdate()
 {
-    //PsyqMoveImage(0x80062d44, 0, 0x8);
+    SRECT rect;
+    rect.x = 0;
+    rect.y = 0xf0;
+    rect.w = 0x140;
+    rect.h = 0xe0;
+    PsyqMoveImage(&rect, 0, 0x8);
 
     l_swirl_rb += 0x1;
     u32 rb = l_swirl_rb & 0x1;
@@ -66,10 +71,11 @@ void SwirlUpdate()
         }
     }
 
-    //PsyqRotMatrix(&l_swirl_rot_vec, 0x80063028);
-    //PsyqScaleMatrix(0x80063028, &l_swirl_scale_vec);
-    //PsyqSetRotMatrix(0x80063028);
-    //PsyqSetTransMatrix(0x80063028);
+    MATRIX m;
+    PsyqRotMatrix(&l_swirl_rot_vec, &m);
+    PsyqScaleMatrix(&m, &l_swirl_scale_vec);
+    PsyqSetRotMatrix(&m);
+    PsyqSetTransMatrix(&m);
 
     u32 scale = l_swirl_scale;
     l_swirl_scale += 0xa;
@@ -82,7 +88,9 @@ void SwirlUpdate()
     {
         for(int x = 0; x < 0xb; ++x)
         {
-            //PsyqRotTransPers(&l_swirl_vec[x][y], &l_swirl_pos[x][y], SP + 0x18, SP + 0x1c);
+            u32 pt;
+            u32 flag;
+            PsyqRotTransPers(&l_swirl_vec[x][y], &l_swirl_pos[x][y], &pt, &flag);
         }
     }
 
@@ -119,6 +127,8 @@ bool SwirlRender()
         PsyqDrawOTag(&l_swirl_ot);
         SwirlUpdate();
     }
+
+    PsyqDrawSync(0);
 
     if (l_swirl_step >= 0x4f) return false;
 
@@ -163,18 +173,15 @@ void SwirlInit()
 
     // add transparency flag because we will use it as texture and do blending
     SRECT rect1, rect2;
-    u8* temp1;
-    u8* temp2;
+    static u32 temp[0x2e40];
     for (int i = 0; i < 0x4; ++i)
     {
         rect2 = rect1;
-        temp2 = temp1;
 
         rect1.x = 0;
         rect1.y = 0xf0 + i * 0x4a;
         rect1.w = 0x140;
         rect1.h = 0x4a;
-        //temp1 = (i & 0x1) ? 0x801b0000 : 0x801b8000;
 
         PsyqDrawSync(0);
 
@@ -182,14 +189,14 @@ void SwirlInit()
         {
             for(int j = 0; j < 0x2e40; ++j)
             {
-//                [temp2 + j * 0x4] = w(w[temp2 + j * 0x4] | 0x80008000); // add transparency flag
+                temp[j] |= 0x80008000; // add transparency flags
             }
-            PsyqLoadImage(&rect2, temp2);
+            PsyqLoadImage(&rect2, (u8*)temp);
         }
 
         if (i < 0x3)
         {
-            //PsyqStoreImage(&rect1, temp1);
+            PsyqStoreImage(&rect1, (u8*)temp);
         }
     }
 
@@ -245,6 +252,4 @@ void SwirlInit()
     memcpy(&l_swirl[0x1], &l_swirl[0x0], 0xaf4);
 
     SwirlUpdate();
-
-    //g_bg_render = BG_RENDER_BATTLE_SWIRL; // set render func to 3 (swirl render)
 }

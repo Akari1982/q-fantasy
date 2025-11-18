@@ -172,11 +172,11 @@ void FieldMain()
             {
                 FadeCopyScreen();
 
-                g_field_control.fade_type = FADE_TYPE_BG_SLOW_SUB;
+                //g_field_control.fade_type = FADE_TYPE_BG_SLOW_SUB;
                 g_field_control.fade_steps = 0;
 
                 SwirlInit();
-                while (SwirlRender() != false) {};
+                while (SwirlRender() == true) {};
             }
         }
 
@@ -193,7 +193,7 @@ void FieldMain()
 
         if (g_gamestate_prev != 0xd)
         {
-            g_field_control.fade_type = FADE_TYPE_DIS_GRAD_SUB;
+            //g_field_control.fade_type = FADE_TYPE_DIS_GRAD_SUB;
             g_field_control.fade_steps = 0x100;
             g_field_control.fade_step = 0x10;
             g_field_control.fade_r = 0x0;

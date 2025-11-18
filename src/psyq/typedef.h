@@ -161,8 +161,8 @@ struct MATRIX
 
 struct SRECT
 {
-    s16 x;
-    s16 y;
-    s16 w;
-    s16 h;
+    s16 x = 0;
+    s16 y = 0;
+    s16 w = 0;
+    s16 h = 0;
 };

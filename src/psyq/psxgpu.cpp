@@ -131,6 +131,10 @@ void OTag::execute()
     {
         ((VRAM_MOVE*)this)->execute();
     }
+    else if (type == GPU_VRAM_STORE)
+    {
+        ((VRAM_STORE*)this)->execute();
+    }
     else if (type == GPU_POLY_FT4)
     {
         ((POLY_FT4*)this)->execute();
@@ -403,8 +407,8 @@ void VRAM_CLEAR::execute()
     clear_value |= ((r >> 0x3) & 0x1f) << 0x0;
     clear_value |= ((g >> 0x3) & 0x1f) << 0x5;
     clear_value |= ((b >> 0x3) & 0x1f) << 0xa;
-    GLuint textureID = g_vram_texture.getTextureData().textureID;
-    glClearTexSubImage(textureID, 0, rect.x, rect.y, 0, rect.w, rect.h, 1, GL_RED_INTEGER, GL_UNSIGNED_SHORT, &clear_value);
+    GLuint id = g_vram_texture.getTextureData().textureID;
+    glClearTexSubImage(id, 0, rect.x, rect.y, 0, rect.w, rect.h, 1, GL_RED_INTEGER, GL_UNSIGNED_SHORT, &clear_value);
 }
 
 
@@ -434,4 +438,12 @@ void VRAM_MOVE::execute()
     g_vram_texture.bind();
     glCopyTexSubImage2D(GL_TEXTURE_2D, 0, x, y, rect.x, rect.y, rect.w, rect.h);
     g_vram_texture.unbind();
+}
+
+
+
+void VRAM_STORE::execute()
+{
+    GLuint id = g_vram_texture.getTextureData().textureID;
+    glGetTextureSubImage(id, 0, rect.x, rect.y, 0, rect.w, rect.h, 1, GL_RED_INTEGER, GL_UNSIGNED_SHORT, rect.w * rect.h * 0x2, data);
 }

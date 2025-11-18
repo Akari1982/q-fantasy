@@ -135,6 +135,21 @@ void PsyqMoveImage(SRECT* rect, int x, int y)
 
 
 
+void PsyqStoreImage(SRECT* rect, u8* data)
+{
+    auto draw = std::make_unique<VRAM_STORE>();
+    draw->type = GPU_VRAM_STORE;
+    draw->data = data;
+    draw->rect.x = rect->x;
+    draw->rect.y = rect->y;
+    draw->rect.w = rect->w;
+    draw->rect.h = rect->h;
+    g_gpu_queue.push_back(draw.get());
+    g_gpu_cmd.emplace_back(std::move(draw));
+}
+
+
+
 s32 PsyqDrawSync(s32 mode)
 {
     AppUpdate();

@@ -11,16 +11,17 @@
 #define GPU_VRAM_CLEAR  0x1
 #define GPU_VRAM_LOAD   0x2
 #define GPU_VRAM_MOVE   0x3
-#define GPU_POLY_FT4    0x4
-#define GPU_LINE_F2     0x5
-#define GPU_TILE        0x6
-#define GPU_SPRT        0x7
-#define GPU_SPRT_16     0x8
-#define GPU_DR_MODE     0x9
-#define GPU_DR_ENV      0xa
-#define GPU_DISP_ENV    0xb
-#define GPU_DISP_ENABLE 0xc
-#define GPU_TERMINATE   0xd
+#define GPU_VRAM_STORE  0x4
+#define GPU_POLY_FT4    0x5
+#define GPU_LINE_F2     0x6
+#define GPU_TILE        0x7
+#define GPU_SPRT        0x8
+#define GPU_SPRT_16     0x9
+#define GPU_DR_MODE     0xa
+#define GPU_DR_ENV      0xb
+#define GPU_DISP_ENV    0xc
+#define GPU_DISP_ENABLE 0xd
+#define GPU_TERMINATE   0xe
 
 struct TIM_IMAGE
 {
@@ -181,6 +182,14 @@ struct VRAM_MOVE : public OTag
     void execute();
 };
 
+struct VRAM_STORE : public OTag
+{
+    u8* data;
+    SRECT rect;
+
+    void execute();
+};
+
 
 
 int PsyqOpenTim(std::vector<u8>::const_iterator ptr);
@@ -190,6 +199,7 @@ void PsyqLoadImage(SRECT* rect, u8* data);
 u16 PsyqLoadTPage(u8* data, int tp, int abr, int x, int y, int w, int h);
 void PsyqClearImage(SRECT* rect, u8 r, u8 g, u8 b);
 void PsyqMoveImage(SRECT* rect, int x, int y);
+void PsyqStoreImage(SRECT* rect, u8* data);
 
 s32 PsyqDrawSync(s32 mode);
 s32 PsyqVSync(s32 mode);
