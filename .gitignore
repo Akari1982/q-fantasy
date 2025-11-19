@@ -1,8 +1,10 @@
 /ffix/data/
 /ffix/*.exe
+/ffix/*.pdb
 /ffix/obj
 /ffvii/data/
 /ffvii/*.exe
+/ffvii/*.pdb
 /ffvii/obj
 /.vs
 /third_party/of_v0.12.0_vs_release/libs/openFrameworksCompiled/lib/vs
