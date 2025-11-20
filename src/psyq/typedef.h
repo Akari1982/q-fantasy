@@ -13,31 +13,31 @@ typedef int16_t s16;
 typedef uint32_t u32;
 typedef int32_t s32;
 
-u8 READ_LE_U8( const void* ptr );
-s8 READ_LE_S8( const void* ptr );
-u16 READ_LE_U16( const void* ptr );
-s16 READ_LE_S16( const void* ptr );
-u32 READ_LE_U32( const void* ptr );
-s32 READ_LE_S32( const void* ptr );
-u8 READ_LE_U8( const std::vector< u8 >::const_iterator& input );
-s8 READ_LE_S8( const std::vector< u8 >::const_iterator& input );
-u16 READ_LE_U16( const std::vector< u8 >::const_iterator& input );
-s16 READ_LE_S16( const std::vector< u8 >::const_iterator& input );
-u32 READ_LE_U32( const std::vector< u8 >::const_iterator& input );
-s32 READ_LE_S32( const std::vector< u8 >::const_iterator& input );
-u8 READ_LE_U8( const std::span<u8>::iterator& input );
-s8 READ_LE_S8( const std::span<u8>::iterator& input );
-u16 READ_LE_U16( const std::span<u8>::iterator& input );
-s16 READ_LE_S16( const std::span<u8>::iterator& input );
-u32 READ_LE_U32( const std::span<u8>::iterator& input );
-s32 READ_LE_S32( const std::span<u8>::iterator& input );
+u8 READ_LE_U8(const void* ptr);
+s8 READ_LE_S8(const void* ptr);
+u16 READ_LE_U16(const void* ptr);
+s16 READ_LE_S16(const void* ptr);
+u32 READ_LE_U32(const void* ptr);
+s32 READ_LE_S32(const void* ptr);
+u8 READ_LE_U8(const std::vector< u8 >::const_iterator& input);
+s8 READ_LE_S8(const std::vector< u8 >::const_iterator& input);
+u16 READ_LE_U16(const std::vector< u8 >::const_iterator& input);
+s16 READ_LE_S16(const std::vector< u8 >::const_iterator& input);
+u32 READ_LE_U32(const std::vector< u8 >::const_iterator& input);
+s32 READ_LE_S32(const std::vector< u8 >::const_iterator& input);
+u8 READ_LE_U8(const std::span<u8>::iterator& input);
+s8 READ_LE_S8(const std::span<u8>::iterator& input);
+u16 READ_LE_U16(const std::span<u8>::iterator& input);
+s16 READ_LE_S16(const std::span<u8>::iterator& input);
+u32 READ_LE_U32(const std::span<u8>::iterator& input);
+s32 READ_LE_S32(const std::span<u8>::iterator& input);
 
 
 
 struct DVECTOR
 {
-    DVECTOR() : vx( 0 ), vy( 0 ) {};
-    DVECTOR( s16 x, s16 y ) : vx( x ), vy( y ) {};
+    DVECTOR() : vx(0), vy(0) {};
+    DVECTOR(s16 x, s16 y) : vx(x), vy(y) {};
 
     s16 vx, vy;
 
@@ -50,7 +50,7 @@ struct DVECTOR
         return temp;
     }
 
-    static DVECTOR fromS32( s32 input )
+    static DVECTOR fromS32(s32 input)
     {
         DVECTOR temp;
         temp.vx = input & 0xffff;
@@ -66,10 +66,10 @@ struct sFixedPoint
 
     operator const s32&() const { return value; }
     operator s32& () { return value; }
-    sFixedPoint& operator=( s32 new_val ) { value = new_val; return *this; }
+    sFixedPoint& operator=(s32 new_val) { value = new_val; return *this; }
     s32 getIntegerPart() { return value >> 16; }
 
-    static sFixedPoint fromValue( s32 new_val )
+    static sFixedPoint fromValue(s32 new_val)
     {
         sFixedPoint temp;
         temp.value = new_val;
@@ -85,20 +85,20 @@ struct VECTOR
     sFixedPoint vz;
     s32 pad;
 
-    sFixedPoint operator[]( size_t id ) const
+    sFixedPoint operator[](size_t id) const
     {
-        switch( id )
+        switch(id)
         {
             case 0: return vx;
             case 1: return vy;
             case 2: return vz;
-            default: return sFixedPoint::fromValue( 0 );
+            default: return sFixedPoint::fromValue(0);
         }
     }
 
-    sFixedPoint& operator[]( size_t id )
+    sFixedPoint& operator[](size_t id)
     {
-        switch( id )
+        switch(id)
         {
         case 0: return vx;
         case 1: return vy;
@@ -113,7 +113,7 @@ struct SVECTOR
     s16 vx, vy, vz;
     s16 pad;
 
-    SVECTOR& operator+=( const SVECTOR& rhs )
+    SVECTOR& operator+=(const SVECTOR& rhs)
     {
         vx += rhs.vx;
         vy += rhs.vy;
@@ -121,7 +121,7 @@ struct SVECTOR
         return *this;
     }
 
-    SVECTOR& operator-=( const SVECTOR& rhs )
+    SVECTOR& operator-=(const SVECTOR& rhs)
     {
         vx -= rhs.vx;
         vy -= rhs.vy;
@@ -129,9 +129,9 @@ struct SVECTOR
         return *this;
     }
 
-    s16 operator[]( size_t id ) const
+    s16 operator[](size_t id) const
     {
-        switch( id )
+        switch (id)
         {
             case 0: return vx;
             case 1: return vy;
@@ -140,9 +140,9 @@ struct SVECTOR
         }
     }
 
-    s16& operator[]( size_t id )
+    s16& operator[](size_t id)
     {
-        switch( id )
+        switch (id)
         {
             case 0: return vx;
             case 1: return vy;
@@ -155,8 +155,8 @@ struct SVECTOR
 
 struct MATRIX
 {
-    s16 m[ 3 ][ 3 ]; // 3 x 3 matrix coefficient value
-    s32 t[ 3 ]; // Parallel transfer volume
+    s16 m[3][3] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+    s32 t[3] = {0, 0, 0};
 };
 
 struct SRECT

@@ -484,6 +484,7 @@ void FieldUpdateEnv()
     DRAWENV* drawenv2 = &l_drawenv[0x1];
 
     PsyqSetGeomScreen(l_field_camera.h);
+    PsyqSetGeomOffset(0, 0);
 
     s16 ofsx = l_field_ofs_x - l_field_camera.x + l_debug_ofs_x;
     s16 ofsy = l_field_ofs_y + l_field_camera.y + l_debug_ofs_y;

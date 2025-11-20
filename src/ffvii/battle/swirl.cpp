@@ -9,7 +9,6 @@ struct BattleSwirl
 {
     OTag ot;
     POLY_FT4 poly[0xa][0x7];
-    LINE_F2 line[0xa][0x7];
 };
 BattleSwirl l_swirl[0x2];
 OTag l_swirl_ot;
@@ -113,15 +112,6 @@ void SwirlUpdate()
             poly->y3 = l_swirl_pos[x + 0x1][y + 0x1].vy;
 
             PsyqAddPrim(&swirl.ot, poly);
-
-            LINE_F2* line = &swirl.line[x][y];
-
-            line->x0 = l_swirl_pos[x + 0x0][y + 0x0].vx;
-            line->y0 = l_swirl_pos[x + 0x0][y + 0x0].vy;
-            line->x1 = l_swirl_pos[x + 0x1][y + 0x0].vx;
-            line->y1 = l_swirl_pos[x + 0x1][y + 0x0].vy;
-
-            PsyqAddPrim(&swirl.ot, line);
         }
     }
 }
@@ -256,14 +246,6 @@ void SwirlInit()
             poly->v2 = v + 0x1f;
             poly->u3 = u + 0x1f;
             poly->v3 = v + 0x1f;
-
-            LINE_F2* line = &l_swirl[0].line[x][y];
-
-            PsyqSetLineF2(line);
-            PsyqSetSemiTrans(line, 0x0);
-            line->r0 = 0x80;
-            line->g0 = 0x00;
-            line->b0 = 0x00;
         }
     }
 
