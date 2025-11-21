@@ -64,9 +64,17 @@ void GameMain()
                 {
                     FieldMain();
                 }
+                break;
             }
 
-            //AkaoQuit();
+            if (g_field_control.cmd == FIELD_CMD_RESET)
+            {
+                g_field_control.cmd = FIELD_CMD_NONE;
+
+                AkaoQuit();
+
+                restart = true;
+            }
         }
     }
 }

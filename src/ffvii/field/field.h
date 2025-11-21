@@ -12,6 +12,7 @@
 
 #define FIELD_CMD_NONE 0x0
 #define FIELD_CMD_MAP 0x1
+#define FIELD_CMD_RESET 0xa
 
 
 
@@ -36,6 +37,12 @@ struct FieldControl
     u8 nfade_r_to;
     u8 nfade_g_to;
     u8 nfade_b_to;
+
+    // controller
+    u32 btn_pressed;
+    u32 btn_prev;
+    u32 btn_new;
+    u32 btn_released;
 };
 
 struct FieldCamera

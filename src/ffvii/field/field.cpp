@@ -1,5 +1,6 @@
 #include "field.h"
 #include "field_list.h"
+#include "model.h"
 #include "rain.h"
 #include "fade.h"
 #include "event.h"
@@ -83,7 +84,7 @@ void FieldLoadMimDatFiles();
 void FieldLoadMimToVram();
 void FieldUpdateEnv();
 void FieldCameraAssign();
-void FieldButtonsUpdate();
+u32 FieldButtonsUpdate();
 
 
 
@@ -220,6 +221,12 @@ void FieldMain()
 
         g_gamestate_prev = GAME_STATE_FIELD;
 
+        if (g_field_control.cmd == FIELD_CMD_RESET)
+        {
+            PsyqVSync(0);
+            return;
+        }
+
         if (g_field_control.cmd == FIELD_CMD_MAP)
         {
             g_field_map_id = g_field_control.arg;
@@ -233,6 +240,8 @@ void FieldMainLoop()
 {
     l_field_ofs_x = 0xa0;
     l_field_ofs_y = 0x78;
+
+    FieldModelLoad();
 
     FieldBackgroundInitPoly(l_field_render_data[0].bg_1, l_field_render_data[0].bg_2, l_field_render_data[0].bg_anim, l_field_render_data[0].bg_dm);
     FieldBackgroundInitPoly(l_field_render_data[1].bg_1, l_field_render_data[1].bg_2, l_field_render_data[1].bg_anim, l_field_render_data[1].bg_dm);
@@ -275,9 +284,16 @@ void FieldMainLoop()
         PsyqClearOTagR(render_data.ot_scene, 0x1000);
 
         FieldCameraAssign();
-        FieldButtonsUpdate();
+        l_buttons_state = FieldButtonsUpdate();
 
         FieldUpdateEnv();
+
+        u32 reset_check = BUTTON_START | BUTTON_SELECT | BUTTON_R1 | BUTTON_L1 | BUTTON_R2 | BUTTON_L2;
+        if ((g_field_control.btn_pressed & reset_check) == reset_check)
+        {
+            g_field_control.cmd = FIELD_CMD_RESET;
+            return;
+        }
 
         if (g_field_control.cmd == FIELD_CMD_MAP)
         {
@@ -525,7 +541,15 @@ void FieldCameraAssign()
 
 
 
-void FieldButtonsUpdate()
+u32 FieldButtonsUpdate()
 {
     l_buttons_state = ButtonsGetCurrent();
+
+    u32 prev = g_field_control.btn_pressed;
+    g_field_control.btn_pressed = l_buttons_state;
+    g_field_control.btn_prev = prev;
+    g_field_control.btn_new = (l_buttons_state ^ prev) & l_buttons_state;
+    g_field_control.btn_released = (l_buttons_state ^ prev) & ~l_buttons_state;
+
+    return l_buttons_state;
 }
