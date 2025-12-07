@@ -4,6 +4,7 @@
 #include "rain.h"
 #include "fade.h"
 #include "event.h"
+#include "entity.h"
 #include "kernel/akao.h"
 #include "kernel/game.h"
 #include "kernel/file.h"
@@ -178,7 +179,7 @@ void FieldMain()
             }
         }
 
-        if ((g_gamestate_prev != 0x5) && (g_gamestate_prev != 0xd)) // if was not menu
+        if ((g_gamestate_prev != GAME_STATE_MENU) && (g_gamestate_prev != GAME_STATE_MENU_FUNC))
         {
             FieldLoadMimDatFiles();
         }
@@ -189,7 +190,7 @@ void FieldMain()
 
         PsyqDrawSync(0);
 
-        if (g_gamestate_prev != 0xd)
+        if (g_gamestate_prev != GAME_STATE_MENU_FUNC)
         {
             g_field_control.fade_type = FADE_TYPE_DIS_GRAD_SUB;
             g_field_control.fade_steps = 0x100;
@@ -199,7 +200,7 @@ void FieldMain()
             g_field_control.fade_b = 0x0;
         }
 
-        if ((g_gamestate_prev != 0x5) && (g_gamestate_prev != 0xd)) // if was not nemu
+        if ((g_gamestate_prev != GAME_STATE_MENU) && (g_gamestate_prev != GAME_STATE_MENU_FUNC))
         {
             FieldLoadMimToVram();
         }
@@ -241,36 +242,21 @@ void FieldMainLoop()
     l_field_ofs_x = 0xa0;
     l_field_ofs_y = 0x78;
 
-    FieldModelLoad();
+    if ((g_gamestate_prev != GAME_STATE_MENU) && (g_gamestate_prev != GAME_STATE_MENU_FUNC))
+    {
+        FieldModelLoad();
+    }
+
+    if ((g_gamestate_prev != GAME_STATE_MENU) && (g_gamestate_prev != GAME_STATE_BATTLE) && (g_gamestate_prev != GAME_STATE_MENU_FUNC))
+    {
+        FieldEntityInitPos();
+    }
 
     FieldBackgroundInitPoly(l_field_render_data[0].bg_1, l_field_render_data[0].bg_2, l_field_render_data[0].bg_anim, l_field_render_data[0].bg_dm);
     FieldBackgroundInitPoly(l_field_render_data[1].bg_1, l_field_render_data[1].bg_2, l_field_render_data[1].bg_anim, l_field_render_data[1].bg_dm);
 
-    // debug
-    u32 walkmesh_addr = READ_LE_U32(&g_field_dat[ 0x4 ]) - g_field_dat_base_addr;
-    u32 id_n = READ_LE_U32(&g_field_dat[ walkmesh_addr ]);
-    walkmesh_addr += 0x4;
-    u32 walkmesh_access_addr = walkmesh_addr + id_n * 0x18;
-    field_walkmesh.resize(id_n);
-    field_walkmesh_access.resize(id_n);
-    for (u32 i = 0; i < id_n; ++i)
-    {
-        field_walkmesh[ i ].p1.vx = READ_LE_S16(&g_field_dat[ walkmesh_addr + i * 0x18 + 0x0 ] );
-        field_walkmesh[ i ].p1.vy = READ_LE_S16(&g_field_dat[ walkmesh_addr + i * 0x18 + 0x2 ] );
-        field_walkmesh[ i ].p1.vz = READ_LE_S16(&g_field_dat[ walkmesh_addr + i * 0x18 + 0x4 ] );
-        field_walkmesh[ i ].p2.vx = READ_LE_S16(&g_field_dat[ walkmesh_addr + i * 0x18 + 0x8 ] );
-        field_walkmesh[ i ].p2.vy = READ_LE_S16(&g_field_dat[ walkmesh_addr + i * 0x18 + 0xa ] );
-        field_walkmesh[ i ].p2.vz = READ_LE_S16(&g_field_dat[ walkmesh_addr + i * 0x18 + 0xc ] );
-        field_walkmesh[ i ].p3.vx = READ_LE_S16(&g_field_dat[ walkmesh_addr + i * 0x18 + 0x10 ]);
-        field_walkmesh[ i ].p3.vy = READ_LE_S16(&g_field_dat[ walkmesh_addr + i * 0x18 + 0x12 ]);
-        field_walkmesh[ i ].p3.vz = READ_LE_S16(&g_field_dat[ walkmesh_addr + i * 0x18 + 0x14 ]);
-        field_walkmesh_access[ i ].p1 = READ_LE_U16(&g_field_dat[ walkmesh_access_addr + i * 0x6 + 0x0 ]);
-        field_walkmesh_access[ i ].p2 = READ_LE_U16(&g_field_dat[ walkmesh_access_addr + i * 0x6 + 0x2 ]);
-        field_walkmesh_access[ i ].p3 = READ_LE_U16(&g_field_dat[ walkmesh_access_addr + i * 0x6 + 0x4 ]);
-    }
-
-    FieldRainInit(&l_field_render_data[ 0 ]);
-    FieldRainInit(&l_field_render_data[ 1 ]);
+    FieldRainInit(&l_field_render_data[0]);
+    FieldRainInit(&l_field_render_data[1]);
 
     bool first_frame = true;
 
@@ -285,6 +271,11 @@ void FieldMainLoop()
 
         FieldCameraAssign();
         l_buttons_state = FieldButtonsUpdate();
+
+        if (l_buttons_state == BUTTON_LEFT) l_debug_ofs_x += 0x5;
+        if (l_buttons_state == BUTTON_RIGHT) l_debug_ofs_x -= 0x5;
+        if (l_buttons_state == BUTTON_UP) l_debug_ofs_y += 0x5;
+        if (l_buttons_state == BUTTON_DOWN) l_debug_ofs_y -= 0x5;
 
         FieldUpdateEnv();
 
@@ -307,63 +298,9 @@ void FieldMainLoop()
 
         FadeUpdate();
 
+        FieldEntityDebugAddToRender(render_data.ot_scene, &l_field_camera.m);
+
         while (PsyqDrawSync(0x1) != 0) {}
-
-        // debug
-        {
-            if (l_buttons_state == BUTTON_LEFT) l_debug_ofs_x += 0x5;
-            if (l_buttons_state == BUTTON_RIGHT) l_debug_ofs_x -= 0x5;
-            if (l_buttons_state == BUTTON_UP) l_debug_ofs_y += 0x5;
-            if (l_buttons_state == BUTTON_DOWN) l_debug_ofs_y -= 0x5;
-
-            PsyqPushMatrix();
-            PsyqSetRotMatrix(&l_field_camera.m);
-            PsyqSetTransMatrix(&l_field_camera.m);
-            std::array< LINE_F2, 0x1000 > walkmesh_prim;
-            for (u32 i = 0; i < id_n; ++i)
-            {
-                u32 pt;
-                u32 flag;
-                DVECTOR sxy1, sxy2, sxy3;
-                PsyqRotTransPers(&field_walkmesh[ i ].p1, &sxy1, &pt, &flag);
-                PsyqRotTransPers(&field_walkmesh[ i ].p2, &sxy2, &pt, &flag);
-                PsyqRotTransPers(&field_walkmesh[ i ].p3, &sxy3, &pt, &flag);
-
-                PsyqSetLineF2(&walkmesh_prim[ i * 3 + 0 ]);
-                PsyqSetSemiTrans(&walkmesh_prim[ i * 3 + 0 ], 0);
-                walkmesh_prim[ i * 3 + 0 ].r0 = 0x7f;
-                walkmesh_prim[ i * 3 + 0 ].g0 = 0x0;
-                walkmesh_prim[ i * 3 + 0 ].b0 = 0x0;
-                walkmesh_prim[ i * 3 + 0 ].x0 = sxy1.vx;
-                walkmesh_prim[ i * 3 + 0 ].y0 = sxy1.vy;
-                walkmesh_prim[ i * 3 + 0 ].x1 = sxy2.vx;
-                walkmesh_prim[ i * 3 + 0 ].y1 = sxy2.vy;
-                PsyqAddPrim(&render_data.ot_scene[0], &walkmesh_prim[ i * 3 + 0 ]);
-
-                PsyqSetLineF2(&walkmesh_prim[ i * 3 + 1 ]);
-                PsyqSetSemiTrans(&walkmesh_prim[ i * 3 + 1 ], 0);
-                walkmesh_prim[ i * 3 + 1 ].r0 = 0x7f;
-                walkmesh_prim[ i * 3 + 1 ].g0 = 0x0;
-                walkmesh_prim[ i * 3 + 1 ].b0 = 0x0;
-                walkmesh_prim[ i * 3 + 1 ].x0 = sxy1.vx;
-                walkmesh_prim[ i * 3 + 1 ].y0 = sxy1.vy;
-                walkmesh_prim[ i * 3 + 1 ].x1 = sxy3.vx;
-                walkmesh_prim[ i * 3 + 1 ].y1 = sxy3.vy;
-                PsyqAddPrim(&render_data.ot_scene[0], &walkmesh_prim[ i * 3 + 1 ]);
-
-                PsyqSetLineF2(&walkmesh_prim[ i * 3 + 2 ]);
-                PsyqSetSemiTrans(&walkmesh_prim[ i * 3 + 2 ], 0);
-                walkmesh_prim[ i * 3 + 2 ].r0 = 0x7f;
-                walkmesh_prim[ i * 3 + 2 ].g0 = 0x0;
-                walkmesh_prim[ i * 3 + 2 ].b0 = 0x0;
-                walkmesh_prim[ i * 3 + 2 ].x0 = sxy2.vx;
-                walkmesh_prim[ i * 3 + 2 ].y0 = sxy2.vy;
-                walkmesh_prim[ i * 3 + 2 ].x1 = sxy3.vx;
-                walkmesh_prim[ i * 3 + 2 ].y1 = sxy3.vy;
-                PsyqAddPrim(&render_data.ot_scene[0], &walkmesh_prim[ i * 3 + 2 ]);
-            }
-            PsyqPopMatrix();
-        }
 
         PsyqVSync(0x2);
 
@@ -420,6 +357,35 @@ void FieldLoadMimDatFiles()
 {
     FileLZS("FIELD/" + g_field_files[g_field_map_id] + ".MIM", l_field_mim);
     FileLZS("FIELD/" + g_field_files[g_field_map_id] + ".DAT", g_field_dat);
+
+    u32 wm_addr = READ_LE_U32(&g_field_dat[0x4]) - g_field_dat_base_addr;
+    u32 id_n = READ_LE_U32(&g_field_dat[wm_addr]);
+    wm_addr += 0x4;
+    u32 wm_link_addr = wm_addr + 0x4 + id_n * 0x18;
+
+    g_field_wm.clear();
+    g_field_wm_link.clear();
+
+    for (u32 i = 0; i < id_n; ++i)
+    {
+        FieldWalkmesh wm;
+        wm.p1.vx = READ_LE_S16(&g_field_dat[wm_addr + i * 0x18 + 0x0] );
+        wm.p1.vy = READ_LE_S16(&g_field_dat[wm_addr + i * 0x18 + 0x2] );
+        wm.p1.vz = READ_LE_S16(&g_field_dat[wm_addr + i * 0x18 + 0x4] );
+        wm.p2.vx = READ_LE_S16(&g_field_dat[wm_addr + i * 0x18 + 0x8] );
+        wm.p2.vy = READ_LE_S16(&g_field_dat[wm_addr + i * 0x18 + 0xa] );
+        wm.p2.vz = READ_LE_S16(&g_field_dat[wm_addr + i * 0x18 + 0xc] );
+        wm.p3.vx = READ_LE_S16(&g_field_dat[wm_addr + i * 0x18 + 0x10]);
+        wm.p3.vy = READ_LE_S16(&g_field_dat[wm_addr + i * 0x18 + 0x12]);
+        wm.p3.vz = READ_LE_S16(&g_field_dat[wm_addr + i * 0x18 + 0x14]);
+        g_field_wm.push_back(wm);
+
+        FieldWalkmeshLink wm_link;
+        wm_link.p1_id = READ_LE_U16(&g_field_dat[wm_link_addr + i * 0x6 + 0x0]);
+        wm_link.p2_id = READ_LE_U16(&g_field_dat[wm_link_addr + i * 0x6 + 0x2]);
+        wm_link.p3_id = READ_LE_U16(&g_field_dat[wm_link_addr + i * 0x6 + 0x4]);
+        g_field_wm_link.push_back(wm_link);
+    }
 }
 
 

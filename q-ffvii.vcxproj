@@ -116,9 +116,11 @@
     <ClCompile Include="src\ffvii\debug\debug_field.cpp" />
     <ClCompile Include="src\ffvii\ending\ending.cpp" />
     <ClCompile Include="src\ffvii\field\background.cpp" />
+    <ClCompile Include="src\ffvii\field\entity.cpp" />
     <ClCompile Include="src\ffvii\field\event.cpp" />
     <ClCompile Include="src\ffvii\field\fade.cpp" />
     <ClCompile Include="src\ffvii\field\field.cpp" />
+    <ClCompile Include="src\ffvii\field\model.cpp" />
     <ClCompile Include="src\ffvii\field\rain.cpp" />
     <ClCompile Include="src\ffvii\kernel\akao.cpp" />
     <ClCompile Include="src\ffvii\kernel\buttons.cpp" />
@@ -171,10 +173,12 @@
     <ClInclude Include="src\ffvii\debug\debug_field.h" />
     <ClInclude Include="src\ffvii\ending\ending.h" />
     <ClInclude Include="src\ffvii\field\background.h" />
+    <ClInclude Include="src\ffvii\field\entity.h" />
     <ClInclude Include="src\ffvii\field\event.h" />
     <ClInclude Include="src\ffvii\field\fade.h" />
     <ClInclude Include="src\ffvii\field\field.h" />
     <ClInclude Include="src\ffvii\field\field_list.h" />
+    <ClInclude Include="src\ffvii\field\model.h" />
     <ClInclude Include="src\ffvii\field\rain.h" />
     <ClInclude Include="src\ffvii\kernel\akao.h" />
     <ClInclude Include="src\ffvii\kernel\akao_commands.h" />

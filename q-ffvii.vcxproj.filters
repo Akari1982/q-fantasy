@@ -160,6 +160,12 @@
     <ClCompile Include="src\ffvii\battle\swirl.cpp">
       <Filter>src\battle</Filter>
     </ClCompile>
+    <ClCompile Include="src\ffvii\field\entity.cpp">
+      <Filter>src\field</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ffvii\field\model.cpp">
+      <Filter>src\field</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="third_party\ofxImGui\src\BaseEngine.h">
@@ -374,6 +380,12 @@
     </ClInclude>
     <ClInclude Include="src\ffvii\battle\swirl.h">
       <Filter>src\battle</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ffvii\field\entity.h">
+      <Filter>src\field</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ffvii\field\model.h">
+      <Filter>src\field</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

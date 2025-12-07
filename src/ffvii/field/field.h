@@ -43,6 +43,17 @@ struct FieldControl
     u32 btn_prev;
     u32 btn_new;
     u32 btn_released;
+
+    // entity
+    s16 player_id;
+    s16 spawn_x;
+    s16 spawn_y;
+    u16 spawn_i;
+    u8 spawn_rot;
+    u8 control_lock;
+    u8 move_lock;
+    u8 gateway_lock;
+    u8 speed_up;
 };
 
 struct FieldCamera
@@ -69,7 +80,7 @@ struct FieldRenderData
     DR_MODE bg_dm[0x6a4];
 
     // rain
-    std::array< LINE_F2, 0x40 > rain;
+    std::array<LINE_F2, 0x40> rain;
     DR_MODE rain_dm;
 };
 
