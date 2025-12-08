@@ -205,7 +205,7 @@ void FieldMain()
             FieldLoadMimToVram();
         }
 
-        FieldEventInit();
+        FieldEventInit(g_field_dat.data());
 
         g_rain_force = (g_rain_enable & 0x80) ? 0xff : 0;
 

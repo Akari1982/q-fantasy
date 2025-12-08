@@ -11,44 +11,44 @@ bool g_browser_field = false;
 
 std::vector<u8> l_dat_file;
 
-void ParseFieldEvents( u8 actor_id );
+void ParseFieldEvents(u8 actor_id);
 
 
 
 void BrowserField()
 {
-    if( g_browser_field == false ) return;
+    if (g_browser_field == false) return;
 
     static bool loaded = false;
 
-    ImGui::SetNextWindowPos( ImGui::GetWindowPos() + ImVec2( 0, 0 ), ImGuiCond_FirstUseEver );
-    ImGui::SetNextWindowSize( ImVec2( 900, 650 ), ImGuiCond_Once );
-    if( ImGui::Begin( "Field Browser", &g_browser_field, ImGuiWindowFlags_NoCollapse ) )
+    ImGui::SetNextWindowPos(ImGui::GetWindowPos() + ImVec2(0, 0), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(900, 650), ImGuiCond_Once);
+    if (ImGui::Begin("Field Browser", &g_browser_field, ImGuiWindowFlags_NoCollapse))
     {
-        ImGui::Columns( 2, nullptr, true );
+        ImGui::Columns(2, nullptr, true);
         // do not reset column width every frame
         static bool first_frame = true;
-        if( first_frame )
+        if (first_frame)
         {
-            ImGui::SetColumnWidth( 0, 250 );
+            ImGui::SetColumnWidth(0, 250);
             first_frame = false;
         }
 
         static int field_id = 0;
 
-        if( ImGui::BeginListBox( "##FieldList", ImVec2( -FLT_MIN, -FLT_MIN ) ) )
+        if (ImGui::BeginListBox("##FieldList", ImVec2(-FLT_MIN, -FLT_MIN)))
         {
-            ImGui::TextDisabled( "Fields Map List" );
+            ImGui::TextDisabled("Fields Map List");
             ImGui::Separator();
 
-            for( int i = 0; i < 0x312; ++i )
+            for (int i = 0; i < 0x312; ++i)
             {
-                ImGui::PushID( i );
+                ImGui::PushID(i);
 
                 std::string name = g_field_files[i];
                 bool corrupted = false;
 
-                if( (name == "BLACKBGA")
+                if ((name == "BLACKBGA")
                  || (name == "BLACKBGF")
                  || (name == "BLACKBGG")
                  || (name == "BLIN69_2")
@@ -67,20 +67,20 @@ void BrowserField()
                  || (name == "TRAP")
                  || (name == "WHITEBG1")
                  || (name == "WHITEBG2")
-                 || (name.compare( 0, 2, "WM" ) == 0)
-                 || (name == "XMVTES") )
+                 || (name.compare(0, 2, "WM") == 0)
+                 || (name == "XMVTES"))
                 {
                     corrupted = true;
-                    ImGui::BeginDisabled( true );
+                    ImGui::BeginDisabled(true);
                 }
 
-                if( ImGui::Selectable( ("0x" + std::format( "{:03x} ", i ) + g_field_files[i] + ((corrupted) ? " (corrupted)": "")).c_str(), (i == field_id) ) )
+                if (ImGui::Selectable(("0x" + std::format("{:03x} ", i) + g_field_files[i] + ((corrupted) ? " (corrupted)": "")).c_str(), (i == field_id)))
                 {
                     loaded = false;
                     field_id = i;
                 }
 
-                if( corrupted ) ImGui::EndDisabled();
+                if (corrupted) ImGui::EndDisabled();
 
                 ImGui::PopID();
             }
@@ -88,248 +88,248 @@ void BrowserField()
         ImGui::EndListBox();
 
         ImGui::NextColumn();
-        ImGui::BeginChild( "right_panel", ImVec2( 0, 0 ), true );
+        ImGui::BeginChild("right_panel", ImVec2(0, 0), true);
 
-        if( loaded == false )
+        if (loaded == false)
         {
-            FileLZS( "FIELD/" + g_field_files[field_id] + ".DAT", l_dat_file );
+            FileLZS("FIELD/" + g_field_files[field_id] + ".DAT", l_dat_file);
             loaded = true;
         }
 
-        ImGui::Text( "Map: 0x%03x", field_id );
+        ImGui::Text("Map: 0x%03x", field_id);
 
-        u32 ate_addr = READ_LE_U32( &l_dat_file[0x0] ) - g_field_dat_base_addr;
-        u8 actors_n = READ_LE_U8( &l_dat_file[ate_addr + 0x2] );
-        u8 models_n = READ_LE_U8( &l_dat_file[ate_addr + 0x3] );
-        u16 strings_ofs = READ_LE_U16( &l_dat_file[ate_addr + 0x4] );
-        u16 scale = READ_LE_U16( &l_dat_file[ate_addr + 0x8] );
+        u32 ate_addr = READ_LE_U32(&l_dat_file[0x0]) - g_field_dat_base_addr;
+        u8 actors_n = READ_LE_U8(&l_dat_file[ate_addr + 0x2]);
+        u8 models_n = READ_LE_U8(&l_dat_file[ate_addr + 0x3]);
+        u16 strings_ofs = READ_LE_U16(&l_dat_file[ate_addr + 0x4]);
+        u16 scale = READ_LE_U16(&l_dat_file[ate_addr + 0x8]);
 
-        ImGui::Text( "Event ver%d. Data ver%d", READ_LE_U8( &l_dat_file[ate_addr + 0x0] ), READ_LE_U8( &l_dat_file[ate_addr + 0x1] ) );
-        ImGui::Text( "Entities: %d. Models: %d", actors_n, models_n );
-        ImGui::Text( "Scale: 0x%04x", scale );
-        ImGui::Text( "Authr: %s", &l_dat_file[ate_addr + 0x10] );
-        ImGui::Text( "Event: %s", &l_dat_file[ate_addr + 0x18] );
+        ImGui::Text("Event ver%d. Data ver%d", READ_LE_U8(&l_dat_file[ate_addr + 0x0]), READ_LE_U8(&l_dat_file[ate_addr + 0x1]));
+        ImGui::Text("Entities: %d. Models: %d", actors_n, models_n);
+        ImGui::Text("Scale: 0x%04x", scale);
+        ImGui::Text("Authr: %s", &l_dat_file[ate_addr + 0x10]);
+        ImGui::Text("Event: %s", &l_dat_file[ate_addr + 0x18]);
         ImGui::Separator();
 
-        for( int i = 0; i < actors_n; ++i )
+        for (int i = 0; i < actors_n; ++i)
         {
-            ImGui::Text( "Actor %02d: %s", i, &l_dat_file[ate_addr + 0x20 + i * 0x8] );
+            ImGui::Text("Actor %02d: %s", i, &l_dat_file[ate_addr + 0x20 + i * 0x8]);
         }
         ImGui::Separator();
 
-        ParseFieldEvents( 0x0 );
+        ParseFieldEvents(0x0);
 
         ImGui::EndChild();
 
-        ImGui::Columns( 1 );
+        ImGui::Columns(1);
     }
     ImGui::End();
 }
 
 
 
-void ArgGetU8( u32 arg_ofs )
+void ArgGetU8(u32 arg_ofs)
 {
-    ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 0.5, 0, 1 ) );
-    ImGui::Text( "0x%02x", READ_LE_U8( &l_dat_file[arg_ofs] ) );
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0.5, 0, 1));
+    ImGui::Text("0x%02x", READ_LE_U8(&l_dat_file[arg_ofs]));
     ImGui::PopStyleColor();
 }
 
 
 
-void ArgGetJump8( u32 arg_ofs )
+void ArgGetJump8(u32 arg_ofs)
 {
-    ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 0, 1, 1 ) );
-    ImGui::Text( "0x%02x", READ_LE_U8( &l_dat_file[arg_ofs] ) );
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 1, 1));
+    ImGui::Text("0x%02x", READ_LE_U8(&l_dat_file[arg_ofs]));
     ImGui::PopStyleColor();
 }
 
 
 
-void ArgGetMemory8( u8 mem_block, u32 op_ofs, u32 arg_ofs )
+void ArgGetMemory8(u8 mem_block, u32 op_ofs, u32 arg_ofs)
 {
     u8 bank = 0;
-    switch( mem_block )
+    switch (mem_block)
     {
-        case 0x1: bank = READ_LE_U8( &l_dat_file[op_ofs + 0x1] ) >> 0x4; break;
-        case 0x2: bank = READ_LE_U8( &l_dat_file[op_ofs + 0x1] ) & 0xf; break;
-        case 0x3: bank = READ_LE_U8( &l_dat_file[op_ofs + 0x2] ) >> 0x4; break;
-        case 0x4: bank = READ_LE_U8( &l_dat_file[op_ofs + 0x2] ) & 0xf; break;
-        case 0x5: bank = READ_LE_U8( &l_dat_file[op_ofs + 0x3] ) >> 0x4; break;
-        case 0x6: bank = READ_LE_U8( &l_dat_file[op_ofs + 0x3] ) & 0xf; break;
+        case 0x1: bank = READ_LE_U8(&l_dat_file[op_ofs + 0x1]) >> 0x4; break;
+        case 0x2: bank = READ_LE_U8(&l_dat_file[op_ofs + 0x1]) & 0xf; break;
+        case 0x3: bank = READ_LE_U8(&l_dat_file[op_ofs + 0x2]) >> 0x4; break;
+        case 0x4: bank = READ_LE_U8(&l_dat_file[op_ofs + 0x2]) & 0xf; break;
+        case 0x5: bank = READ_LE_U8(&l_dat_file[op_ofs + 0x3]) >> 0x4; break;
+        case 0x6: bank = READ_LE_U8(&l_dat_file[op_ofs + 0x3]) & 0xf; break;
     }
 
-    if( bank == 0x0 )
+    if (bank == 0x0)
     {
-        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 0.5, 0, 1 ) );
-        ImGui::Text( "0x%02x", READ_LE_U8( &l_dat_file[arg_ofs] ) );
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0.5, 0, 1));
+        ImGui::Text("0x%02x", READ_LE_U8(&l_dat_file[arg_ofs]));
         ImGui::PopStyleColor();
     }
-    else if( (bank == 0x1) || (bank == 0x2) )
+    else if ((bank == 0x1) || (bank == 0x2))
     {
-        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 1, 0, 1 ) );
-        ImGui::Text( "M0_1[0x%02x]", READ_LE_U8( &l_dat_file[arg_ofs] ) );
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 0, 1));
+        ImGui::Text("M0_1[0x%02x]", READ_LE_U8(&l_dat_file[arg_ofs]));
         ImGui::PopStyleColor();
     }
-    else if( (bank == 0x3) || (bank == 0x4) )
+    else if ((bank == 0x3) || (bank == 0x4))
     {
-        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 1, 0, 1 ) );
-        ImGui::Text( "M1_1[0x%02x]", READ_LE_U8( &l_dat_file[arg_ofs] ) );
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 0, 1));
+        ImGui::Text("M1_1[0x%02x]", READ_LE_U8(&l_dat_file[arg_ofs]));
         ImGui::PopStyleColor();
     }
-    else if( (bank == 0xb) || (bank == 0xc) )
+    else if ((bank == 0xb) || (bank == 0xc))
     {
-        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 1, 0, 1 ) );
-        ImGui::Text( "M2_1[0x%02x]", READ_LE_U8( &l_dat_file[arg_ofs] ) );
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 0, 1));
+        ImGui::Text("M2_1[0x%02x]", READ_LE_U8(&l_dat_file[arg_ofs]));
         ImGui::PopStyleColor();
     }
-    else if( (bank == 0xd) || (bank == 0xe) )
+    else if ((bank == 0xd) || (bank == 0xe))
     {
-        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 1, 0, 1 ) );
-        ImGui::Text( "M3_1[0x%02x]", READ_LE_U8( &l_dat_file[arg_ofs] ) );
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 0, 1));
+        ImGui::Text("M3_1[0x%02x]", READ_LE_U8(&l_dat_file[arg_ofs]));
         ImGui::PopStyleColor();
     }
-    else if( (bank == 0x7) || (bank == 0xf) )
+    else if ((bank == 0x7) || (bank == 0xf))
     {
-        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 1, 0, 1 ) );
-        ImGui::Text( "M4_1[0x%02x]", READ_LE_U8( &l_dat_file[arg_ofs] ) );
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 0, 1));
+        ImGui::Text("M4_1[0x%02x]", READ_LE_U8(&l_dat_file[arg_ofs]));
         ImGui::PopStyleColor();
     }
-    else if( (bank == 0x5) || (bank == 0x6) )
+    else if ((bank == 0x5) || (bank == 0x6))
     {
-        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 1, 0, 1 ) );
-        ImGui::Text( "L_1[0x%02x]", READ_LE_U8( &l_dat_file[arg_ofs] ) );
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 0, 1));
+        ImGui::Text("L_1[0x%02x]", READ_LE_U8(&l_dat_file[arg_ofs]));
         ImGui::PopStyleColor();
     }
 }
 
 
 
-void ArgGetMemory16( u8 mem_block, u32 op_ofs, u32 arg_ofs )
+void ArgGetMemory16(u8 mem_block, u32 op_ofs, u32 arg_ofs)
 {
     u8 bank = 0;
-    switch( mem_block )
+    switch (mem_block)
     {
-        case 0x1: bank = READ_LE_U8( &l_dat_file[op_ofs + 0x1] ) >> 0x4; break;
-        case 0x2: bank = READ_LE_U8( &l_dat_file[op_ofs + 0x1] ) & 0xf; break;
-        case 0x3: bank = READ_LE_U8( &l_dat_file[op_ofs + 0x2] ) >> 0x4; break;
-        case 0x4: bank = READ_LE_U8( &l_dat_file[op_ofs + 0x2] ) & 0xf; break;
-        case 0x5: bank = READ_LE_U8( &l_dat_file[op_ofs + 0x3] ) >> 0x4; break;
-        case 0x6: bank = READ_LE_U8( &l_dat_file[op_ofs + 0x3] ) & 0xf; break;
+        case 0x1: bank = READ_LE_U8(&l_dat_file[op_ofs + 0x1]) >> 0x4; break;
+        case 0x2: bank = READ_LE_U8(&l_dat_file[op_ofs + 0x1]) & 0xf; break;
+        case 0x3: bank = READ_LE_U8(&l_dat_file[op_ofs + 0x2]) >> 0x4; break;
+        case 0x4: bank = READ_LE_U8(&l_dat_file[op_ofs + 0x2]) & 0xf; break;
+        case 0x5: bank = READ_LE_U8(&l_dat_file[op_ofs + 0x3]) >> 0x4; break;
+        case 0x6: bank = READ_LE_U8(&l_dat_file[op_ofs + 0x3]) & 0xf; break;
     }
 
-    if( bank == 0x0 )
+    if (bank == 0x0)
     {
-        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 0.5, 0, 1 ) );
-        ImGui::Text( "0x%04x", READ_LE_U16( &l_dat_file[arg_ofs] ) );
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0.5, 0, 1));
+        ImGui::Text("0x%04x", READ_LE_U16(&l_dat_file[arg_ofs]));
         ImGui::PopStyleColor();
     }
-    else if( (bank == 0x1) || (bank == 0x2) )
+    else if ((bank == 0x1) || (bank == 0x2))
     {
-        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 1, 0, 1 ) );
-        ImGui::Text( "M0_2[0x%02x]", READ_LE_U8( &l_dat_file[arg_ofs] ) );
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 0, 1));
+        ImGui::Text("M0_2[0x%02x]", READ_LE_U8(&l_dat_file[arg_ofs]));
         ImGui::PopStyleColor();
     }
-    else if( (bank == 0x3) || (bank == 0x4) )
+    else if ((bank == 0x3) || (bank == 0x4))
     {
-        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 1, 0, 1 ) );
-        ImGui::Text( "M1_2[0x%02x]", READ_LE_U8( &l_dat_file[arg_ofs] ) );
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 0, 1));
+        ImGui::Text("M1_2[0x%02x]", READ_LE_U8(&l_dat_file[arg_ofs]));
         ImGui::PopStyleColor();
     }
-    else if( (bank == 0xb) || (bank == 0xc) )
+    else if ((bank == 0xb) || (bank == 0xc))
     {
-        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 1, 0, 1 ) );
-        ImGui::Text( "M2_2[0x%02x]", READ_LE_U8( &l_dat_file[arg_ofs] ) );
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 0, 1));
+        ImGui::Text("M2_2[0x%02x]", READ_LE_U8(&l_dat_file[arg_ofs]));
         ImGui::PopStyleColor();
     }
-    else if( (bank == 0xd) || (bank == 0xe) )
+    else if ((bank == 0xd) || (bank == 0xe))
     {
-        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 1, 0, 1 ) );
-        ImGui::Text( "M3_2[0x%02x]", READ_LE_U8( &l_dat_file[arg_ofs] ) );
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 0, 1));
+        ImGui::Text("M3_2[0x%02x]", READ_LE_U8(&l_dat_file[arg_ofs]));
         ImGui::PopStyleColor();
     }
-    else if( (bank == 0x7) || (bank == 0xf) )
+    else if ((bank == 0x7) || (bank == 0xf))
     {
-        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 1, 0, 1 ) );
-        ImGui::Text( "M4_2[0x%02x]", READ_LE_U8( &l_dat_file[arg_ofs] ) );
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 0, 1));
+        ImGui::Text("M4_2[0x%02x]", READ_LE_U8(&l_dat_file[arg_ofs]));
         ImGui::PopStyleColor();
     }
-    else if( (bank == 0x5) || (bank == 0x6) )
+    else if ((bank == 0x5) || (bank == 0x6))
     {
-        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 1, 0, 1 ) );
-        ImGui::Text( "L_2[0x%02x]", READ_LE_U8( &l_dat_file[arg_ofs] ) );
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 0, 1));
+        ImGui::Text("L_2[0x%02x]", READ_LE_U8(&l_dat_file[arg_ofs]));
         ImGui::PopStyleColor();
     }
 }
 
 
 
-void ArgSetMemory16( u8 mem_block, u32 op_ofs, u32 arg_ofs )
+void ArgSetMemory16(u8 mem_block, u32 op_ofs, u32 arg_ofs)
 {
     u8 bank = 0;
-    switch( mem_block )
+    switch (mem_block)
     {
-        case 0x1: bank = READ_LE_U8( &l_dat_file[op_ofs + 0x1] ) >> 0x4; break;
-        case 0x2: bank = READ_LE_U8( &l_dat_file[op_ofs + 0x1] ) & 0xf; break;
-        case 0x3: bank = READ_LE_U8( &l_dat_file[op_ofs + 0x2] ) >> 0x4; break;
-        case 0x4: bank = READ_LE_U8( &l_dat_file[op_ofs + 0x2] ) & 0xf; break;
-        case 0x5: bank = READ_LE_U8( &l_dat_file[op_ofs + 0x3] ) >> 0x4; break;
-        case 0x6: bank = READ_LE_U8( &l_dat_file[op_ofs + 0x3] ) & 0xf; break;
+        case 0x1: bank = READ_LE_U8(&l_dat_file[op_ofs + 0x1]) >> 0x4; break;
+        case 0x2: bank = READ_LE_U8(&l_dat_file[op_ofs + 0x1]) & 0xf; break;
+        case 0x3: bank = READ_LE_U8(&l_dat_file[op_ofs + 0x2]) >> 0x4; break;
+        case 0x4: bank = READ_LE_U8(&l_dat_file[op_ofs + 0x2]) & 0xf; break;
+        case 0x5: bank = READ_LE_U8(&l_dat_file[op_ofs + 0x3]) >> 0x4; break;
+        case 0x6: bank = READ_LE_U8(&l_dat_file[op_ofs + 0x3]) & 0xf; break;
     }
 
-    if( (bank == 0x1) || (bank == 0x2) )
+    if ((bank == 0x1) || (bank == 0x2))
     {
-        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 1, 0, 1 ) );
-        ImGui::Text( "M0_2[0x%02x]", READ_LE_U8( &l_dat_file[arg_ofs] ) );
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 0, 1));
+        ImGui::Text("M0_2[0x%02x]", READ_LE_U8(&l_dat_file[arg_ofs]));
         ImGui::PopStyleColor();
     }
-    else if( (bank == 0x3) || (bank == 0x3) )
+    else if ((bank == 0x3) || (bank == 0x3))
     {
-        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 1, 0, 1 ) );
-        ImGui::Text( "M1_2[0x%02x]", READ_LE_U8( &l_dat_file[arg_ofs] ) );
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 0, 1));
+        ImGui::Text("M1_2[0x%02x]", READ_LE_U8(&l_dat_file[arg_ofs]));
         ImGui::PopStyleColor();
     }
-    else if( (bank == 0xb) || (bank == 0xc) )
+    else if ((bank == 0xb) || (bank == 0xc))
     {
-        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 1, 0, 1 ) );
-        ImGui::Text( "M2_2[0x%02x]", READ_LE_U8( &l_dat_file[arg_ofs] ) );
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 0, 1));
+        ImGui::Text("M2_2[0x%02x]", READ_LE_U8(&l_dat_file[arg_ofs]));
         ImGui::PopStyleColor();
     }
-    else if( (bank == 0xd) || (bank == 0xe) )
+    else if ((bank == 0xd) || (bank == 0xe))
     {
-        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 1, 0, 1 ) );
-        ImGui::Text( "M3_2[0x%02x]", READ_LE_U8( &l_dat_file[arg_ofs] ) );
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 0, 1));
+        ImGui::Text("M3_2[0x%02x]", READ_LE_U8(&l_dat_file[arg_ofs]));
         ImGui::PopStyleColor();
     }
-    else if( (bank == 0x7) || (bank == 0xf) )
+    else if ((bank == 0x7) || (bank == 0xf))
     {
-        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 1, 0, 1 ) );
-        ImGui::Text( "M4_2[0x%02x]", READ_LE_U8( &l_dat_file[arg_ofs] ) );
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 0, 1));
+        ImGui::Text("M4_2[0x%02x]", READ_LE_U8(&l_dat_file[arg_ofs]));
         ImGui::PopStyleColor();
     }
-    else if( (bank == 0x5) || (bank == 0x6) )
+    else if ((bank == 0x5) || (bank == 0x6))
     {
-        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 1, 0, 1 ) );
-        ImGui::Text( "L_2[0x%02x]", READ_LE_U8( &l_dat_file[arg_ofs] ) );
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 0, 1));
+        ImGui::Text("L_2[0x%02x]", READ_LE_U8(&l_dat_file[arg_ofs]));
         ImGui::PopStyleColor();
     }
 }
 
 
 
-void ParseFieldEvents( u8 actor_id )
+void ParseFieldEvents(u8 actor_id)
 {
-    u32 ate_addr = READ_LE_U32( &l_dat_file[0x0] ) - g_field_dat_base_addr;
-    u8 actors_n = READ_LE_U8( &l_dat_file[ate_addr + 0x2] );
-    u16 akao_n = READ_LE_S16( &l_dat_file[ate_addr + 0x6] );
+    u32 ate_addr = READ_LE_U32(&l_dat_file[0x0]) - g_field_dat_base_addr;
+    u8 actors_n = READ_LE_U8(&l_dat_file[ate_addr + 0x2]);
+    u16 akao_n = READ_LE_S16(&l_dat_file[ate_addr + 0x6]);
 
-    for( int i = 0; i < 0x20; ++i )
+    for (int i = 0; i < 0x20; ++i)
     {
-        u32 event_ofs = READ_LE_U16( &l_dat_file[ate_addr + 0x20 + actors_n * 0x8 + akao_n * 0x4 + actor_id * 0x40 + i * 0x02] );
-        ImGui::Text( "Event %02d: 0x%04x", i, event_ofs );
+        u32 event_ofs = READ_LE_U16(&l_dat_file[ate_addr + 0x20 + actors_n * 0x8 + akao_n * 0x4 + actor_id * 0x40 + i * 0x02]);
+        ImGui::Text("Event %02d: 0x%04x", i, event_ofs);
 
         u32 end_ofs = event_ofs;
-        u8 opcode = READ_LE_U8( &l_dat_file[ate_addr + event_ofs] );
+        u8 opcode = READ_LE_U8(&l_dat_file[ate_addr + event_ofs]);
 
 //        if (opcode == 0x00 && i != 0) // skip if script contain only RET opcode and this is not init script
 //        {
@@ -343,59 +343,59 @@ void ParseFieldEvents( u8 actor_id )
 
         for (; event_ofs <= end_ofs;)
         {
-            u8 opcode = READ_LE_U8( &l_dat_file[ate_addr + event_ofs] );
+            u8 opcode = READ_LE_U8(&l_dat_file[ate_addr + event_ofs]);
 
-            ImGui::Text( "  0x%04x    ", event_ofs );
-            ImGui::SameLine( 0, 0 );
+            ImGui::Text("  0x%04x    ", event_ofs);
+            ImGui::SameLine(0, 0);
 
-            if( g_field_opcodes[opcode].init )
+            if (g_field_opcodes[opcode].init)
             {
-                ImGui::Text( "%s(", g_field_opcodes[opcode].full_name.c_str() ); ImGui::SameLine( 0, 0 );
+                ImGui::Text("%s(", g_field_opcodes[opcode].full_name.c_str()); ImGui::SameLine(0, 0);
 
-                for( int arg_id = 0; arg_id < g_field_opcodes[opcode].args.size(); ++arg_id )
+                for (int arg_id = 0; arg_id < g_field_opcodes[opcode].args.size(); ++arg_id)
                 {
                     const OpcodeArg& argument = g_field_opcodes[opcode].args[arg_id];
                     const u32 arg_ofs = ate_addr + event_ofs + argument.offset;
 
-                    if( arg_id != 0 ) ImGui::Text( "," ); ImGui::SameLine( 0, 0 );
+                    if (arg_id != 0) ImGui::Text(","); ImGui::SameLine(0, 0);
 
-                    ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0.5, 0.5, 0.5, 1 ) );
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5, 0.5, 0.5, 1));
                     ImGui::Text(" %s:", argument.name.c_str()); ImGui::SameLine(0, 0);
                     ImGui::PopStyleColor();
 
-                    switch( argument.type )
+                    switch(argument.type)
                     {
-                        case OpcodeArg::U8: ArgGetU8( arg_ofs ); break;
-                        case OpcodeArg::READ_MEMORY8: ArgGetMemory8( argument.mem_block, ate_addr + event_ofs, arg_ofs ); break;
-                        case OpcodeArg::READ_MEMORY16: ArgGetMemory16( argument.mem_block, ate_addr + event_ofs, arg_ofs ); break;
-                        case OpcodeArg::WRITE_MEMORY16: ArgSetMemory16( argument.mem_block, ate_addr + event_ofs, arg_ofs ); break;
+                        case OpcodeArg::U8: ArgGetU8(arg_ofs); break;
+                        case OpcodeArg::READ_MEMORY8: ArgGetMemory8(argument.mem_block, ate_addr + event_ofs, arg_ofs); break;
+                        case OpcodeArg::READ_MEMORY16: ArgGetMemory16(argument.mem_block, ate_addr + event_ofs, arg_ofs); break;
+                        case OpcodeArg::WRITE_MEMORY16: ArgSetMemory16(argument.mem_block, ate_addr + event_ofs, arg_ofs); break;
 
                         case OpcodeArg::JUMP8:
                         {
-                            ArgGetJump8( arg_ofs );
+                            ArgGetJump8(arg_ofs);
 
-                            u32 temp_end = event_ofs + READ_LE_U8( &l_dat_file[arg_ofs] ) + g_field_opcodes[opcode].size - 1;
+                            u32 temp_end = event_ofs + READ_LE_U8(&l_dat_file[arg_ofs]) + g_field_opcodes[opcode].size - 1;
                             end_ofs = (temp_end > end_ofs) ? temp_end : end_ofs;
                         }
                         break;
                     }
 
-                    ImGui::SameLine( 0, 0 );
+                    ImGui::SameLine(0, 0);
 
-                    if( (arg_id + 1) >= g_field_opcodes[opcode].args.size() ) ImGui::Text( " " ); ImGui::SameLine( 0, 0 );
+                    if ((arg_id + 1) >= g_field_opcodes[opcode].args.size()) ImGui::Text(" "); ImGui::SameLine(0, 0);
                 }
-                ImGui::Text( ")" );
+                ImGui::Text(")");
 
                 event_ofs += g_field_opcodes[opcode].size;
                 end_ofs = (event_ofs > end_ofs) ? event_ofs : end_ofs;
 
-                ImGui::SameLine( 0, 0 );
-                ImGui::Text( " // end:0x%04x", end_ofs );
+                ImGui::SameLine(0, 0);
+                ImGui::Text(" // end:0x%04x", end_ofs);
             }
             else
             {
-                ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1, 0, 0, 1 ) );
-                ImGui::Text( "Failed to decode opcode 0x%02X", opcode );
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 0, 1));
+                ImGui::Text("Failed to decode opcode 0x%02X", opcode);
                 ImGui::PopStyleColor();
                 break;
             }
@@ -409,13 +409,13 @@ void ParseFieldEvents( u8 actor_id )
 
             u8 opcode = GetU8(script);
 
-            if( opcode == 0x00 ) // RET
+            if (opcode == 0x00) // RET
             {
-                export_script->Log( "return\n" );
+                export_script->Log("return\n");
 
-                if( i == 0 && one_ret_check == false ) // in init we need to meet ret at least once
+                if (i == 0 && one_ret_check == false) // in init we need to meet ret at least once
                 {
-                    AdvanceScript( 1, script, end );
+                    AdvanceScript(1, script, end);
                     one_ret_check = true;
                 }
                 else
@@ -423,29 +423,29 @@ void ParseFieldEvents( u8 actor_id )
                     script += 1;
                 }
             }
-            else if( opcode == 0x01 ) // REQ
+            else if (opcode == 0x01) // REQ
             {
-                u8 entity_id = GetU8( script + 1 );
-                u8 priority  = GetU8( script + 2 ) >> 5;
-                u8 script_id = GetU8( script + 2 ) & 0x1F;
-                export_script->Log( "script:request( \"" + entity_list[ entity_id ] + "\", \"script_" + IntToString( script_id ) + "\", " + IntToString( priority ) + " )\n" );
-                AdvanceScript( 3, script, end );
+                u8 entity_id = GetU8(script + 1);
+                u8 priority  = GetU8(script + 2) >> 5;
+                u8 script_id = GetU8(script + 2) & 0x1F;
+                export_script->Log("script:request(\"" + entity_list[ entity_id ] + "\", \"script_" + IntToString(script_id) + "\", " + IntToString(priority) + ")\n");
+                AdvanceScript(3, script, end);
             }
-            else if( opcode == 0x02 ) // REQSW
+            else if (opcode == 0x02) // REQSW
             {
-                u8 entity_id = GetU8( script + 1 );
-                u8 priority  = GetU8( script + 2 ) >> 5;
-                u8 script_id = GetU8( script + 2 ) & 0x1F;
-                export_script->Log( "script:request_start_sync( \"" + entity_list[ entity_id ] + "\", \"script_" + IntToString( script_id ) + "\", " + IntToString( priority ) + " )\n" );
-                AdvanceScript( 3, script, end );
+                u8 entity_id = GetU8(script + 1);
+                u8 priority  = GetU8(script + 2) >> 5;
+                u8 script_id = GetU8(script + 2) & 0x1F;
+                export_script->Log("script:request_start_sync(\"" + entity_list[ entity_id ] + "\", \"script_" + IntToString(script_id) + "\", " + IntToString(priority) + ")\n");
+                AdvanceScript(3, script, end);
             }
-            else if( opcode == 0x03 ) // REQEW
+            else if (opcode == 0x03) // REQEW
             {
-                u8 entity_id = GetU8( script + 1 );
-                u8 priority  = GetU8( script + 2 ) >> 5;
-                u8 script_id = GetU8( script + 2 ) & 0x1F;
-                export_script->Log( "script:request_end_sync( \"" + entity_list[ entity_id ] + "\", \"script_" + IntToString( script_id ) + "\", " + IntToString( priority ) + " )\n" );
-                AdvanceScript( 3, script, end );
+                u8 entity_id = GetU8(script + 1);
+                u8 priority  = GetU8(script + 2) >> 5;
+                u8 script_id = GetU8(script + 2) & 0x1F;
+                export_script->Log("script:request_end_sync(\"" + entity_list[ entity_id ] + "\", \"script_" + IntToString(script_id) + "\", " + IntToString(priority) + ")\n");
+                AdvanceScript(3, script, end);
             }
             else if (opcode == 0x07) // RETTO
             {
@@ -453,12 +453,12 @@ void ParseFieldEvents( u8 actor_id )
                 u8 script_id = GetU8(script + 1) & 0x1F;
 
                 export_script->Log(
-                    "return_to( \"script_" +
+                    "return_to(\"script_" +
                     IntToString(script_id) +
                     "\", " +
                     IntToString(priority) +
-                    " );\n"
-                );
+                    ");\n"
+               );
 
                 script += 2;
             }
@@ -468,7 +468,7 @@ void ParseFieldEvents( u8 actor_id )
                     "[UNREVERSED] JOIN(" +
                     ArgumentString(script + 1, 1) +
                     ");\n"
-                );
+               );
 
                 AdvanceScript(2, script, end);
             }
@@ -478,30 +478,30 @@ void ParseFieldEvents( u8 actor_id )
                     "[UNREVERSED] SPLIT(" +
                     ArgumentString(script + 1, 14) +
                     ");\n"
-                );
+               );
 
                 AdvanceScript(15, script, end);
             }
             else if (opcode == 0x0A) // SPTYE
             {
                 export_script->Log(
-                    "game:party_set( " +
+                    "game:party_set(" +
                     ParseGetVariable(GetU8(script + 1) >> 4, GetU8(script + 3)) +
                     ", " +
                     ParseGetVariable(GetU8(script + 1) & 0x0F, GetU8(script + 4)) +
                     ", " +
                     ParseGetVariable(GetU8(script + 2) >> 4, GetU8(script + 5)) +
-                    " );\n"
-                );
+                    ");\n"
+               );
                 AdvanceScript(6, script, end);
             }
             else if (opcode == 0x0B) // GTPYE
             {
                 export_script->Log(
-                    SetVariable(GetU8(script + 1) >> 4, GetU8(script + 3), "game:party_get_id_of_member( 0 )") +
-                    SetVariable(GetU8(script + 1) & 0x0F, GetU8(script + 4), "game:party_get_id_of_member( 1 )") +
-                    SetVariable(GetU8(script + 2) >> 4, GetU8(script + 5), "game:party_get_id_of_member( 2 )")
-                );
+                    SetVariable(GetU8(script + 1) >> 4, GetU8(script + 3), "game:party_get_id_of_member(0)") +
+                    SetVariable(GetU8(script + 1) & 0x0F, GetU8(script + 4), "game:party_get_id_of_member(1)") +
+                    SetVariable(GetU8(script + 2) >> 4, GetU8(script + 5), "game:party_get_id_of_member(2)")
+               );
                 AdvanceScript(6, script, end);
             }
             else if (opcode == 0x0F) // SPECIAL
@@ -511,10 +511,10 @@ void ParseFieldEvents( u8 actor_id )
                 if (special_opcode == 0xF5) // ARROW
                 {
                     export_script->Log(
-                        "game:pointer_enable( " +
+                        "game:pointer_enable(" +
                         BoolToString(!(bool)(GetU8(script + 2))) +
-                        " )\n"
-                    );
+                        ")\n"
+                   );
                     AdvanceScript(3, script, end);
                 }
                 else if (special_opcode == 0xF9) // FLMAT
@@ -525,19 +525,19 @@ void ParseFieldEvents( u8 actor_id )
                 else if (special_opcode == 0xFB) // BTLLK
                 {
                     export_script->Log(
-                        "game:battle_enable( " +
+                        "game:battle_enable(" +
                         BoolToString(!(bool)(GetU8(script + 2))) +
-                        " )\n"
-                    );
+                        ")\n"
+                   );
                     AdvanceScript(3, script, end);
                 }
                 else if (special_opcode == 0xFC) // MVLCK
                 {
                     export_script->Log(
-                        "game:movie_enable( " +
+                        "game:movie_enable(" +
                         BoolToString(!(bool)(GetU8(script + 2))) +
-                        " )\n"
-                    );
+                        ")\n"
+                   );
                     AdvanceScript(3, script, end);
                 }
                 else if (special_opcode == 0xFD) // SPCNM
@@ -546,7 +546,7 @@ void ParseFieldEvents( u8 actor_id )
                         "[UNREVERSED] SPECIAL SPCNM(" +
                         ArgumentString(script + 2, 2) +
                         ");\n"
-                    );
+                   );
                     AdvanceScript(4, script, end);
                 }
                 else if (special_opcode == 0xFE) // RSGLB
@@ -560,11 +560,11 @@ void ParseFieldEvents( u8 actor_id )
                     script += 2;
                 }
             }
-            else if( opcode == 0x10 ) // JMPF
+            else if (opcode == 0x10) // JMPF
             {
-                u32 temp_end = script + GetU8( script + 1 ) + 1;
-                export_script->Log( "jumpto( " + OffsetString( temp_end ) + " );\n" );
-                end = ( temp_end > end ) ? temp_end : end;
+                u32 temp_end = script + GetU8(script + 1) + 1;
+                export_script->Log("jumpto(" + OffsetString(temp_end) + ");\n");
+                end = (temp_end > end) ? temp_end : end;
                 script += 2;
             }
             else if (opcode == 0x11) // JMPFL
@@ -572,10 +572,10 @@ void ParseFieldEvents( u8 actor_id )
                 u32 temp_end = script + GetU16LE(script + 1) + 1;
 
                 export_script->Log(
-                    "jumpto( " +
+                    "jumpto(" +
                     OffsetString(temp_end) +
-                    " );\n"
-                );
+                    ");\n"
+               );
 
                 end = (temp_end > end) ? temp_end : end;
                 script += 3;
@@ -583,20 +583,20 @@ void ParseFieldEvents( u8 actor_id )
             else if (opcode == 0x12) // JMPB
             {
                 export_script->Log(
-                    "jumpto( " +
+                    "jumpto(" +
                     OffsetString(script - GetU8(script + 1)) +
-                    " );\n"
-                );
+                    ");\n"
+               );
 
                 script += 2;
             }
             else if (opcode == 0x13) // JMPBL
             {
                 export_script->Log(
-                    "jumpto( " +
+                    "jumpto(" +
                     OffsetString(script - GetU16LE(script + 1)) +
-                    " );\n"
-                );
+                    ");\n"
+               );
 
                 script += 3;
             }
@@ -605,10 +605,10 @@ void ParseFieldEvents( u8 actor_id )
                 u32 temp_end = script + GetU8(script + 5) + 5;
 
                 export_script->Log(
-                    "if ( " +
+                    "if (" +
                     ParseRelation(GetU8(script + 4), ParseGetVariable(GetU8(script + 1) >> 4, GetU8(script + 2)), ParseGetVariable(GetU8(script + 1) & 0x0F, GetU8(script + 3))) +
-                    " ) then continue else jumpto(" + OffsetString(temp_end) + ");\n"
-                );
+                    ") then continue else jumpto(" + OffsetString(temp_end) + ");\n"
+               );
 
                 end = (temp_end > end) ? temp_end : end;
                 script += 6;
@@ -618,10 +618,10 @@ void ParseFieldEvents( u8 actor_id )
                 u32 temp_end = script + GetU16LE(script + 5) + 5;
 
                 export_script->Log(
-                    "if ( " +
+                    "if (" +
                     ParseRelation(GetU8(script + 4), ParseGetVariable(GetU8(script + 1) >> 4, GetU8(script + 2)), ParseGetVariable(GetU8(script + 1) & 0x0F, GetU8(script + 3))) +
-                    " ) then continue else jumpto(" + OffsetString(temp_end) + ");\n"
-                );
+                    ") then continue else jumpto(" + OffsetString(temp_end) + ");\n"
+               );
 
                 end = (temp_end > end) ? temp_end : end;
                 script += 7;
@@ -631,10 +631,10 @@ void ParseFieldEvents( u8 actor_id )
                 u32 temp_end = script + GetU16LE(script + 7) + 7;
 
                 export_script->Log(
-                    "if ( " +
+                    "if (" +
                     ParseRelation(GetU8(script + 6), ParseGetVariable(GetU8(script + 1) >> 4, (s16)GetU16LE(script + 2)), ParseGetVariable(GetU8(script + 1) & 0x0F, (s16)GetU16LE(script + 4))) +
-                    " ) then continue else jumpto(" + OffsetString(temp_end) + ");\n"
-                );
+                    ") then continue else jumpto(" + OffsetString(temp_end) + ");\n"
+               );
 
                 end = (temp_end > end) ? temp_end : end;
                 script += 9;
@@ -644,10 +644,10 @@ void ParseFieldEvents( u8 actor_id )
                 u32 temp_end = script + GetU8(script + 7) + 7;
 
                 export_script->Log(
-                    "if ( " +
+                    "if (" +
                     ParseRelation(GetU8(script + 6), ParseGetVariable(GetU8(script + 1) >> 4, GetU16LE(script + 2)), ParseGetVariable(GetU8(script + 1) & 0x0F, GetU16LE(script + 4))) +
-                    " ) then continue else jumpto(" + OffsetString(temp_end) + ");\n"
-                );
+                    ") then continue else jumpto(" + OffsetString(temp_end) + ");\n"
+               );
 
                 end = (temp_end > end) ? temp_end : end;
                 script += 8;
@@ -658,14 +658,14 @@ void ParseFieldEvents( u8 actor_id )
                     "[UNREVERSED] TUTOR(" +
                     ArgumentString(script + 1, 1) +
                     ");\n"
-                );
+               );
 
                 AdvanceScript(2, script, end);
             }
-            else if( opcode == 0x24 ) // WAIT
+            else if (opcode == 0x24) // WAIT
             {
-                export_script->Log( "script:wait( " + FloatToString( GetU16LE( script + 1 ) / 30.0f ) + " )\n" );
-                AdvanceScript( 3, script, end );
+                export_script->Log("script:wait(" + FloatToString(GetU16LE(script + 1) / 30.0f) + ")\n");
+                AdvanceScript(3, script, end);
             }
             else if (opcode == 0x25) // NFADE
             {
@@ -689,7 +689,7 @@ void ParseFieldEvents( u8 actor_id )
                         ", " +
                         ParseGetVariable(GetU8(script + 2) & 0x0F, GetU16LE(script + 7)) +
                         ");\n"
-                    );
+                   );
                 }
 
                 AdvanceScript(9, script, end);
@@ -701,7 +701,7 @@ void ParseFieldEvents( u8 actor_id )
                     ":enable_eye_blink(" +
                     BoolToString(!(bool)(GetU8(script + 1))) +
                     ");\n"
-                );
+               );
 
                 AdvanceScript(2, script, end);
             }
@@ -713,7 +713,7 @@ void ParseFieldEvents( u8 actor_id )
                     "[UNREVERSED] KAWAI(" +
                     ArgumentString(script + 1, kawai_length - 1) +
                     ");\n"
-                );
+               );
 
                 AdvanceScript(kawai_length, script, end);
             }
@@ -723,7 +723,7 @@ void ParseFieldEvents( u8 actor_id )
                     "[UNREVERSED] WCLS(" +
                     ArgumentString(script + 1, 1) +
                     ");\n"
-                );
+               );
 
                 AdvanceScript(2, script, end);
             }
@@ -743,7 +743,7 @@ void ParseFieldEvents( u8 actor_id )
                     ", height = " +
                     IntToString(GetU16LE(script + 8)) +
                     ");\n"
-                );
+               );
 
                 AdvanceScript(10, script, end);
             }
@@ -755,7 +755,7 @@ void ParseFieldEvents( u8 actor_id )
                     "if (pressed buttons \"" +
                     HexToString(GetU16LE(script + 1), 4, '0') +
                     "\") then continue else jumpto(" + OffsetString(temp_end) + ");\n"
-                );
+               );
 
                 end = (temp_end > end) ? temp_end : end;
                 script += 4;
@@ -768,7 +768,7 @@ void ParseFieldEvents( u8 actor_id )
                     "if (first pressed buttons \"" +
                     HexToString(GetU16LE(script + 1), 4, '0') +
                     "\") then continue else jumpto(" + OffsetString(temp_end) + ");\n"
-                );
+               );
 
                 end = (temp_end > end) ? temp_end : end;
                 script += 4;
@@ -779,7 +779,7 @@ void ParseFieldEvents( u8 actor_id )
                     "field:pc_lock(" +
                     BoolToString((bool)(GetU8(script + 1))) +
                     ");\n"
-                );
+               );
 
                 AdvanceScript(2, script, end);
             }
@@ -789,7 +789,7 @@ void ParseFieldEvents( u8 actor_id )
                     "[UNREVERSED] WSPCL(" +
                     ArgumentString(script + 1, 4) +
                     ");\n"
-                );
+               );
 
                 AdvanceScript(5, script, end);
             }
@@ -803,7 +803,7 @@ void ParseFieldEvents( u8 actor_id )
                     "), seconds(" +
                     ParseGetVariable(GetU8(script + 2) & 0x0F, GetU8(script + 5)) +
                     "));\n"
-                );
+               );
                 AdvanceScript(6, script, end);
             }
             else if (opcode == 0x39) // GOLDU
@@ -814,7 +814,7 @@ void ParseFieldEvents( u8 actor_id )
                     "), lower(" +
                     ParseGetVariable(GetU8(script + 1) >> 4, GetU16LE(script + 2)) +
                     "));\n"
-                );
+               );
                 AdvanceScript(6, script, end);
             }
             else if (opcode == 0x3A) // GOLDD
@@ -825,7 +825,7 @@ void ParseFieldEvents( u8 actor_id )
                     "), lower(" +
                     ParseGetVariable(GetU8(script + 1) >> 4, GetU16LE(script + 2)) +
                     "));\n"
-                );
+               );
                 AdvanceScript(6, script, end);
             }
             else if (opcode == 0x3B) // CHGLD
@@ -833,21 +833,21 @@ void ParseFieldEvents( u8 actor_id )
                 export_script->Log(
                     SetVariable(GetU8(script + 1) >> 4, GetU8(script + 2), "game:get_money_lower()") +
                     SetVariable(GetU8(script + 1) & 0x0F, GetU8(script + 3), "game:get_money_top()")
-                );
+               );
                 AdvanceScript(4, script, end);
             }
             else if (opcode == 0x3E) // MHMMX
             {
                 export_script->Log(
                     "game:restore_hp_mp_status_to_all();\n"
-                );
+               );
                 AdvanceScript(1, script, end);
             }
             else if (opcode == 0x3F) // HMPMAX3
             {
                 export_script->Log(
                     "game:party_restore_hp_mp();\n"
-                );
+               );
                 AdvanceScript(1, script, end);
             }
             else if (opcode == 0x40) // MESSAGE
@@ -859,7 +859,7 @@ void ParseFieldEvents( u8 actor_id )
                     ", " +
                     IntToString(GetU8(script + 2)) +
                     ", x, y);\n"
-                );
+               );
 
                 AdvanceScript(3, script, end);
             }
@@ -870,7 +870,7 @@ void ParseFieldEvents( u8 actor_id )
                     "field:map_name(" +
                     IntToString(GetU8(script + 1)) +
                     ");\n"
-                );
+               );
 
                 AdvanceScript(2, script, end);
             }
@@ -889,7 +889,7 @@ void ParseFieldEvents( u8 actor_id )
                     ", end " +
                     IntToString(GetU8(script + 5)) +
                     "\n"
-                );
+               );
 
                 AdvanceScript(7, script, end);
             }
@@ -899,7 +899,7 @@ void ParseFieldEvents( u8 actor_id )
                     "[UNREVERSED] MENU(" +
                     ArgumentString(script + 1, 3) +
                     ");\n"
-                );
+               );
 
                 AdvanceScript(4, script, end);
             }
@@ -909,7 +909,7 @@ void ParseFieldEvents( u8 actor_id )
                     "field:menu_lock(" +
                     BoolToString((bool)(GetU8(script + 1))) +
                     ");\n"
-                );
+               );
 
                 AdvanceScript(2, script, end);
             }
@@ -919,7 +919,7 @@ void ParseFieldEvents( u8 actor_id )
                     "field:set_battle_table(" +
                     IntToString(GetU8(script + 1)) +
                     ");\n"
-                );
+               );
 
                 AdvanceScript(2, script, end);
             }
@@ -937,7 +937,7 @@ void ParseFieldEvents( u8 actor_id )
                     ", height = " +
                     IntToString(GetU16LE(script + 8)) +
                     ");\n"
-                );
+               );
 
                 AdvanceScript(10, script, end);
             }
@@ -953,7 +953,7 @@ void ParseFieldEvents( u8 actor_id )
                     ", disable input from player: " +
                     BoolToString((bool)(GetU8(script + 3))) +
                     ");\n"
-                );
+               );
 
                 AdvanceScript(4, script, end);
             }
@@ -963,7 +963,7 @@ void ParseFieldEvents( u8 actor_id )
                     "-- reset window to default (id = " +
                     IntToString(GetU8(script + 1)) +
                     ");\n"
-                );
+               );
 
                 AdvanceScript(2, script, end);
             }
@@ -973,7 +973,7 @@ void ParseFieldEvents( u8 actor_id )
                     "[UNREVERSED] WCLSE(" +
                     ArgumentString(script + 1, 1) +
                     ");\n"
-                );
+               );
 
                 AdvanceScript(2, script, end);
             }
@@ -985,7 +985,7 @@ void ParseFieldEvents( u8 actor_id )
                     ", " +
                     ParseGetVariable(GetU8(script + 1) & 0x0F, GetU8(script + 4)) +
                     ");\n"
-                );
+               );
 
                 AdvanceScript(5, script, end);
             }
@@ -993,7 +993,7 @@ void ParseFieldEvents( u8 actor_id )
             {
                 export_script->Log(
                     SetVariable(GetU8(script + 1), GetU8(script + 4), "game:get_number_of_item(" + IntToString(GetU16LE(script + 2)) + ")")
-                );
+               );
                 AdvanceScript(5, script, end);
             }
             else if (opcode == 0x5B) // SMTRA
@@ -1008,7 +1008,7 @@ void ParseFieldEvents( u8 actor_id )
                     ", " +
                     ParseGetVariable(GetU8(script + 2) & 0x0F, GetU8(script + 6)) +
                     ");\n"
-                );
+               );
 
                 AdvanceScript(7, script, end);
             }
@@ -1018,7 +1018,7 @@ void ParseFieldEvents( u8 actor_id )
                     "[UNREVERSED] SHAKE(" +
                     ArgumentString(script + 1, 7) +
                     ");\n"
-                );
+               );
 
                 AdvanceScript(8, script, end);
             }
@@ -1036,7 +1036,7 @@ void ParseFieldEvents( u8 actor_id )
                     ", " +
                     FloatToString((GetU8(script + 9) / 256.0f) * 360.0f) +
                     ");\n"
-                );
+               );
 
                 AdvanceScript(10, script, end);
             }
@@ -1050,7 +1050,7 @@ void ParseFieldEvents( u8 actor_id )
                     ", " +
                     ParseGetVariable(GetU8(script + 1) & 0x0F, GetU16LE(script + 2), 0, 30.0f) +
                     ");\n"
-                );
+               );
 
                 AdvanceScript(5, script, end);
             }
@@ -1066,29 +1066,29 @@ void ParseFieldEvents( u8 actor_id )
                     ", " +
                     ParseGetVariable(GetU8(script + 1), GetU16LE(script + 2), 0, 30.0f) +
                     ");\n"
-                );
+               );
 
                 AdvanceScript(6, script, end);
             }
-            else if( opcode == 0x65 ) // SCRCC
+            else if (opcode == 0x65) // SCRCC
             {
-                export_script->Log( "background2d:autoscroll_to_entity( --[[ player entity object here ]] )\n" );
-                AdvanceScript( 1, script, end );
+                export_script->Log("background2d:autoscroll_to_entity(--[[ player entity object here ]])\n");
+                AdvanceScript(1, script, end);
             }
-            else if( opcode == 0x66 ) // SCR2DC
+            else if (opcode == 0x66) // SCR2DC
             {
-                export_script->Log( "background2d:scroll_to_position( " + ParseGetVariable( GetU8( script + 1 ) >> 4, ( s16 )GetU16LE( script + 3 ) ) + ", " + ParseGetVariable( GetU8( script + 1 ) & 0x0F, ( s16 )GetU16LE( script + 5 ) ) + ", Background2D.SMOOTH, " + ParseGetVariable( GetU8( script + 2 ) & 0x0F, ( s16 )GetU16LE( script + 7 ), 0, 30.0f ) + " )\n" );
-                AdvanceScript( 9, script, end );
+                export_script->Log("background2d:scroll_to_position(" + ParseGetVariable(GetU8(script + 1) >> 4, (s16)GetU16LE(script + 3)) + ", " + ParseGetVariable(GetU8(script + 1) & 0x0F, (s16)GetU16LE(script + 5)) + ", Background2D.SMOOTH, " + ParseGetVariable(GetU8(script + 2) & 0x0F, (s16)GetU16LE(script + 7), 0, 30.0f) + ")\n");
+                AdvanceScript(9, script, end);
             }
-            else if( opcode == 0x67 ) // SCRLW
+            else if (opcode == 0x67) // SCRLW
             {
-                export_script->Log( "background2d:scroll_sync()\n" );
-                AdvanceScript( 1, script, end );
+                export_script->Log("background2d:scroll_sync()\n");
+                AdvanceScript(1, script, end);
             }
             else if (opcode == 0x68) // SCR2DL
             {
-                export_script->Log( "background2d:scroll_to_position( " + ParseGetVariable( GetU8( script + 1 ) >> 4, ( s16 )GetU16LE( script + 3 ) ) + ", " + ParseGetVariable( GetU8( script + 1 ) & 0x0F, ( s16 )GetU16LE( script + 5 ) ) + ", Background2D.LINEAR, " + ParseGetVariable( GetU8( script + 2 ) & 0x0F, ( s16 )GetU16LE( script + 7 ), 0, 30.0f ) + " )\n" );
-                AdvanceScript( 9, script, end );
+                export_script->Log("background2d:scroll_to_position(" + ParseGetVariable(GetU8(script + 1) >> 4, (s16)GetU16LE(script + 3)) + ", " + ParseGetVariable(GetU8(script + 1) & 0x0F, (s16)GetU16LE(script + 5)) + ", Background2D.LINEAR, " + ParseGetVariable(GetU8(script + 2) & 0x0F, (s16)GetU16LE(script + 7), 0, 30.0f) + ")\n");
+                AdvanceScript(9, script, end);
             }
             else if (opcode == 0x6A) // VWOFT
             {
@@ -1096,7 +1096,7 @@ void ParseFieldEvents( u8 actor_id )
                     "[UNREVERSED] VWOFT(" +
                     ArgumentString(script + 1, 6) +
                     ");\n"
-                );
+               );
 
                 AdvanceScript(7, script, end);
             }
@@ -1108,12 +1108,12 @@ void ParseFieldEvents( u8 actor_id )
             else if (opcode == 0x6D) // IDLCK
             {
                 export_script->Log(
-                    "field:lock_walkmesh( " +
+                    "field:lock_walkmesh(" +
                     IntToString(GetU16LE(script + 1)) +
                     ", " +
                     BoolToString((bool)(GetU8(script + 3))) +
-                    " );\n"
-                );
+                    ");\n"
+               );
 
                 AdvanceScript(4, script, end);
             }
@@ -1121,67 +1121,67 @@ void ParseFieldEvents( u8 actor_id )
             {
                 export_script->Log(
                     SetVariable(GetU8(script + 1), GetU8(script + 2), "field:get_last_map()")
-                );
+               );
                 AdvanceScript(3, script, end);
             }
             else if (opcode == 0x70) // BATTLE
             {
                 export_script->Log(
-                    "field:battle_run( " +
+                    "field:battle_run(" +
                     ParseGetVariable(GetU8(script + 1), GetU16LE(script + 2)) +
-                    " );\n"
-                );
+                    ");\n"
+               );
 
                 AdvanceScript(4, script, end);
             }
             else if (opcode == 0x76) // PLUS!
             {
                 export_script->Log(
-                    SetVariable(GetU8(script + 1) >> 4, GetU8(script + 2), "( ( " + ParseGetVariable(GetU8(script + 1) >> 4, GetU8(script + 2)) + " + " + ParseGetVariable(GetU8(script + 1) & 0x0F, GetU8(script + 3)) + " > 255 ) ? 255 : " + ParseGetVariable(GetU8(script + 1) >> 4, GetU8(script + 2)) + " + " + ParseGetVariable(GetU8(script + 1) & 0x0F, GetU8(script + 3)) + " )")
-                );
+                    SetVariable(GetU8(script + 1) >> 4, GetU8(script + 2), "((" + ParseGetVariable(GetU8(script + 1) >> 4, GetU8(script + 2)) + " + " + ParseGetVariable(GetU8(script + 1) & 0x0F, GetU8(script + 3)) + " > 255) ? 255 : " + ParseGetVariable(GetU8(script + 1) >> 4, GetU8(script + 2)) + " + " + ParseGetVariable(GetU8(script + 1) & 0x0F, GetU8(script + 3)) + ")")
+               );
                 AdvanceScript(4, script, end);
             }
             else if (opcode == 0x77) // PLUS2!
             {
                 export_script->Log(
-                    SetVariable(GetU8(script + 1) >> 4, GetU8(script + 2), "( ( " + ParseGetVariable(GetU8(script + 1) >> 4, GetU8(script + 2)) + " + " + ParseGetVariable(GetU8(script + 1) & 0x0F, GetU16LE(script + 3)) + " > 65535 ) ? 65535 : " + ParseGetVariable(GetU8(script + 1) >> 4, GetU8(script + 2)) + " + " + ParseGetVariable(GetU8(script + 1) & 0x0F, GetU16LE(script + 3)) + " )")
-                );
+                    SetVariable(GetU8(script + 1) >> 4, GetU8(script + 2), "((" + ParseGetVariable(GetU8(script + 1) >> 4, GetU8(script + 2)) + " + " + ParseGetVariable(GetU8(script + 1) & 0x0F, GetU16LE(script + 3)) + " > 65535) ? 65535 : " + ParseGetVariable(GetU8(script + 1) >> 4, GetU8(script + 2)) + " + " + ParseGetVariable(GetU8(script + 1) & 0x0F, GetU16LE(script + 3)) + ")")
+               );
                 AdvanceScript(5, script, end);
             }
             else if (opcode == 0x78) // MINUS!
             {
                 export_script->Log(
-                    SetVariable(GetU8(script + 1) >> 4, GetU8(script + 2), "( ( " + ParseGetVariable(GetU8(script + 1) >> 4, GetU8(script + 2)) + " - " + ParseGetVariable(GetU8(script + 1) & 0x0F, GetU8(script + 3)) + " < 0 ) ? 0 : " + ParseGetVariable(GetU8(script + 1) >> 4, GetU8(script + 2)) + " - " + ParseGetVariable(GetU8(script + 1) & 0x0F, GetU8(script + 3)) + " )")
-                );
+                    SetVariable(GetU8(script + 1) >> 4, GetU8(script + 2), "((" + ParseGetVariable(GetU8(script + 1) >> 4, GetU8(script + 2)) + " - " + ParseGetVariable(GetU8(script + 1) & 0x0F, GetU8(script + 3)) + " < 0) ? 0 : " + ParseGetVariable(GetU8(script + 1) >> 4, GetU8(script + 2)) + " - " + ParseGetVariable(GetU8(script + 1) & 0x0F, GetU8(script + 3)) + ")")
+               );
                 AdvanceScript(4, script, end);
             }
-            else if( opcode == 0x79 ) // MINUS2!
+            else if (opcode == 0x79) // MINUS2!
             {
-                export_script->Log( SetVariable( GetU8( script + 1 ) >> 4, GetU8( script + 2 ), "( ( " + ParseGetVariable( GetU8( script + 1 ) >> 4, GetU8( script + 2 ) ) + " - " + ParseGetVariable( GetU8( script + 1 ) & 0x0F, GetU16LE( script + 3 ) ) + " < 0 ) ? 0 : " + ParseGetVariable( GetU8( script + 1 ) >> 4, GetU8( script + 2 ) ) + " - " + ParseGetVariable( GetU8( script + 1 ) & 0x0F, GetU16LE( script + 3 ) ) + " )" ) );
-                AdvanceScript( 5, script, end );
+                export_script->Log(SetVariable(GetU8(script + 1) >> 4, GetU8(script + 2), "((" + ParseGetVariable(GetU8(script + 1) >> 4, GetU8(script + 2)) + " - " + ParseGetVariable(GetU8(script + 1) & 0x0F, GetU16LE(script + 3)) + " < 0) ? 0 : " + ParseGetVariable(GetU8(script + 1) >> 4, GetU8(script + 2)) + " - " + ParseGetVariable(GetU8(script + 1) & 0x0F, GetU16LE(script + 3)) + ")"));
+                AdvanceScript(5, script, end);
             }
-            else if( opcode == 0x7A ) // INC!
+            else if (opcode == 0x7A) // INC!
             {
-                export_script->Log( SetVariable( GetU8( script + 1 ), GetU8( script + 2 ), "( ( " + ParseGetVariable( GetU8( script + 1 ), GetU8( script + 2 ) ) + " + 1 > 255 ) ? 255 : " + ParseGetVariable( GetU8( script + 1 ), GetU8( script + 2 ) ) + " + 1 )" ) );
-                AdvanceScript( 3, script, end );
+                export_script->Log(SetVariable(GetU8(script + 1), GetU8(script + 2), "((" + ParseGetVariable(GetU8(script + 1), GetU8(script + 2)) + " + 1 > 255) ? 255 : " + ParseGetVariable(GetU8(script + 1), GetU8(script + 2)) + " + 1)"));
+                AdvanceScript(3, script, end);
             }
             else if (opcode == 0x7E) // TALKON
             {
                 export_script->Log(
                     entity_list[i] +
-                    ":set_talkable( " +
+                    ":set_talkable(" +
                     BoolToString(!(bool)(GetU8(script + 1))) +
-                    " );\n"
-                );
+                    ");\n"
+               );
 
                 AdvanceScript(2, script, end);
             }
             else if (opcode == 0x80) // SETBYTE
             {
                 export_script->Log(
-                    SetVariable( GetU8( script + 1 ) >> 4, GetU8( script + 2 ), ParseGetVariable( GetU8( script + 1 ) & 0x0F, GetU8( script + 3 ) ) )
-                );
-                AdvanceScript( 4, script, end );
+                    SetVariable(GetU8(script + 1) >> 4, GetU8(script + 2), ParseGetVariable(GetU8(script + 1) & 0x0F, GetU8(script + 3)))
+               );
+                AdvanceScript(4, script, end);
             }
             else if (opcode == 0x82) // BITON
             {
@@ -1189,190 +1189,190 @@ void ParseFieldEvents( u8 actor_id )
 
                 AdvanceScript(4, script, end);
             }
-            else if( opcode == 0x83 ) // BITOFF
+            else if (opcode == 0x83) // BITOFF
             {
-                export_script->Log( SetBitChange( GetU8( script + 1 ) >> 4, GetU8( script + 2 ), GetU8( script + 1 ) & 0x0F, GetU8( script + 3 ), false ) );
-                AdvanceScript( 4, script, end );
+                export_script->Log(SetBitChange(GetU8(script + 1) >> 4, GetU8(script + 2), GetU8(script + 1) & 0x0F, GetU8(script + 3), false));
+                AdvanceScript(4, script, end);
             }
             else if (opcode == 0x85) // PLUS
             {
                 export_script->Log(
                     SetVariable(GetU8(script + 1) >> 4, GetU8(script + 2), ParseGetVariable(GetU8(script + 1) >> 4, GetU8(script + 2)) + " + " + ParseGetVariable(GetU8(script + 1) & 0x0F, GetU8(script + 3)))
-                );
+               );
                 AdvanceScript(4, script, end);
             }
             else if (opcode == 0x87) // MINUS
             {
                 export_script->Log(
                     SetVariable(GetU8(script + 1) >> 4, GetU8(script + 2), ParseGetVariable(GetU8(script + 1) >> 4, GetU8(script + 2)) + " - " + ParseGetVariable(GetU8(script + 1) & 0x0F, GetU8(script + 3)))
-                );
+               );
                 AdvanceScript(4, script, end);
             }
             else if (opcode == 0x89) // MUL
             {
                 export_script->Log(
                     SetVariable(GetU8(script + 1) >> 4, GetU8(script + 2), "((" + ParseGetVariable(GetU8(script + 1) >> 4, GetU8(script + 2)) + " * " + ParseGetVariable(GetU8(script + 1) & 0x0F, GetU8(script + 3)) + " > 255) ? 255 : " + ParseGetVariable(GetU8(script + 1) >> 4, GetU8(script + 2)) + " * " + ParseGetVariable(GetU8(script + 1) & 0x0F, GetU8(script + 3)) + ")")
-                );
+               );
                 AdvanceScript(4, script, end);
             }
             else if (opcode == 0x8D) // MOD
             {
                 export_script->Log(
                     SetVariable(GetU8(script + 1) >> 4, GetU8(script + 2), ParseGetVariable(GetU8(script + 1) >> 4, GetU8(script + 2)) + " % " + ParseGetVariable(GetU8(script + 1) & 0x0F, GetU8(script + 3)))
-                );
+               );
                 AdvanceScript(4, script, end);
             }
             else if (opcode == 0x8F) // AND
             {
                 export_script->Log(
                     SetVariable(GetU8(script + 1) >> 4, GetU8(script + 2), ParseGetVariable(GetU8(script + 1) >> 4, GetU8(script + 2)) + " & " + ParseGetVariable(GetU8(script + 1) & 0x0F, GetU8(script + 3)))
-                );
+               );
                 AdvanceScript(4, script, end);
             }
             else if (opcode == 0x90) // AND2
             {
                 export_script->Log(
                     SetVariable(GetU8(script + 1) >> 4, GetU8(script + 2), ParseGetVariable(GetU8(script + 1) >> 4, GetU8(script + 2)) + " & " + ParseGetVariable(GetU8(script + 1) & 0x0F, GetU16LE(script + 3)))
-                );
+               );
                 AdvanceScript(5, script, end);
             }
-            else if( opcode == 0x91 ) // OR
+            else if (opcode == 0x91) // OR
             {
-                export_script->Log( SetVariable( GetU8( script + 1 ) >> 4, GetU8( script + 2 ), ParseGetVariable( GetU8( script + 1 ) >> 4, GetU8( script + 2 ) ) + " | " + ParseGetVariable( GetU8( script + 1 ) & 0x0F, GetU8( script + 3 ) ) ) );
-                AdvanceScript( 4, script, end );
+                export_script->Log(SetVariable(GetU8(script + 1) >> 4, GetU8(script + 2), ParseGetVariable(GetU8(script + 1) >> 4, GetU8(script + 2)) + " | " + ParseGetVariable(GetU8(script + 1) & 0x0F, GetU8(script + 3))));
+                AdvanceScript(4, script, end);
             }
             else if (opcode == 0x92) // OR2
             {
                 export_script->Log(
                     SetVariable(GetU8(script + 1) >> 4, GetU8(script + 2), ParseGetVariable(GetU8(script + 1) >> 4, GetU8(script + 2)) + " | " + ParseGetVariable(GetU8(script + 1) & 0x0F, GetU16LE(script + 3)))
-                );
+               );
                 AdvanceScript(5, script, end);
             }
             else if (opcode == 0x95) // INC
             {
                 export_script->Log(
                     SetVariable(GetU8(script + 1), GetU8(script + 2), ParseGetVariable(GetU8(script + 1), GetU8(script + 2)) + " + 1")
-                );
+               );
                 AdvanceScript(3, script, end);
             }
             else if (opcode == 0x97) // DEC
             {
                 export_script->Log(
                     SetVariable(GetU8(script + 1), GetU8(script + 2), ParseGetVariable(GetU8(script + 1), GetU8(script + 2)) + " - 1")
-                );
+               );
                 AdvanceScript(3, script, end);
             }
             else if (opcode == 0x99) // RANDOM
             {
                 export_script->Log(
                     SetVariable(GetU8(script + 1), GetU8(script + 2), "math.rand()")
-                );
+               );
                 AdvanceScript(3, script, end);
             }
-            else if( opcode == 0xA0 ) // PC
+            else if (opcode == 0xA0) // PC
             {
-                export_script->Log( "set_entity_to_character( \"" + entity_list[ i ] + "\", " + IntToString( GetU8( script + 1 ) ) + " );\n" );
-                AdvanceScript( 2, script, end );
+                export_script->Log("set_entity_to_character(\"" + entity_list[ i ] + "\", " + IntToString(GetU8(script + 1)) + ");\n");
+                AdvanceScript(2, script, end);
             }
-            else if( opcode == 0xA1 ) // CHAR
+            else if (opcode == 0xA1) // CHAR
             {
-                export_script->Log( "-- assosiate entity with model (CHAR) argument doesn't matter\n" );
-                AdvanceScript( 2, script, end );
+                export_script->Log("-- assosiate entity with model (CHAR) argument doesn't matter\n");
+                AdvanceScript(2, script, end);
             }
-            else if( opcode == 0xA2 ) // DFANM
+            else if (opcode == 0xA2) // DFANM
             {
-                export_script->Log( entity_list[ i ] + ":set_default_animation( \"" + IntToString( GetU8( script + 1 ) ) + "\" ) -- speed=" + FloatToString( 1.0f / GetU8( script + 2 ) ) + "\n" );
-                export_script->Log( "                 " + entity_list[ i ] + ":play_animation( \"" + IntToString( GetU8( script + 1 ) ) + "\" )\n" );
-                AdvanceScript( 3, script, end );
+                export_script->Log(entity_list[ i ] + ":set_default_animation(\"" + IntToString(GetU8(script + 1)) + "\") -- speed=" + FloatToString(1.0f / GetU8(script + 2)) + "\n");
+                export_script->Log("                 " + entity_list[ i ] + ":play_animation(\"" + IntToString(GetU8(script + 1)) + "\")\n");
+                AdvanceScript(3, script, end);
             }
-            else if( opcode == 0xA3 ) // ANIME1
+            else if (opcode == 0xA3) // ANIME1
             {
-                export_script->Log( entity_list[ i ] + ":play_animation( \"" + IntToString( GetU8( script + 1 ) ) + "\" ) -- speed=" + FloatToString( 1.0f / GetU8( script + 2 ) ) + "\n" );
-                export_script->Log( "                 " + entity_list[ i ] + ":animation_sync()\n" );
-                AdvanceScript( 3, script, end );
+                export_script->Log(entity_list[ i ] + ":play_animation(\"" + IntToString(GetU8(script + 1)) + "\") -- speed=" + FloatToString(1.0f / GetU8(script + 2)) + "\n");
+                export_script->Log("                 " + entity_list[ i ] + ":animation_sync()\n");
+                AdvanceScript(3, script, end);
             }
-            else if( opcode == 0xA4 ) // VISI
+            else if (opcode == 0xA4) // VISI
             {
-                export_script->Log( entity_list[ i ] + ":set_visible( " + BoolToString( ( bool )( GetU8( script + 1 ) ) ) + " )\n" );
-                AdvanceScript( 2, script, end );
+                export_script->Log(entity_list[ i ] + ":set_visible(" + BoolToString((bool)(GetU8(script + 1))) + ")\n");
+                AdvanceScript(2, script, end);
             }
-            else if( opcode == 0xA5 ) // XYZI
+            else if (opcode == 0xA5) // XYZI
             {
-                export_script->Log( entity_list[ i ] + ":set_position( " + ParseGetVariable( GetU8( script + 1 ) >> 4, ( s16 )GetU16LE( script + 3 ), 0, downscaler ) + ", " + ParseGetVariable( GetU8( script + 1 ) & 0x0F, ( s16 )GetU16LE( script + 5 ), 0, downscaler ) + ", " + ParseGetVariable( GetU8( script + 2 ) >> 4, ( s16 )GetU16LE( script + 7 ), 0, downscaler ) + " ) -- triangle_id=" + ParseGetVariable( GetU8( script + 2 ) & 0x0F, ( s16 )GetU16LE( script + 9 ) ) + "\n" );
-                AdvanceScript( 11, script, end );
+                export_script->Log(entity_list[ i ] + ":set_position(" + ParseGetVariable(GetU8(script + 1) >> 4, (s16)GetU16LE(script + 3), 0, downscaler) + ", " + ParseGetVariable(GetU8(script + 1) & 0x0F, (s16)GetU16LE(script + 5), 0, downscaler) + ", " + ParseGetVariable(GetU8(script + 2) >> 4, (s16)GetU16LE(script + 7), 0, downscaler) + ") -- triangle_id=" + ParseGetVariable(GetU8(script + 2) & 0x0F, (s16)GetU16LE(script + 9)) + "\n");
+                AdvanceScript(11, script, end);
             }
-            else if( opcode == 0xA6 ) // XYI
+            else if (opcode == 0xA6) // XYI
             {
                 export_script->Log(
                     entity_list[ i ] +
-                    ":set_2d_position_triangle( " +
-                    ParseGetVariable( GetU8( script + 1 ) >> 4, ( s16 )GetU16LE( script + 3 ), false, downscaler ) +
+                    ":set_2d_position_triangle(" +
+                    ParseGetVariable(GetU8(script + 1) >> 4, (s16)GetU16LE(script + 3), false, downscaler) +
                     ", " +
-                    ParseGetVariable( GetU8( script + 1 ) & 0x0F, ( s16 )GetU16LE( script + 5 ), false, downscaler ) +
+                    ParseGetVariable(GetU8(script + 1) & 0x0F, (s16)GetU16LE(script + 5), false, downscaler) +
                     ", triangle_id=" +
-                    ParseGetVariable( GetU8( script + 2 ) >> 4, ( s16 )GetU16LE( script + 7 ) ) +
+                    ParseGetVariable(GetU8(script + 2) >> 4, (s16)GetU16LE(script + 7)) +
                     ");\n"
-                );
+               );
 
                 AdvanceScript(9, script, end);
             }
-            else if( opcode == 0xA8 ) // MOVE
+            else if (opcode == 0xA8) // MOVE
             {
-                export_script->Log( entity_list[ i ] + ":move_to_position( " + ParseGetVariable( GetU8( script + 1 ) >> 4, ( s16 )GetU16LE( script + 2 ), false, downscaler ) + ", " + ParseGetVariable( GetU8( script + 1 ) & 0x0F, ( s16 )GetU16LE( script + 4 ), false, downscaler ) + " )\n" );
-                export_script->Log( "                 " + entity_list[ i ] + ":move_sync()\n" );
-                AdvanceScript( 6, script, end );
+                export_script->Log(entity_list[ i ] + ":move_to_position(" + ParseGetVariable(GetU8(script + 1) >> 4, (s16)GetU16LE(script + 2), false, downscaler) + ", " + ParseGetVariable(GetU8(script + 1) & 0x0F, (s16)GetU16LE(script + 4), false, downscaler) + ")\n");
+                export_script->Log("                 " + entity_list[ i ] + ":move_sync()\n");
+                AdvanceScript(6, script, end);
             }
-            else if( opcode == 0xA9 ) // CMOVE
+            else if (opcode == 0xA9) // CMOVE
             {
                 export_script->Log(
                     entity_list[ i ] +
-                    ":set_rotation_lock( true );\n" +
+                    ":set_rotation_lock(true);\n" +
                     entity_list[ i ] +
-                    ":move_to_position( " +
-                    ParseGetVariable( GetU8( script + 1 ) >> 4, ( s16 )GetU16LE( script + 2), 0, downscaler ) +
+                    ":move_to_position(" +
+                    ParseGetVariable(GetU8(script + 1) >> 4, (s16)GetU16LE(script + 2), 0, downscaler) +
                     ", " +
-                    ParseGetVariable( GetU8( script + 1 ) & 0x0F, ( s16 )GetU16LE( script + 4 ), 0, downscaler ) +
-                    ", false );\n" +
+                    ParseGetVariable(GetU8(script + 1) & 0x0F, (s16)GetU16LE(script + 4), 0, downscaler) +
+                    ", false);\n" +
                     entity_list[ i ] +
-                    ":set_rotation_lock( false );\n"
-                );
+                    ":set_rotation_lock(false);\n"
+               );
 
-                AdvanceScript( 6, script, end );
+                AdvanceScript(6, script, end);
             }
-            else if( opcode == 0xAA ) // MOVA
+            else if (opcode == 0xAA) // MOVA
             {
                 export_script->Log(
                     entity_list[ i ] +
-                    ":move_to_model( " +
-                    entity_list[ GetU8( script + 1 ) ] +
-                    ", true );\n"
-                );
+                    ":move_to_model(" +
+                    entity_list[ GetU8(script + 1) ] +
+                    ", true);\n"
+               );
 
-                AdvanceScript( 2, script, end );
+                AdvanceScript(2, script, end);
             }
-            else if( opcode == 0xAB ) // TURA
+            else if (opcode == 0xAB) // TURA
             {
-                u8 type = GetU8( script + 2 );
+                u8 type = GetU8(script + 2);
 
                 export_script->Log(
                     entity_list[ i ] +
-                    ":turn_to_entity( " +
-                    entity_list[ GetU8( script + 1 ) ] +
+                    ":turn_to_entity(" +
+                    entity_list[ GetU8(script + 1) ] +
                     ", " +
-                    ( ( type == 0 ) ? "Entity.CLOCKWISE" : ( ( type == 1 ) ? "Entity.ANTICLOCKWISE" : "Entity.CLOSEST" ) ) +
+                    ((type == 0) ? "Entity.CLOCKWISE" : ((type == 1) ? "Entity.ANTICLOCKWISE" : "Entity.CLOSEST")) +
                     ", " +
-                    FloatToString( GetU8( script + 3 ) / 30.0f ) +
+                    FloatToString(GetU8(script + 3) / 30.0f) +
                     ");\n"
-                );
+               );
 
-                AdvanceScript( 4, script, end );
+                AdvanceScript(4, script, end);
             }
             else if (opcode == 0xAC) // ANIMW
             {
                 export_script->Log(
                     entity_list[i] +
                     ":set_animation_wait();\n"
-                );
+               );
 
                 AdvanceScript(1, script, end);
             }
@@ -1380,12 +1380,12 @@ void ParseFieldEvents( u8 actor_id )
             {
                 export_script->Log(
                     entity_list[i] +
-                    ":move_to_position( \"" +
+                    ":move_to_position(\"" +
                     ParseGetVariable(GetU8(script + 1) >> 4, (s16)GetU16LE(script + 2)) +
                     ", " +
                     ParseGetVariable(GetU8(script + 1) & 0x0F, (s16)GetU16LE(script + 4)) +
-                    ", false );\n"
-                );
+                    ", false);\n"
+               );
 
                 AdvanceScript(6, script, end);
             }
@@ -1393,25 +1393,25 @@ void ParseFieldEvents( u8 actor_id )
             {
                 export_script->Log(
                     entity_list[i] +
-                    ":play_animation( \"" +
+                    ":play_animation(\"" +
                     IntToString(GetU8(script + 1)) +
                     "\", 0, -1, " +
                     FloatToString(1.0f / GetU8(script + 2)) +
-                    ", false );\n"
-                );
+                    ", false);\n"
+               );
 
                 AdvanceScript(3, script, end);
             }
-            else if( opcode == 0xAF ) // ANIM!1
+            else if (opcode == 0xAF) // ANIM!1
             {
-                export_script->Log( entity_list[ i ] + ":play_animation_stop( \"" + IntToString( GetU8( script + 1 ) ) + "\" ) -- speed=" + FloatToString( 1.0f / GetU8( script + 2 ) ) + "\n" );
-                AdvanceScript( 3, script, end );
+                export_script->Log(entity_list[ i ] + ":play_animation_stop(\"" + IntToString(GetU8(script + 1)) + "\") -- speed=" + FloatToString(1.0f / GetU8(script + 2)) + "\n");
+                AdvanceScript(3, script, end);
             }
             else if (opcode == 0xB1) // CANM!1
             {
                 export_script->Log(
                     entity_list[i] +
-                    ":play_animation( \"" +
+                    ":play_animation(\"" +
                     IntToString(GetU8(script + 1)) +
                     "\", " +
                     FloatToString(GetU8(script + 2) / 30.0f) +
@@ -1419,28 +1419,28 @@ void ParseFieldEvents( u8 actor_id )
                     FloatToString(GetU8(script + 3) / 30.0f) +
                     ", " +
                     FloatToString(1.0f / GetU8(script + 4)) +
-                    ", true );\n"
-                );
+                    ", true);\n"
+               );
 
                 AdvanceScript(5, script, end);
             }
-            else if( opcode == 0xB2 ) // MSPED
+            else if (opcode == 0xB2) // MSPED
             {
-                export_script->Log( entity_list[ i ] + ":set_move_auto_speed( " + ParseGetVariable( GetU8( script + 1 ), GetU16LE( script + 2 ), 0, 256.0f * downscaler / ( 30.0f ) ) + " )\n" );
-                AdvanceScript( 4, script, end );
+                export_script->Log(entity_list[ i ] + ":set_move_auto_speed(" + ParseGetVariable(GetU8(script + 1), GetU16LE(script + 2), 0, 256.0f * downscaler / (30.0f)) + ")\n");
+                AdvanceScript(4, script, end);
             }
-            else if( opcode == 0xB3 ) // DIR
+            else if (opcode == 0xB3) // DIR
             {
-                export_script->Log( entity_list[ i ] + ":set_direction( " + ParseGetVariable( GetU8( script + 1 ), GetU8( script + 2 ), 0, 256.0f / 360.0f ) + " )\n" );
+                export_script->Log(entity_list[ i ] + ":set_direction(" + ParseGetVariable(GetU8(script + 1), GetU8(script + 2), 0, 256.0f / 360.0f) + ")\n");
                 AdvanceScript(3, script, end);
             }
-            else if( opcode == 0xB4 ) // TURNGEN
+            else if (opcode == 0xB4) // TURNGEN
             {
-                u8 type = GetU8( script + 3 );
-                u8 calc = GetU8( script + 5 );
-                export_script->Log( entity_list[ i ] + ":turn_to_direction( " + ParseGetVariable( GetU8( script + 1 ), GetU8( script + 2 ), 0, 256.0f / 360.0f ) + ", " + ( ( type == 0 ) ? "Entity.CLOCKWISE" : ( ( type == 1 ) ? "Entity.ANTICLOCKWISE" : "Entity.CLOSEST" ) ) + ", " + ( ( calc == 1 ) ? "Entity.LINEAR" : "Entity.SMOOTH" ) + ", " + FloatToString( GetU8( script + 4 ) / 30.0f ) + " )\n" );
-                export_script->Log( entity_list[ i ] + ":turn_sync()\n" );
-                AdvanceScript( 6, script, end );
+                u8 type = GetU8(script + 3);
+                u8 calc = GetU8(script + 5);
+                export_script->Log(entity_list[ i ] + ":turn_to_direction(" + ParseGetVariable(GetU8(script + 1), GetU8(script + 2), 0, 256.0f / 360.0f) + ", " + ((type == 0) ? "Entity.CLOCKWISE" : ((type == 1) ? "Entity.ANTICLOCKWISE" : "Entity.CLOSEST")) + ", " + ((calc == 1) ? "Entity.LINEAR" : "Entity.SMOOTH") + ", " + FloatToString(GetU8(script + 4) / 30.0f) + ")\n");
+                export_script->Log(entity_list[ i ] + ":turn_sync()\n");
+                AdvanceScript(6, script, end);
             }
             else if (opcode == 0xB5) // TURN
             {
@@ -1448,28 +1448,28 @@ void ParseFieldEvents( u8 actor_id )
 
                 export_script->Log(
                     entity_list[i] +
-                    ":turn_to_direction( " +
+                    ":turn_to_direction(" +
                     ParseGetVariable(GetU8(script + 1), GetU16LE(script + 2), 0, 256.0f / 360.0f) +
                     ", Entity.CLOCKWISE, " +
                     ((calc == 1) ? "Field.LINEAR" : "Field.SMOOTH") +
                     ", " +
                     FloatToString(GetU8(script + 4) / 30.0f) +
-                    " );\n"
-                );
-                export_script->Log( entity_list[ i ] + ":turn_sync()\n" );
+                    ");\n"
+               );
+                export_script->Log(entity_list[ i ] + ":turn_sync()\n");
 
                 AdvanceScript(6, script, end);
             }
-            else if( opcode == 0xB6 ) // DIRA
+            else if (opcode == 0xB6) // DIRA
             {
-                export_script->Log( entity_list[ i ] + ":set_direction( \"" + entity_list[ GetU8( script + 1 ) ] + "\" )\n" );
-                AdvanceScript( 2, script, end );
+                export_script->Log(entity_list[ i ] + ":set_direction(\"" + entity_list[ GetU8(script + 1) ] + "\")\n");
+                AdvanceScript(2, script, end);
             }
             else if (opcode == 0xB7) // GETDIR
             {
                 export_script->Log(
                     SetVariable(GetU8(script + 1), GetU8(script + 3), entity_list[GetU8(script + 2)] + ":get_direction()")
-                );
+               );
                 AdvanceScript(4, script, end);
             }
             else if (opcode == 0xB8) // GETAXY
@@ -1477,44 +1477,44 @@ void ParseFieldEvents( u8 actor_id )
                 export_script->Log(
                     SetVariable(GetU8(script + 1) >> 4, GetU8(script + 3), entity_list[GetU8(script + 2)] + ":get_x()") +
                     SetVariable(GetU8(script + 1) & 0x0F, GetU8(script + 4), entity_list[GetU8(script + 2)] + ":get_y()")
-                );
+               );
                 AdvanceScript(5, script, end);
             }
-            else if( opcode == 0xB9 ) // GETAI
+            else if (opcode == 0xB9) // GETAI
             {
-                export_script->Log( SetVariable( GetU8( script + 1 ), GetU8( script + 3 ), entity_list[ GetU8( script + 2 ) ] + ":get_move_triangle_id()" ) );
-                AdvanceScript( 4, script, end );
+                export_script->Log(SetVariable(GetU8(script + 1), GetU8(script + 3), entity_list[ GetU8(script + 2) ] + ":get_move_triangle_id()"));
+                AdvanceScript(4, script, end);
             }
-            else if( opcode == 0xBA ) // ANIM!2
+            else if (opcode == 0xBA) // ANIM!2
             {
-                export_script->Log( entity_list[ i ] + ":play_animation_stop( \"" + IntToString( GetU8( script + 1 ) ) + "\" ) -- speed=" + FloatToString( 1.0f / GetU8( script + 2 ) ) + "\n" );
-                export_script->Log( "                 " + entity_list[ i ] + ":animation_sync()\n" );
-                AdvanceScript( 3, script, end );
+                export_script->Log(entity_list[ i ] + ":play_animation_stop(\"" + IntToString(GetU8(script + 1)) + "\") -- speed=" + FloatToString(1.0f / GetU8(script + 2)) + "\n");
+                export_script->Log("                 " + entity_list[ i ] + ":animation_sync()\n");
+                AdvanceScript(3, script, end);
             }
-            else if( opcode == 0xBB ) // CANIM2
+            else if (opcode == 0xBB) // CANIM2
             {
-                export_script->Log( entity_list[ i ] + ":play_animation( \"" + IntToString( GetU8( script + 1 ) ) + "\", " + FloatToString( GetU8( script + 2 ) / 30.0f ) + ", " + FloatToString( GetU8( script + 3 ) / 30.0f ) + " ) -- speed=" + FloatToString( 1.0f / GetU8( script + 4 ) ) + "\n" );
-                export_script->Log( "                 " + entity_list[ i ] + ":animation_sync()\n" );
-                AdvanceScript( 5, script, end );
+                export_script->Log(entity_list[ i ] + ":play_animation(\"" + IntToString(GetU8(script + 1)) + "\", " + FloatToString(GetU8(script + 2) / 30.0f) + ", " + FloatToString(GetU8(script + 3) / 30.0f) + ") -- speed=" + FloatToString(1.0f / GetU8(script + 4)) + "\n");
+                export_script->Log("                 " + entity_list[ i ] + ":animation_sync()\n");
+                AdvanceScript(5, script, end);
             }
-            else if( opcode == 0xBC ) // CANM!2
+            else if (opcode == 0xBC) // CANM!2
             {
-                export_script->Log( entity_list[ i ] + ":play_animation_stop( \"" + IntToString( GetU8( script + 1 ) ) + "\", " + FloatToString( GetU8( script + 2 ) / 30.0f ) + ", " + FloatToString( GetU8( script + 3 ) / 30.0f ) + " ) -- speed=" + FloatToString( 1.0f / GetU8( script + 4 ) ) + "\n" );
-                export_script->Log( "                 " + entity_list[ i ] + ":animation_sync()\n" );
-                AdvanceScript( 5, script, end );
+                export_script->Log(entity_list[ i ] + ":play_animation_stop(\"" + IntToString(GetU8(script + 1)) + "\", " + FloatToString(GetU8(script + 2) / 30.0f) + ", " + FloatToString(GetU8(script + 3) / 30.0f) + ") -- speed=" + FloatToString(1.0f / GetU8(script + 4)) + "\n");
+                export_script->Log("                 " + entity_list[ i ] + ":animation_sync()\n");
+                AdvanceScript(5, script, end);
             }
-            else if( opcode == 0xBD ) // ASPED
+            else if (opcode == 0xBD) // ASPED
             {
-                export_script->Log( "-- set speed of entity animation to \"" + ParseGetVariable( GetU8( script + 1 ), GetU16LE( script + 2 ), 0, 0x10 ) + "\"\n" );
-                AdvanceScript( 4, script, end );
+                export_script->Log("-- set speed of entity animation to \"" + ParseGetVariable(GetU8(script + 1), GetU16LE(script + 2), 0, 0x10) + "\"\n");
+                AdvanceScript(4, script, end);
             }
             else if (opcode == 0xBF) // CC
             {
                 export_script->Log(
-                    "field:set_player_entity( " +
+                    "field:set_player_entity(" +
                     entity_list[GetU8(script + 1)] +
-                    " );\n"
-                );
+                    ");\n"
+               );
 
                 AdvanceScript(2, script, end);
             }
@@ -1522,7 +1522,7 @@ void ParseFieldEvents( u8 actor_id )
             {
                 export_script->Log(
                     entity_list[i] +
-                    ":jump_to_position( " +
+                    ":jump_to_position(" +
                     ParseGetVariable(GetU8(script + 1) >> 4, (s16)GetU16LE(script + 3)) +
                     ", " +
                     ParseGetVariable(GetU8(script + 1) & 0x0F, (s16)GetU16LE(script + 5)) +
@@ -1530,8 +1530,8 @@ void ParseFieldEvents( u8 actor_id )
                     ParseGetVariable(GetU8(script + 2) >> 4, GetU16LE(script + 7)) +
                     ", " +
                     ParseGetVariable(GetU8(script + 2) & 0x0F, GetU16LE(script + 9), 0, 30.0f) +
-                    " );\n"
-                );
+                    ");\n"
+               );
 
                 AdvanceScript(11, script, end);
             }
@@ -1542,7 +1542,7 @@ void ParseFieldEvents( u8 actor_id )
                     SetVariable(GetU8(script + 1) & 0x0F, GetU8(script + 5), entity_list[GetU8(script + 3)] + ":get_y()") +
                     SetVariable(GetU8(script + 2) >> 4, GetU8(script + 6), entity_list[GetU8(script + 3)] + ":get_z()") +
                     SetVariable(GetU8(script + 2) & 0x0F, GetU8(script + 7), entity_list[GetU8(script + 3)] + ":get_move_triangle_id()")
-                );
+               );
                 AdvanceScript(8, script, end);
             }
             else if (opcode == 0xC2) // LADER
@@ -1551,7 +1551,7 @@ void ParseFieldEvents( u8 actor_id )
 
                 export_script->Log(
                     entity_list[i] +
-                    ":climb_to_position( " +
+                    ":climb_to_position(" +
                     ParseGetVariable(GetU8(script + 1) >> 4, (s16)GetU16LE(script + 3)) +
                     ", " +
                     ParseGetVariable(GetU8(script + 1) & 0x0F, (s16)GetU16LE(script + 5)) +
@@ -1561,36 +1561,36 @@ void ParseFieldEvents( u8 actor_id )
                     ParseGetVariable(GetU8(script + 2) & 0x0F, GetU16LE(script + 9)) +
                     ", " +
                     ((type == 0) ? "Entity.UP_TO_DOWN" : ((type == 1) ? "Entity.DOWN_TO_UP" : ((type == 2) ? "Entity.LEFT_TO_RIGHT" : ((type == 1) ? "Entity.RIGHT_TO_LEFT" : "")))) +
-                    " ); -- direction needs to be seted to \"" +
+                    "); -- direction needs to be seted to \"" +
                     FloatToString((GetU8(script + 13) / 256.0f) * 360.0f) +
                     "\" and animation during climbing is \"" +
                     IntToString(GetU8(script + 12)) +
                     "\" with speed \"" +
                     FloatToString(1.0f / GetU8(script + 14)) +
                     "\"\n"
-                );
+               );
 
                 AdvanceScript(15, script, end);
             }
-            else if( opcode == 0xC3 ) // OFST
+            else if (opcode == 0xC3) // OFST
             {
-                u8 type = GetU8( script + 3 );
-                export_script->Log( entity_list[ i ] + ":offset_to_position( " + ParseGetVariable( GetU8( script + 1 ) >> 4, ( s16 )GetU16LE( script + 4 ), 0, downscaler ) + ", " + ParseGetVariable( GetU8( script + 1 ) & 0x0F, ( s16 )GetU16LE( script + 6 ), false, downscaler ) + ", " + ParseGetVariable( GetU8( script + 2 ) >> 4, ( s16 )GetU16LE( script + 8 ), false, downscaler ) + ", " + ( ( type == 2 ) ? "Entity.SMOOTH" : "Entity.LINEAR" ) + ", " + ParseGetVariable( GetU8( script + 2 ) & 0x0F, GetU16LE( script + 10 ), 0, 30.0f ) + " )\n" );
-                AdvanceScript( 12, script, end );
+                u8 type = GetU8(script + 3);
+                export_script->Log(entity_list[ i ] + ":offset_to_position(" + ParseGetVariable(GetU8(script + 1) >> 4, (s16)GetU16LE(script + 4), 0, downscaler) + ", " + ParseGetVariable(GetU8(script + 1) & 0x0F, (s16)GetU16LE(script + 6), false, downscaler) + ", " + ParseGetVariable(GetU8(script + 2) >> 4, (s16)GetU16LE(script + 8), false, downscaler) + ", " + ((type == 2) ? "Entity.SMOOTH" : "Entity.LINEAR") + ", " + ParseGetVariable(GetU8(script + 2) & 0x0F, GetU16LE(script + 10), 0, 30.0f) + ")\n");
+                AdvanceScript(12, script, end);
             }
-            else if( opcode == 0xC4 ) // OFSTW
+            else if (opcode == 0xC4) // OFSTW
             {
-                export_script->Log( entity_list[ i ] + ":offset_sync()\n" );
-                AdvanceScript( 1, script, end );
+                export_script->Log(entity_list[ i ] + ":offset_sync()\n");
+                AdvanceScript(1, script, end);
             }
             else if (opcode == 0xC5) // TALKR
             {
                 export_script->Log(
                     entity_list[i] +
-                    ":set_talk_range( " +
+                    ":set_talk_range(" +
                     ParseGetVariable(GetU8(script + 1), GetU8(script + 2)) +
-                    " );\n"
-                );
+                    ");\n"
+               );
 
                 AdvanceScript(3, script, end);
             }
@@ -1598,61 +1598,61 @@ void ParseFieldEvents( u8 actor_id )
             {
                 export_script->Log(
                     entity_list[i] +
-                    ":set_solid_range( " +
+                    ":set_solid_range(" +
                     ParseGetVariable(GetU8(script + 1), GetU8(script + 2)) +
-                    " );\n"
-                );
+                    ");\n"
+               );
 
                 AdvanceScript(3, script, end);
             }
-            else if( opcode == 0xC7 ) // SOLID
+            else if (opcode == 0xC7) // SOLID
             {
-                export_script->Log( entity_list[ i ] + ":set_solid( " + BoolToString( !( bool )( GetU8( script + 1 ) ) ) + " )\n" );
-                AdvanceScript( 2, script, end );
+                export_script->Log(entity_list[ i ] + ":set_solid(" + BoolToString(!(bool)(GetU8(script + 1))) + ")\n");
+                AdvanceScript(2, script, end);
             }
             else if (opcode == 0xC8) // PRTYP
             {
                 export_script->Log(
-                    "game:party_add( " +
+                    "game:party_add(" +
                     IntToString(GetU8(script + 1)) +
-                    " );\n"
-                );
+                    ");\n"
+               );
 
                 AdvanceScript(2, script, end);
             }
             else if (opcode == 0xC9) // PRTYM
             {
                 export_script->Log(
-                    "game:party_remove( " +
+                    "game:party_remove(" +
                     IntToString(GetU8(script + 1)) +
-                    " );\n"
-                );
+                    ");\n"
+               );
 
                 AdvanceScript(2, script, end);
             }
             else if (opcode == 0xCA) // PRTYE
             {
                 export_script->Log(
-                    "game:party_set( " +
+                    "game:party_set(" +
                     IntToString(GetU8(script + 1)) +
                     ", " +
                     IntToString(GetU8(script + 2)) +
                     ", " +
                     IntToString(GetU8(script + 3)) +
-                    " );\n"
-                );
+                    ");\n"
+               );
 
                 AdvanceScript(4, script, end);
             }
             else if (opcode == 0xCD) // MMBUD
             {
                 export_script->Log(
-                    "game:character_enable( " +
+                    "game:character_enable(" +
                     IntToString(GetU8(script + 2)) +
                     ", " +
                     BoolToString((bool)(GetU8(script + 1))) +
-                    " );\n"
-                );
+                    ");\n"
+               );
 
                 AdvanceScript(3, script, end);
             }
@@ -1662,14 +1662,14 @@ void ParseFieldEvents( u8 actor_id )
                     "[UNREVERSED] MMBLK(" +
                     ArgumentString(script + 1, 1) +
                     ");\n"
-                );
+               );
 
                 AdvanceScript(2, script, end);
             }
             else if (opcode == 0xD0) // LINE
             {
                 export_script->Log(
-                    "-- define line point1( " +
+                    "-- define line point1(" +
                     IntToString(GetU16LE(script + 1)) +
                     ", " +
                     IntToString(GetU16LE(script + 3)) +
@@ -1681,8 +1681,8 @@ void ParseFieldEvents( u8 actor_id )
                     IntToString(GetU16LE(script + 9)) +
                     ", " +
                     IntToString(GetU16LE(script + 11)) +
-                    " )\n"
-                );
+                    ")\n"
+               );
 
                 AdvanceScript(13, script, end);
             }
@@ -1692,26 +1692,26 @@ void ParseFieldEvents( u8 actor_id )
                     "-- turn line " +
                     Ogre::String((GetU8(script + 1) == 1) ? "on" : "off") +
                     "\n"
-                );
+               );
 
                 AdvanceScript(2, script, end);
             }
             else if (opcode == 0xD2) // MPJPO
             {
                 export_script->Log(
-                    "field:gateway_enable( " +
+                    "field:gateway_enable(" +
                     Ogre::String((GetU8(script + 1) == 1) ? "false" : "true") +
-                    " );\n"
-                );
+                    ");\n"
+               );
 
-                AdvanceScript( 2, script, end );
+                AdvanceScript(2, script, end);
             }
-            else if( opcode == 0xD3 ) // SLINE
+            else if (opcode == 0xD3) // SLINE
             {
                 u8 type = GetU8(script + 2);
 
                 export_script->Log(
-                    "-- redefine line point1( " +
+                    "-- redefine line point1(" +
                     ParseGetVariable(GetU8(script + 1) >> 4, GetU8(script + 4)) +
                     ", " +
                     ParseGetVariable(GetU8(script + 1) & 0x0F, GetU8(script + 6)) +
@@ -1723,8 +1723,8 @@ void ParseFieldEvents( u8 actor_id )
                     ParseGetVariable(GetU8(script + 3) >> 4, GetU8(script + 12)) +
                     ", " +
                     ParseGetVariable(GetU8(script + 3) & 0x0F, GetU8(script + 14)) +
-                    " )\n"
-                );
+                    ")\n"
+               );
 
                 AdvanceScript(16, script, end);
             }
@@ -1734,7 +1734,7 @@ void ParseFieldEvents( u8 actor_id )
                     "[UNREVERSED] PMJMP(" +
                     ArgumentString(script + 1, 2) +
                     ");\n"
-                );
+               );
 
                 AdvanceScript(3, script, end);
             }
@@ -1742,7 +1742,7 @@ void ParseFieldEvents( u8 actor_id )
             {
                 u8 sub_opcode = GetU8(script + 4);
 
-                Ogre::String sound = "music:execute_akao( " +
+                Ogre::String sound = "music:execute_akao(" +
                     HexToString(sub_opcode, 2, '0') +
                     ", " +
                     ParseGetVariable(GetU8(script + 1) >> 4, GetU16LE(script + 5), 4) +
@@ -1756,7 +1756,7 @@ void ParseFieldEvents( u8 actor_id )
                     ParseGetVariable(GetU8(script + 3) >> 4, GetU16LE(script + 13), 4) +
                     ", " +
                     ParseGetVariable(GetU8(script + 3) & 0x0F, GetU16LE(script + 15), 4) +
-                    " );\n";
+                    ");\n";
 
                 m_SoundOpcodes.push_back(sound);
                 export_script->Log(sound);
@@ -1768,7 +1768,7 @@ void ParseFieldEvents( u8 actor_id )
                 export_script->Log(
                     entity_list[i] +
                     ":animation_stop();\n"
-                );
+               );
 
                 AdvanceScript(1, script, end);
             }
@@ -1777,95 +1777,95 @@ void ParseFieldEvents( u8 actor_id )
                 export_script->Log(
                     entity_list[i] +
                     ":set_turn_wait();\n"
-                );
+               );
 
                 AdvanceScript(1, script, end);
             }
-            else if( opcode == 0xE0 ) // BGON
+            else if (opcode == 0xE0) // BGON
             {
                 export_script->Log(
-                    "field:background_on( \"" +
-                    ParseGetVariable( GetU8( script + 1 ) >> 4, GetU8( script + 2 ) ) +
+                    "field:background_on(\"" +
+                    ParseGetVariable(GetU8(script + 1) >> 4, GetU8(script + 2)) +
                     "\", " +
-                    ParseGetVariable( GetU8( script + 1 ) & 0x0F, GetU8( script + 3 ) ) +
-                    " ); -- turns on layer of background animation with given id\n"
-                );
-                AdvanceScript( 4, script, end );
+                    ParseGetVariable(GetU8(script + 1) & 0x0F, GetU8(script + 3)) +
+                    "); -- turns on layer of background animation with given id\n"
+               );
+                AdvanceScript(4, script, end);
             }
-            else if( opcode == 0xE1 ) // BGOFF
+            else if (opcode == 0xE1) // BGOFF
             {
                 export_script->Log(
-                    "field:background_off( \"" +
-                    ParseGetVariable( GetU8( script + 1 ) >> 4, GetU8( script + 2 ) ) +
+                    "field:background_off(\"" +
+                    ParseGetVariable(GetU8(script + 1) >> 4, GetU8(script + 2)) +
                     "\", " +
-                    ParseGetVariable( GetU8( script + 1 ) & 0x0F, GetU8( script + 3 ) ) +
-                    " ); -- turns off layer of background animation with given id\n"
-                );
-                AdvanceScript( 4, script, end );
+                    ParseGetVariable(GetU8(script + 1) & 0x0F, GetU8(script + 3)) +
+                    "); -- turns off layer of background animation with given id\n"
+               );
+                AdvanceScript(4, script, end);
             }
-            else if( opcode == 0xE4 ) // BGCLR
+            else if (opcode == 0xE4) // BGCLR
             {
                 export_script->Log(
-                    "field:background_clear( \"" +
-                    ParseGetVariable( GetU8( script + 1 ), GetU8( script + 2 ) ) +
-                    "\" ); -- turns off all layer of background animation with given id\n"
-                );
-                AdvanceScript( 3, script, end );
+                    "field:background_clear(\"" +
+                    ParseGetVariable(GetU8(script + 1), GetU8(script + 2)) +
+                    "\"); -- turns off all layer of background animation with given id\n"
+               );
+                AdvanceScript(3, script, end);
             }
-            else if( opcode == 0xE5 ) // STPAL
+            else if (opcode == 0xE5) // STPAL
             {
-                export_script->Log( "-- store palette \"" + ParseGetVariable( GetU8( script + 1 ) >> 4, GetU8( script + 2 ) ) + "\" to slot \"0x" + ParseGetVariable( GetU8( script + 1 ) & 0x0f, GetU8( script + 3 ), 2 ) + "\" starting from clut_x=\"0x00\" and with width=\"0x" + HexToString( GetU8( script + 4 ) + 1, 2, '0' ) + "\"\n" );
-                AdvanceScript( 5, script, end );
+                export_script->Log("-- store palette \"" + ParseGetVariable(GetU8(script + 1) >> 4, GetU8(script + 2)) + "\" to slot \"0x" + ParseGetVariable(GetU8(script + 1) & 0x0f, GetU8(script + 3), 2) + "\" starting from clut_x=\"0x00\" and with width=\"0x" + HexToString(GetU8(script + 4) + 1, 2, '0') + "\"\n");
+                AdvanceScript(5, script, end);
             }
-            else if( opcode == 0xE6 ) // LDPAL
+            else if (opcode == 0xE6) // LDPAL
             {
-                export_script->Log( "-- load palette \"" + ParseGetVariable( GetU8( script + 1 ) & 0x0f, GetU8( script + 3 ) ) + "\" from slot \"0x" + ParseGetVariable( GetU8( script + 1 ) >> 4, GetU8( script + 2 ), 2 ) + "\" starting from clut_x=\"0x00\" and with width=\"0x" + HexToString( GetU8( script + 4 ) + 1, 2, '0' ) + "\"\n" );
-                AdvanceScript( 5, script, end );
+                export_script->Log("-- load palette \"" + ParseGetVariable(GetU8(script + 1) & 0x0f, GetU8(script + 3)) + "\" from slot \"0x" + ParseGetVariable(GetU8(script + 1) >> 4, GetU8(script + 2), 2) + "\" starting from clut_x=\"0x00\" and with width=\"0x" + HexToString(GetU8(script + 4) + 1, 2, '0') + "\"\n");
+                AdvanceScript(5, script, end);
             }
-            else if( opcode == 0xE7 ) // CPPAL
+            else if (opcode == 0xE7) // CPPAL
             {
-                export_script->Log( "-- copy palette stored in slot \"0x" + ParseGetVariable( GetU8( script + 1 ) >> 4, GetU8( script + 2 ), 2 ) + "\" with width=\"0x" + HexToString( GetU8( script + 4 ) + 1, 2, '0' ) + " to slot \"0x" + ParseGetVariable( GetU8( script + 1 ) & 0x0f, GetU8( script + 3 ), 2 ) + "\"\n" );
-                AdvanceScript( 5, script, end );
+                export_script->Log("-- copy palette stored in slot \"0x" + ParseGetVariable(GetU8(script + 1) >> 4, GetU8(script + 2), 2) + "\" with width=\"0x" + HexToString(GetU8(script + 4) + 1, 2, '0') + " to slot \"0x" + ParseGetVariable(GetU8(script + 1) & 0x0f, GetU8(script + 3), 2) + "\"\n");
+                AdvanceScript(5, script, end);
             }
-            else if( opcode == 0xE9 ) // ADPAL
+            else if (opcode == 0xE9) // ADPAL
             {
-                export_script->Log( "-- add to palette stored in slot \"0x" + ParseGetVariable( GetU8( script + 1 ) >> 4, GetU8( script + 4 ), 2 ) + "\" with width=\"0x" + HexToString( GetU8( script + 9 ) + 1, 2, '0' ) + "\" with values R=\"" + ParseGetVariable( GetU8( script + 3 ) >> 4, GetU8( script + 8 ) ) + "\", G=\"" + ParseGetVariable( GetU8( script + 2 ) & 0x0f, GetU8( script + 7 ) ) + "\", B=\"" + ParseGetVariable( GetU8( script + 2 ) >> 4, GetU8( script + 6 ) ) + "\" and store it to slot \"0x" + ParseGetVariable( GetU8( script + 1 ) & 0x0f, GetU8( script + 5 ), 2 ) + "\"\n" );
-                AdvanceScript( 10, script, end );
+                export_script->Log("-- add to palette stored in slot \"0x" + ParseGetVariable(GetU8(script + 1) >> 4, GetU8(script + 4), 2) + "\" with width=\"0x" + HexToString(GetU8(script + 9) + 1, 2, '0') + "\" with values R=\"" + ParseGetVariable(GetU8(script + 3) >> 4, GetU8(script + 8)) + "\", G=\"" + ParseGetVariable(GetU8(script + 2) & 0x0f, GetU8(script + 7)) + "\", B=\"" + ParseGetVariable(GetU8(script + 2) >> 4, GetU8(script + 6)) + "\" and store it to slot \"0x" + ParseGetVariable(GetU8(script + 1) & 0x0f, GetU8(script + 5), 2) + "\"\n");
+                AdvanceScript(10, script, end);
             }
-            else if( opcode == 0xEA ) // MPPAL2
+            else if (opcode == 0xEA) // MPPAL2
             {
-                export_script->Log( "-- multiply palette stored in slot \"0x" + ParseGetVariable( GetU8( script + 1 ) >> 4, GetU8( script + 4 ), 2 ) + "\" with width=\"0x" + HexToString( GetU8( script + 9 ) + 1, 2, '0' ) + " with values R=\"" + ParseGetVariable( GetU8( script + 3 ) >> 4, GetU8( script + 8 ) ) + "\", G=\"" + ParseGetVariable( GetU8( script + 2 ) & 0x0f, GetU8( script + 7 ) ) + "\", B=\"" + ParseGetVariable( GetU8( script + 2 ) >> 4, GetU8( script + 6 ) ) + "\" (note: 64 - 1.0f, 32 - 0.5f) and store it to slot \"0x" + ParseGetVariable( GetU8( script + 1 ) & 0x0f, GetU8( script + 5 ), 2 ) + "\"\n" );
-                AdvanceScript( 10, script, end );
+                export_script->Log("-- multiply palette stored in slot \"0x" + ParseGetVariable(GetU8(script + 1) >> 4, GetU8(script + 4), 2) + "\" with width=\"0x" + HexToString(GetU8(script + 9) + 1, 2, '0') + " with values R=\"" + ParseGetVariable(GetU8(script + 3) >> 4, GetU8(script + 8)) + "\", G=\"" + ParseGetVariable(GetU8(script + 2) & 0x0f, GetU8(script + 7)) + "\", B=\"" + ParseGetVariable(GetU8(script + 2) >> 4, GetU8(script + 6)) + "\" (note: 64 - 1.0f, 32 - 0.5f) and store it to slot \"0x" + ParseGetVariable(GetU8(script + 1) & 0x0f, GetU8(script + 5), 2) + "\"\n");
+                AdvanceScript(10, script, end);
             }
-            else if( opcode == 0xEB ) // STPLS
+            else if (opcode == 0xEB) // STPLS
             {
-                export_script->Log( "-- store palette \"" + IntToString( GetU8( script + 1 ) ) + "\" to slot \"0x" + HexToString( GetU8( script + 2 ), 2, '0' ) + "\" starting from clut_x=\"0x" + HexToString( GetU8( script + 3 ), 2, '0' ) + "\" and with width=\"0x" + HexToString( GetU8( script + 4 ) + 1, 2, '0' ) + "\"\n" );
-                AdvanceScript( 5, script, end );
+                export_script->Log("-- store palette \"" + IntToString(GetU8(script + 1)) + "\" to slot \"0x" + HexToString(GetU8(script + 2), 2, '0') + "\" starting from clut_x=\"0x" + HexToString(GetU8(script + 3), 2, '0') + "\" and with width=\"0x" + HexToString(GetU8(script + 4) + 1, 2, '0') + "\"\n");
+                AdvanceScript(5, script, end);
             }
-            else if( opcode == 0xEC ) // LDPLS
+            else if (opcode == 0xEC) // LDPLS
             {
-                export_script->Log( "-- load palette \"" + IntToString( GetU8( script + 2 ) ) + "\" from slot \"0x" + HexToString( GetU8( script + 1 ), 2, '0' ) + "\" starting from clut_x=\"0x" + HexToString( GetU8( script + 3 ), 2, '0' ) + "\" and with width=\"0x" + HexToString( GetU8( script + 4 ) + 1, 2, '0' ) + "\"\n" );
-                AdvanceScript( 5, script, end );
+                export_script->Log("-- load palette \"" + IntToString(GetU8(script + 2)) + "\" from slot \"0x" + HexToString(GetU8(script + 1), 2, '0') + "\" starting from clut_x=\"0x" + HexToString(GetU8(script + 3), 2, '0') + "\" and with width=\"0x" + HexToString(GetU8(script + 4) + 1, 2, '0') + "\"\n");
+                AdvanceScript(5, script, end);
             }
-            else if( opcode == 0xEE ) // RTPAL2
+            else if (opcode == 0xEE) // RTPAL2
             {
-                export_script->Log( "[UNREVERSED] RTPAL2( " + ArgumentString( script + 1, 7 ) + " );\n" );
-                AdvanceScript( 8, script, end );
+                export_script->Log("[UNREVERSED] RTPAL2(" + ArgumentString(script + 1, 7) + ");\n");
+                AdvanceScript(8, script, end);
             }
-            else if( opcode == 0xEF ) // ADPAL2
+            else if (opcode == 0xEF) // ADPAL2
             {
-                export_script->Log( "[UNREVERSED] ADPAL2( " + ArgumentString( script + 1, 10 ) + ");\n" );
-                AdvanceScript( 11, script, end );
+                export_script->Log("[UNREVERSED] ADPAL2(" + ArgumentString(script + 1, 10) + ");\n");
+                AdvanceScript(11, script, end);
             }
             else if (opcode == 0xF1) // SOUND
             {
-                Ogre::String sound = "music:execute_akao( " +
+                Ogre::String sound = "music:execute_akao(" +
                     HexToString(0x20, 2, '0') +
                     ", " +
                     ParseGetVariable(GetU8(script + 1) & 0x0F, GetU8(script + 4), true) +
                     ", " +
                     ParseGetVariable(GetU8(script + 1) >> 4, GetU16LE(script + 2), true) +
-                    " ); -- play sound\n";
+                    "); -- play sound\n";
 
                 m_SoundOpcodes.push_back(sound);
                 export_script->Log(sound);
@@ -1875,10 +1875,10 @@ void ParseFieldEvents( u8 actor_id )
             else if (opcode == 0xF5) // MULCK
             {
                 export_script->Log(
-                    "music:lock( " +
+                    "music:lock(" +
                     BoolToString((bool)(GetU8(script + 1))) +
-                    " );\n"
-                );
+                    ");\n"
+               );
 
                 AdvanceScript(2, script, end);
             }
@@ -1888,17 +1888,17 @@ void ParseFieldEvents( u8 actor_id )
                     "[UNREVERSED] BMUSC(" +
                     IntToString(GetU8(script + 1)) +
                     ");\n"
-                );
+               );
 
                 AdvanceScript(2, script, end);
             }
             else if (opcode == 0xF8) // PMVIE
             {
                 export_script->Log(
-                    "field:movie_set( " +
+                    "field:movie_set(" +
                     IntToString(GetU8(script + 1)) +
-                    " );\n"
-                );
+                    ");\n"
+               );
 
                 AdvanceScript(2, script, end);
             }
@@ -1911,16 +1911,16 @@ void ParseFieldEvents( u8 actor_id )
             {
                 export_script->Log(
                     SetVariable(GetU8(script + 1), GetU8(script + 2), "field:get_movie_frame()")
-                );
+               );
                 AdvanceScript(3, script, end);
             }
             else if (opcode == 0xFB) // MVCAM
             {
                 export_script->Log(
-                    "field:movie_camera_enable( " +
+                    "field:movie_camera_enable(" +
                     BoolToString(!(bool)(GetU8(script + 1))) +
-                    " );\n"
-                );
+                    ");\n"
+               );
 
                 AdvanceScript(2, script, end);
             }
@@ -1928,7 +1928,7 @@ void ParseFieldEvents( u8 actor_id )
             {
                 export_script->Log(
                     SetVariable(GetU8(script + 1), GetU8(script + 2), "field:is_music_playing()")
-                );
+               );
                 AdvanceScript(3, script, end);
             }
             else

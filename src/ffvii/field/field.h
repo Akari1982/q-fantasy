@@ -24,6 +24,8 @@ struct FieldControl
 
     u8 disable_render;
 
+    s16 scale;
+
     // fade
     u16 fade_type = FADE_TYPE_NONE;
     s16 fade_steps;
@@ -45,6 +47,7 @@ struct FieldControl
     u32 btn_released;
 
     // entity
+    s16 entities_n;
     s16 player_id;
     s16 spawn_x;
     s16 spawn_y;
@@ -54,6 +57,15 @@ struct FieldControl
     u8 move_lock;
     u8 gateway_lock;
     u8 speed_up;
+
+    // model animation
+    u16 anim_stand;
+    u16 anim_walk;
+    u16 anim_run;
+
+    // background
+    s16 scroll_x;
+    s16 scroll_y;
 };
 
 struct FieldCamera

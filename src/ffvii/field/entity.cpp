@@ -1,4 +1,5 @@
 #include "entity.h"
+#include "field.h"
 #include "psyq/libgte.h"
 
 #include <array>

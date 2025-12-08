@@ -5,4 +5,4 @@
 
 
 
-void FieldEventInit();
+void FieldEventInit(u8* events);
