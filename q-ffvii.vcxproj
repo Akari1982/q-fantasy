@@ -126,6 +126,7 @@
     <ClCompile Include="src\ffvii\kernel\buttons.cpp" />
     <ClCompile Include="src\ffvii\kernel\file.cpp" />
     <ClCompile Include="src\ffvii\kernel\game.cpp" />
+    <ClCompile Include="src\ffvii\kernel\save.cpp" />
     <ClCompile Include="src\ffvii\menu\menu.cpp" />
     <ClCompile Include="src\ffvii\menu\newgame.cpp" />
     <ClCompile Include="src\main.cpp" />
@@ -175,6 +176,7 @@
     <ClInclude Include="src\ffvii\field\background.h" />
     <ClInclude Include="src\ffvii\field\entity.h" />
     <ClInclude Include="src\ffvii\field\event.h" />
+    <ClInclude Include="src\ffvii\field\event_opcodes.h" />
     <ClInclude Include="src\ffvii\field\fade.h" />
     <ClInclude Include="src\ffvii\field\field.h" />
     <ClInclude Include="src\ffvii\field\field_list.h" />
@@ -186,6 +188,7 @@
     <ClInclude Include="src\ffvii\kernel\buttons.h" />
     <ClInclude Include="src\ffvii\kernel\file.h" />
     <ClInclude Include="src\ffvii\kernel\game.h" />
+    <ClInclude Include="src\ffvii\kernel\save.h" />
     <ClInclude Include="src\ffvii\menu\menu.h" />
     <ClInclude Include="src\ffvii\menu\newgame.h" />
     <ClInclude Include="src\psyq\libapi.h" />

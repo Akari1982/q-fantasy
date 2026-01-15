@@ -166,6 +166,9 @@
     <ClCompile Include="src\ffvii\field\model.cpp">
       <Filter>src\field</Filter>
     </ClCompile>
+    <ClCompile Include="src\ffvii\kernel\save.cpp">
+      <Filter>src\kernel</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="third_party\ofxImGui\src\BaseEngine.h">
@@ -386,6 +389,12 @@
     </ClInclude>
     <ClInclude Include="src\ffvii\field\model.h">
       <Filter>src\field</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ffvii\field\event_opcodes.h">
+      <Filter>src\field</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ffvii\kernel\save.h">
+      <Filter>src\kernel</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

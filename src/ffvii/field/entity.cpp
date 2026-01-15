@@ -6,6 +6,8 @@
 
 
 
+FieldEntity g_field_entities[FIELD_ENTITY_N];
+
 std::vector<FieldWalkmesh> g_field_wm;
 std::vector<FieldWalkmeshLink> g_field_wm_link;
 
