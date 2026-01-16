@@ -6,6 +6,8 @@
 
 
 
+#define FIXED32_12(x) x >> 0xc;
+
 typedef uint8_t u8;
 typedef int8_t s8;
 typedef uint16_t u16;
