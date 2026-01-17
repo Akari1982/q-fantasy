@@ -169,6 +169,9 @@
     <ClCompile Include="src\ffvii\kernel\save.cpp">
       <Filter>src\kernel</Filter>
     </ClCompile>
+    <ClCompile Include="src\ffvii\field\debug.cpp">
+      <Filter>src\field</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="third_party\ofxImGui\src\BaseEngine.h">
@@ -395,6 +398,9 @@
     </ClInclude>
     <ClInclude Include="src\ffvii\kernel\save.h">
       <Filter>src\kernel</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ffvii\field\debug.h">
+      <Filter>src\field</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

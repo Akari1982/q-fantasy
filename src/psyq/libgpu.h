@@ -7,21 +7,23 @@
 
 
 
-#define GPU_OTAG        0x0
-#define GPU_VRAM_CLEAR  0x1
-#define GPU_VRAM_LOAD   0x2
-#define GPU_VRAM_MOVE   0x3
-#define GPU_VRAM_STORE  0x4
-#define GPU_POLY_FT4    0x5
-#define GPU_LINE_F2     0x6
-#define GPU_TILE        0x7
-#define GPU_SPRT        0x8
-#define GPU_SPRT_16     0x9
-#define GPU_DR_MODE     0xa
-#define GPU_DR_ENV      0xb
-#define GPU_DISP_ENV    0xc
-#define GPU_DISP_ENABLE 0xd
-#define GPU_TERMINATE   0xe
+#define GPU_OTAG        0x00
+#define GPU_VRAM_CLEAR  0x01
+#define GPU_VRAM_LOAD   0x02
+#define GPU_VRAM_MOVE   0x03
+#define GPU_VRAM_STORE  0x04
+#define GPU_POLY_FT4    0x05
+#define GPU_LINE_F2     0x06
+#define GPU_LINE_F3     0x07
+#define GPU_TILE        0x08
+#define GPU_SPRT        0x09
+#define GPU_SPRT_8      0x0a
+#define GPU_SPRT_16     0x0b
+#define GPU_DR_MODE     0x0c
+#define GPU_DR_ENV      0x0d
+#define GPU_DISP_ENV    0x0e
+#define GPU_DISP_ENABLE 0x0f
+#define GPU_TERMINATE   0x10
 
 struct TIM_IMAGE
 {
@@ -74,6 +76,17 @@ struct LINE_F2 : public OTag
     void execute();
 };
 
+struct LINE_F3 : public OTag
+{
+    u8 r0, g0, b0;
+    u8 code;
+    s16 x0, y0;
+    s16 x1, y1;
+    s16 x2, y2;
+
+    void execute();
+};
+
 struct POLY_FT4 : public OTag
 {
     u8 r0, g0, b0;
@@ -112,6 +125,17 @@ struct SPRT : public OTag
     u8 u0, v0;
     u16 clut;
     s16 w, h;
+
+    void execute();
+};
+
+struct SPRT_8 : public OTag
+{
+    u8 r0, g0, b0;
+    u8 code;
+    s16 x0, y0;
+    u8 u0, v0;
+    u16 clut;
 
     void execute();
 };
@@ -217,9 +241,11 @@ OTag* PsyqClearOTag(OTag* ot, s32 n);
 void PsyqDrawOTag(OTag* ot);
 
 void PsyqSetLineF2(LINE_F2* p);
+void PsyqSetLineF3(LINE_F3* p);
 void PsyqSetPolyFT4(POLY_FT4* p);
 void PsyqSetTile(TILE* p);
 void PsyqSetSprt(SPRT* p);
+void PsyqSetSprt8(SPRT_8* p);
 void PsyqSetSprt16(SPRT_16* p);
 
 void PsyqAddPrim(OTag* ot, OTag* p);

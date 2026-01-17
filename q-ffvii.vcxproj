@@ -116,6 +116,7 @@
     <ClCompile Include="src\ffvii\debug\debug_field.cpp" />
     <ClCompile Include="src\ffvii\ending\ending.cpp" />
     <ClCompile Include="src\ffvii\field\background.cpp" />
+    <ClCompile Include="src\ffvii\field\debug.cpp" />
     <ClCompile Include="src\ffvii\field\entity.cpp" />
     <ClCompile Include="src\ffvii\field\event.cpp" />
     <ClCompile Include="src\ffvii\field\fade.cpp" />
@@ -174,6 +175,7 @@
     <ClInclude Include="src\ffvii\debug\debug_field.h" />
     <ClInclude Include="src\ffvii\ending\ending.h" />
     <ClInclude Include="src\ffvii\field\background.h" />
+    <ClInclude Include="src\ffvii\field\debug.h" />
     <ClInclude Include="src\ffvii\field\entity.h" />
     <ClInclude Include="src\ffvii\field\event.h" />
     <ClInclude Include="src\ffvii\field\event_opcodes.h" />

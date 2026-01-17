@@ -11,42 +11,46 @@ u16 l_actor_script[FIELD_ACTORS_N];
 u16 l_actor_entity[FIELD_ACTORS_N];
 u16 l_char_actor[GAME_CHARACTERS_N];
 u8 l_opcode_cur;
+u8 l_memory_temp[0x100];
+
+u8 FieldEventReadMemoryU8(s16 bank_id, s16 ofs);
+s16 FieldEventReadMemoryS16(s16 bank_id, s16 ofs);
 
 #include "event_opcodes.h"
 FieldEventOpcode event_opcodes[] =
 {
-    FieldEventNull,         FieldEventNull,           FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull,
-    FieldEventNull,         FieldEventNull,           FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull,
-    FieldEventNull,         FieldEventNull,           FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull,
-    FieldEventNull,         FieldEventNull,           FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull,
-    FieldEventNull,         FieldEventNull,           FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull,
-    FieldEventNull,         FieldEventNull,           FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull,
-    FieldEventNull,         FieldEventNull,           FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull,
-    FieldEventNull,         FieldEventNull,           FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull,
-    FieldEventNull,         FieldEventNull,           FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull,
-    FieldEventNull,         FieldEventNull,           FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull,
-    FieldEventNull,         FieldEventNull,           FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull,
-    FieldEventNull,         FieldEventNull,           FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull,
-    FieldEventNull,         FieldEventNull,           FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull,
-    FieldEventNull,         FieldEventNull,           FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull,
-    FieldEventNull,         FieldEventNull,           FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull,
-    FieldEventNull,         FieldEventNull,           FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull,
-    FieldEventNull,         FieldEventNull,           FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull,
-    FieldEventNull,         FieldEventNull,           FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull,
-    FieldEventNull,         FieldEventNull,           FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull,
-    FieldEventNull,         FieldEventNull,           FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull,
-    FieldEventOpcode_a0_pc, FieldEventOpcode_a1_char, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull,
-    FieldEventNull,         FieldEventNull,           FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull,
-    FieldEventNull,         FieldEventNull,           FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull,
-    FieldEventNull,         FieldEventNull,           FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull,
-    FieldEventNull,         FieldEventNull,           FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull,
-    FieldEventNull,         FieldEventNull,           FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull,
-    FieldEventNull,         FieldEventNull,           FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull,
-    FieldEventNull,         FieldEventNull,           FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull,
-    FieldEventNull,         FieldEventNull,           FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull,
-    FieldEventNull,         FieldEventNull,           FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull,
-    FieldEventNull,         FieldEventNull,           FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull,
-    FieldEventNull,         FieldEventNull,           FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull, FieldEventNull
+    FENull,         FENull,           FENull,            FENull,          FENull,           FENull,           FENull,            FENull,
+    FENull,         FENull,           FENull,            FENull,          FENull,           FENull,           FENull,            FENull,
+    FENull,         FENull,           FENull,            FENull,          FENull,           FENull,           FENull,            FENull,
+    FENull,         FENull,           FENull,            FENull,          FENull,           FENull,           FENull,            FENull,
+    FENull,         FENull,           FENull,            FENull,          FENull,           FENull,           FENull,            FENull,
+    FENull,         FENull,           FENull,            FENull,          FENull,           FENull,           FENull,            FENull,
+    FENull,         FENull,           FENull,            FENull,          FENull,           FENull,           FENull,            FENull,
+    FENull,         FENull,           FENull,            FENull,          FENull,           FENull,           FENull,            FENull,
+    FENull,         FENull,           FENull,            FENull,          FENull,           FENull,           FENull,            FENull,
+    FENull,         FENull,           FENull,            FENull,          FENull,           FENull,           FENull,            FENull,
+    FENull,         FENull,           FENull,            FENull,          FENull,           FENull,           FENull,            FENull,
+    FENull,         FENull,           FENull,            FENull,          FENull,           FENull,           FENull,            FENull,
+    FENull,         FENull,           FENull,            FENull,          FENull,           FENull,           FENull,            FENull,
+    FENull,         FENull,           FENull,            FENull,          FENull,           FENull,           FENull,            FENull,
+    FENull,         FENull,           FENull,            FENull,          FENull,           FENull,           FENull,            FENull,
+    FENull,         FENull,           FENull,            FENull,          FENull,           FENull,           FEOpcode_7e_tlkon, FENull,
+    FENull,         FENull,           FENull,            FENull,          FENull,           FENull,           FENull,            FENull,
+    FENull,         FENull,           FENull,            FENull,          FENull,           FENull,           FENull,            FENull,
+    FENull,         FENull,           FENull,            FENull,          FENull,           FENull,           FENull,            FENull,
+    FENull,         FENull,           FENull,            FENull,          FENull,           FENull,           FENull,            FENull,
+    FEOpcode_a0_pc, FEOpcode_a1_char, FEOpcode_a2_dfanm, FENull,          FEOpcode_a4_visi, FEOpcode_a5_xyzi, FENull,            FENull,
+    FENull,         FENull,           FENull,            FENull,          FENull,           FENull,           FENull,            FENull,
+    FENull,         FENull,           FENull,            FEOpcode_b3_dir, FENull,           FENull,           FENull,            FENull,
+    FENull,         FENull,           FENull,            FENull,          FENull,           FENull,           FENull,            FENull,
+    FENull,         FENull,           FENull,            FENull,          FENull,           FENull,           FEOpcode_c6_slidr, FEOpcode_c7_solid,
+    FENull,         FENull,           FENull,            FENull,          FENull,           FENull,           FENull,            FENull,
+    FENull,         FENull,           FENull,            FENull,          FENull,           FENull,           FENull,            FENull,
+    FENull,         FENull,           FENull,            FENull,          FENull,           FENull,           FENull,            FENull,
+    FENull,         FENull,           FENull,            FENull,          FENull,           FENull,           FENull,            FENull,
+    FENull,         FENull,           FENull,            FENull,          FENull,           FENull,           FENull,            FENull,
+    FENull,         FENull,           FENull,            FENull,          FENull,           FENull,           FENull,            FENull,
+    FENull,         FENull,           FENull,            FENull,          FENull,           FENull,           FENull,            FENull
 };
 
 
@@ -113,34 +117,165 @@ void FieldEventInitRun()
 
 
 
-s16 FieldEventReadMemoryS16(s16 bank_id, s16 ofs)
+u8 FieldEventReadMemoryU8(s16 bank_id, s16 ofs)
 {
-    actor_id_cur = bu[0x800722c4];
-    events_data = w[0x8009c6dc];
-    script_cur = hu[0x800831fc + actor_id_cur * 0x2];
+    u16 script_cur = l_actor_script[l_actor_id_cur];
 
     u8 bank = -1;
 
-    switch (bank_id - 0x1)
+    switch (bank_id)
     {
-        case 0x0: bank = bu[events_data + script_cur + 0x1] >> 0x4; break;
-        case 0x1: bank = bu[events_data + script_cur + 0x1] & 0xf;  break;
-        case 0x2: bank = bu[events_data + script_cur + 0x2] >> 0x4; break;
-        case 0x3: bank = bu[events_data + script_cur + 0x2] & 0xf;  break;
-        case 0x4: bank = bu[events_data + script_cur + 0x3] >> 0x4; break;
-        case 0x5: bank = bu[events_data + script_cur + 0x3] & 0xf;  break;
+        case 0x0: bank = READ_LE_U8(g_field_events + script_cur + 0x1) >> 0x4; break;
+        case 0x1: bank = READ_LE_U8(g_field_events + script_cur + 0x1) & 0xf;  break;
+        case 0x2: bank = READ_LE_U8(g_field_events + script_cur + 0x2) >> 0x4; break;
+        case 0x3: bank = READ_LE_U8(g_field_events + script_cur + 0x2) & 0xf;  break;
+        case 0x4: bank = READ_LE_U8(g_field_events + script_cur + 0x3) >> 0x4; break;
+        case 0x5: bank = READ_LE_U8(g_field_events + script_cur + 0x3) & 0xf;  break;
+    }
+
+    switch(bank)
+    {
+        case 0x0: // memory bank 0
+        {
+            u8 val = READ_LE_U8(g_field_events + script_cur + ofs);
+
+//            if (bu[0x8009d820] & 0x3)
+//            {
+//                field_debug_add_parse_value_to_page2("G cons=", val, 0x2);
+//            }
+
+            return val;
+        }
+
+        case 0x1: // memory bank 1
+        case 0x2: // memory bank 2
+        {
+            u16 indx = READ_LE_U8(g_field_events + script_cur + ofs);
+            u8 val = READ_LE_U8(&g_save.memory[indx]);
+
+//            if (bu[0x8009d820] & 0x3) // debug
+//            {
+//                field_debug_add_parse_value_to_page2("G indx=", indx, 0x4);
+//                field_debug_add_parse_value_to_page2("G glov=", val, 0x2);
+//            }
+
+            return val;
+        }
+
+        case 0x3: // memory bank 3
+        case 0x4: // memory bank 4
+        {
+            u8 indx = READ_LE_U8(g_field_events + script_cur + ofs);
+            u8 val = READ_LE_U8(&g_save.memory[0x100 + indx]);
+
+//            if (bu[0x8009d820] & 0x3) // debug
+//            {
+//                field_debug_add_parse_value_to_page2("G indx=", indx, 0x4);
+//                field_debug_add_parse_value_to_page2("G glov=", val, 0x2);
+//            }
+
+            return val;
+        }
+
+        case 0xb: // memory bank B
+        case 0xc: // memory bank C
+        {
+            u8 indx = READ_LE_U8(g_field_events + script_cur + ofs);
+            u8 val = READ_LE_U8(&g_save.memory[0x200 + indx]);
+
+//            if (bu[0x8009d820] & 0x3) // debug
+//            {
+//                field_debug_add_parse_value_to_page2("G indx=", indx, 0x4);
+//                field_debug_add_parse_value_to_page2("G glov=", val, 0x2);
+//            }
+
+            return val;
+        }
+
+        case 0xd: // memory bank D
+        case 0xe: // memory bank E
+        {
+            u8 indx = READ_LE_U8(g_field_events + script_cur + ofs);
+            u8 val = READ_LE_U8(&g_save.memory[0x300 + indx]);
+
+//            if (bu[0x8009d820] & 0x3) // debug
+//            {
+//                field_debug_add_parse_value_to_page2("G indx=", indx, 0x4);
+//                field_debug_add_parse_value_to_page2("G glov=", val, 0x2);
+//            }
+
+            return val;
+        }
+
+        case 0x7: // memory bank 7
+        case 0xf: // memory bank F
+        {
+            u8 indx = READ_LE_U8(g_field_events + script_cur + ofs);
+            u8 val = READ_LE_U8(&g_save.memory[0x400 + indx]);
+
+//            if (bu[0x8009d820] & 0x3) // debug
+//            {
+//                field_debug_add_parse_value_to_page2("G indx=", indx, 0x4);
+//                field_debug_add_parse_value_to_page2("G glov=", val, 0x2);
+//            }
+
+            return val;
+        }
+
+        case 0x5: // memory bank 5
+        case 0x6: // memory bank 6
+        {
+            u8 indx = READ_LE_U8(g_field_events + script_cur + ofs);
+            u8 val = READ_LE_U8(l_memory_temp + indx);
+
+//            if (bu[0x8009d820] & 0x3) // debug
+//            {
+//                field_debug_add_parse_value_to_page2("G indx=", indx, 0x4);
+//                field_debug_add_parse_value_to_page2("G mapv=", val, 0x2);
+//            }
+
+            return val;
+        }
+    }
+
+//    if (bu[0x8009d820] & 0x3) // debug
+//    {
+//        field_debug_add_parse_value_to_page2("G data err=", bank, 0x2);
+//    }
+
+//    field_event_debug_error("Bad Event arg!");
+
+    return 0;
+}
+
+
+
+s16 FieldEventReadMemoryS16(s16 bank_id, s16 ofs)
+{
+    u16 script_cur = l_actor_script[l_actor_id_cur];
+
+    u8 bank = -1;
+
+    switch (bank_id)
+    {
+        case 0x1: bank = READ_LE_U8(g_field_events + script_cur + 0x1) >> 0x4; break;
+        case 0x2: bank = READ_LE_U8(g_field_events + script_cur + 0x1) & 0xf;  break;
+        case 0x3: bank = READ_LE_U8(g_field_events + script_cur + 0x2) >> 0x4; break;
+        case 0x4: bank = READ_LE_U8(g_field_events + script_cur + 0x2) & 0xf;  break;
+        case 0x5: bank = READ_LE_U8(g_field_events + script_cur + 0x3) >> 0x4; break;
+        case 0x6: bank = READ_LE_U8(g_field_events + script_cur + 0x3) & 0xf;  break;
     }
 
     switch (bank)
     {
         case 0x0: // memory bank 0
         {
-            u16 val = hu[events_data + script_cur + ofs];
+            u16 val = READ_LE_U16(g_field_events + script_cur + ofs);
 
-            if (bu[0x8009d820] & 0x3)
-            {
-                field_debug_add_parse_value_to_page2("G cons=", val, 0x4);
-            }
+//            if (bu[0x8009d820] & 0x3)
+//            {
+//                field_debug_add_parse_value_to_page2("G cons=", val, 0x4);
+//            }
 
             return val;
         }
@@ -148,14 +283,14 @@ s16 FieldEventReadMemoryS16(s16 bank_id, s16 ofs)
 
         case 0x1: // memory bank 1
         {
-            u32 indx = bu[events_data + script_cur + ofs];
-            u16 val = bu[0x8009d288 + indx];
+            u8 indx = READ_LE_U8(g_field_events + script_cur + ofs);
+            s16 val = READ_LE_S8(&g_save.memory[indx]);
 
-            if (bu[0x8009d820] & 0x3)
-            {
-                field_debug_add_parse_value_to_page2("G indx=", indx, 0x4);
-                field_debug_add_parse_value_to_page2("G glov=", val, 0x4);
-            }
+//            if (bu[0x8009d820] & 0x3)
+//            {
+//                field_debug_add_parse_value_to_page2("G indx=", indx, 0x4);
+//                field_debug_add_parse_value_to_page2("G glov=", val, 0x4);
+//            }
 
             return val;
         }
@@ -163,14 +298,14 @@ s16 FieldEventReadMemoryS16(s16 bank_id, s16 ofs)
 
         case 0x2: // memory bank 2
         {
-            u32 indx = bu[events_data + script_cur + ofs];
-            u16 val = hu[0x8009d288 + indx];
+            u8 indx = READ_LE_U8(g_field_events + script_cur + ofs);
+            s16 val = READ_LE_S16(&g_save.memory[indx]);
 
-            if (bu[0x8009d820] & 0x3)
-            {
-                field_debug_add_parse_value_to_page2("G indx=", indx, 0x4);
-                field_debug_add_parse_value_to_page2("G glov=", val, 0x4);
-            }
+//            if (bu[0x8009d820] & 0x3)
+//            {
+//                field_debug_add_parse_value_to_page2("G indx=", indx, 0x4);
+//                field_debug_add_parse_value_to_page2("G glov=", val, 0x4);
+//            }
 
             return val;
         }
@@ -178,14 +313,14 @@ s16 FieldEventReadMemoryS16(s16 bank_id, s16 ofs)
 
         case 0x3: // memory bank 3
         {
-            u32 indx = 0x100 | bu[events_data + script_cur + ofs];
-            u16 val = bu[0x8009d288 + indx];
+            u8 indx = READ_LE_U8(g_field_events + script_cur + ofs);
+            s16 val = READ_LE_S8(&g_save.memory[0x100 + indx]);
 
-            if (bu[0x8009d820] & 0x3)
-            {
-                field_debug_add_parse_value_to_page2("G indx=", indx, 0x4);
-                field_debug_add_parse_value_to_page2("G glov=", val, 0x4);
-            }
+//            if (bu[0x8009d820] & 0x3)
+//            {
+//                field_debug_add_parse_value_to_page2("G indx=", indx, 0x4);
+//                field_debug_add_parse_value_to_page2("G glov=", val, 0x4);
+//            }
 
             return val;
         }
@@ -193,14 +328,14 @@ s16 FieldEventReadMemoryS16(s16 bank_id, s16 ofs)
 
         case 0x4: // memory bank 4
         {
-            u32 indx = 0x100 | bu[events_data + script_cur + ofs];
-            u16 val = h[0x8009d288 + indx];
+            u8 indx = READ_LE_U8(g_field_events + script_cur + ofs);
+            s16 val = READ_LE_S16(&g_save.memory[0x100 + indx]);
 
-            if (bu[0x8009d820] & 0x3)
-            {
-                field_debug_add_parse_value_to_page2("G indx=", indx, 0x4);
-                field_debug_add_parse_value_to_page2("G glov=", val, 0x4);
-            }
+//            if (bu[0x8009d820] & 0x3)
+//            {
+//                field_debug_add_parse_value_to_page2("G indx=", indx, 0x4);
+//                field_debug_add_parse_value_to_page2("G glov=", val, 0x4);
+//            }
 
             return val;
         }
@@ -208,14 +343,14 @@ s16 FieldEventReadMemoryS16(s16 bank_id, s16 ofs)
 
         case 0xb: // memory bank B
         {
-            u32 indx = 0x200 | bu[events_data + script_cur + ofs];
-            u16 val = bu[0x8009d288 + indx];
+            u8 indx = READ_LE_U8(g_field_events + script_cur + ofs);
+            s16 val = READ_LE_S8(&g_save.memory[0x200 + indx]);
 
-            if (bu[0x8009d820] & 0x3)
-            {
-                field_debug_add_parse_value_to_page2("G indx=", indx, 0x4);
-                field_debug_add_parse_value_to_page2("G glov=", val, 0x4);
-            }
+//            if (bu[0x8009d820] & 0x3)
+//            {
+//                field_debug_add_parse_value_to_page2("G indx=", indx, 0x4);
+//                field_debug_add_parse_value_to_page2("G glov=", val, 0x4);
+//            }
 
             return val;
         }
@@ -223,14 +358,14 @@ s16 FieldEventReadMemoryS16(s16 bank_id, s16 ofs)
 
         case 0xc: // memory bank C
         {
-            u32 indx = 0x200 | bu[events_data + script_cur + ofs];
-            u16 val = hu[0x8009d288 + indx];
+            u8 indx = READ_LE_U8(g_field_events + script_cur + ofs);
+            s16 val = READ_LE_S16(&g_save.memory[0x200 + indx]);
 
-            if (bu[0x8009d820] & 0x3)
-            {
-                field_debug_add_parse_value_to_page2("G indx=", indx, 0x4);
-                field_debug_add_parse_value_to_page2("G glov=", val, 0x4);
-            }
+//            if (bu[0x8009d820] & 0x3)
+//            {
+//                field_debug_add_parse_value_to_page2("G indx=", indx, 0x4);
+//                field_debug_add_parse_value_to_page2("G glov=", val, 0x4);
+//            }
 
             return val;
         }
@@ -238,14 +373,14 @@ s16 FieldEventReadMemoryS16(s16 bank_id, s16 ofs)
 
         case 0xd: // memory bank D
         {
-            u32 indx = 0x300 | bu[events_data + script_cur + ofs];
-            u16 val = bu[0x8009d288 + indx];
+            u8 indx = READ_LE_U8(g_field_events + script_cur + ofs);
+            s16 val = READ_LE_S8(&g_save.memory[0x300 + indx]);
 
-            if (bu[0x8009d820] & 0x3)
-            {
-                field_debug_add_parse_value_to_page2("G indx=", indx, 0x4);
-                field_debug_add_parse_value_to_page2("G glov=", val, 0x4);
-            }
+//            if (bu[0x8009d820] & 0x3)
+//            {
+//                field_debug_add_parse_value_to_page2("G indx=", indx, 0x4);
+//                field_debug_add_parse_value_to_page2("G glov=", val, 0x4);
+//            }
 
             return val;
         }
@@ -253,14 +388,14 @@ s16 FieldEventReadMemoryS16(s16 bank_id, s16 ofs)
 
         case 0xe: // memory bank E
         {
-            u32 indx = 0x300 | bu[events_data + script_cur + ofs];
-            u16 val = h[0x8009d288 + indx];
+            u8 indx = READ_LE_U8(g_field_events + script_cur + ofs);
+            s16 val = READ_LE_S16(&g_save.memory[0x300 + indx]);
 
-            if (bu[0x8009d820] & 0x3)
-            {
-                field_debug_add_parse_value_to_page2("G indx=", indx, 0x4);
-                field_debug_add_parse_value_to_page2("G glov=", val, 0x4);
-            }
+//            if (bu[0x8009d820] & 0x3)
+//            {
+//                field_debug_add_parse_value_to_page2("G indx=", indx, 0x4);
+//                field_debug_add_parse_value_to_page2("G glov=", val, 0x4);
+//            }
 
             return val;
         }
@@ -268,14 +403,14 @@ s16 FieldEventReadMemoryS16(s16 bank_id, s16 ofs)
 
         case 0xf: // memory bank F
         {
-            u32 indx = 0x400 | bu[events_data + script_cur + ofs];
-            u16 val = bu[0x8009d288 + indx];
+            u8 indx = READ_LE_U8(g_field_events + script_cur + ofs);
+            s16 val = READ_LE_S8(&g_save.memory[0x400 + indx]);
 
-            if (bu[0x8009d820] & 0x3)
-            {
-                field_debug_add_parse_value_to_page2("G indx=", indx, 0x4);
-                field_debug_add_parse_value_to_page2("G glov=", val, 0x4);
-            }
+//            if (bu[0x8009d820] & 0x3)
+//            {
+//                field_debug_add_parse_value_to_page2("G indx=", indx, 0x4);
+//                field_debug_add_parse_value_to_page2("G glov=", val, 0x4);
+//            }
 
             return val;
         }
@@ -283,14 +418,14 @@ s16 FieldEventReadMemoryS16(s16 bank_id, s16 ofs)
 
         case 0x7: // memory bank 7
         {
-            u32 indx = 0x400 | bu[events_data + script_cur + ofs];
-            u16 val = hu[0x8009d288 + indx];
+            u8 indx = READ_LE_U8(g_field_events + script_cur + ofs);
+            s16 val = READ_LE_S16(&g_save.memory[0x400 + indx]);
 
-            if (bu[0x8009d820] & 0x3)
-            {
-                field_debug_add_parse_value_to_page2("G indx=", indx, 0x4);
-                field_debug_add_parse_value_to_page2("G glov=", val, 0x4);
-            }
+//            if (bu[0x8009d820] & 0x3)
+//            {
+//                field_debug_add_parse_value_to_page2("G indx=", indx, 0x4);
+//                field_debug_add_parse_value_to_page2("G glov=", val, 0x4);
+//            }
 
             return val;
         }
@@ -298,14 +433,14 @@ s16 FieldEventReadMemoryS16(s16 bank_id, s16 ofs)
 
         case 0x5: // memory bank 5
         {
-            u32 indx = bu[events_data + script_cur + ofs];
-            u16 val = bu[0x80075e24 + indx];
+            u8 indx = READ_LE_U8(g_field_events + script_cur + ofs);
+            s16 val = READ_LE_S8(l_memory_temp + indx);
 
-            if (bu[0x8009d820] & 0x3)
-            {
-                field_debug_add_parse_value_to_page2("G indx=", indx, 0x4);
-                field_debug_add_parse_value_to_page2("G mapv=", val, 0x4);
-            }
+//            if (bu[0x8009d820] & 0x3)
+//            {
+//                field_debug_add_parse_value_to_page2("G indx=", indx, 0x4);
+//                field_debug_add_parse_value_to_page2("G mapv=", val, 0x4);
+//            }
 
             return val;
         }
@@ -313,26 +448,26 @@ s16 FieldEventReadMemoryS16(s16 bank_id, s16 ofs)
 
         case 0x6: // memory bank 6
         {
-            u32 indx = bu[events_data + script_cur + ofs];
-            u16 val = hu[0x80075e24 + indx];
+            u8 indx = READ_LE_U8(g_field_events + script_cur + ofs);
+            s16 val = READ_LE_S16(l_memory_temp + indx);
 
-            if (bu[0x8009d820] & 0x3)
-            {
-                field_debug_add_parse_value_to_page2("G indx=", indx, 0x4);
-                field_debug_add_parse_value_to_page2("G mapv=", val, 0x4);
-            }
+//            if (bu[0x8009d820] & 0x3)
+//            {
+//                field_debug_add_parse_value_to_page2("G indx=", indx, 0x4);
+//                field_debug_add_parse_value_to_page2("G mapv=", val, 0x4);
+//            }
 
             return val;
         }
     }
 
     // memory bank 8, 9, A, >F
-    if (bu[0x8009d820] & 0x3)
-    {
-        field_debug_add_parse_value_to_page2("G data err=", access, 0x2);
-    }
+//    if (bu[0x8009d820] & 0x3)
+//    {
+//        field_debug_add_parse_value_to_page2("G data err=", access, 0x2);
+//    }
 
-    field_event_debug_error("Bad Event arg!");
+//    field_event_debug_error("Bad Event arg!");
 
     return 0;
 }

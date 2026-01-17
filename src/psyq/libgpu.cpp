@@ -313,6 +313,14 @@ void PsyqSetLineF2(LINE_F2* p)
 
 
 
+void PsyqSetLineF3(LINE_F3* p)
+{
+    p->type = GPU_LINE_F3;
+    p->code = 0x48;
+}
+
+
+
 void PsyqSetPolyFT4(POLY_FT4* p)
 {
     p->type = GPU_POLY_FT4;
@@ -333,6 +341,14 @@ void PsyqSetSprt(SPRT* p)
 {
     p->type = GPU_SPRT;
     p->code = 0x64;
+}
+
+
+
+void PsyqSetSprt8(SPRT_8* p)
+{
+    p->type = GPU_SPRT_8;
+    p->code = 0x74;
 }
 
 

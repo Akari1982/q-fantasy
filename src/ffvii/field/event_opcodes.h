@@ -6,7 +6,7 @@ typedef int (*FieldEventOpcode)();
 
 
 
-int FieldEventNull()
+int FENull()
 {
     LOG_ERROR("Opcode 0x%02x not implemented.", l_opcode_cur);
     return -1;
@@ -14,8 +14,30 @@ int FieldEventNull()
 
 
 
-int FieldEventOpcode_a0_pc()
+int FEOpcode_7e_tlkon()
 {
+    LOG_INFO("Opcode 0x%02x.", l_opcode_cur);
+
+    u16 script_cur = l_actor_script[l_actor_id_cur];
+    u16 entity_cur = l_actor_entity[l_actor_id_cur];
+
+//    if (bu[0x8009d820] & 0x3) field_debug_event_opcode("tlkon", 0x1);
+
+    if (entity_cur != 0xff)
+    {
+        g_field_entities[entity_cur].talk_off = READ_LE_U8(g_field_events + script_cur + 0x1);
+    }
+
+    l_actor_script[l_actor_id_cur] += 0x2;
+    return 0;
+}
+
+
+
+int FEOpcode_a0_pc()
+{
+    LOG_INFO("Opcode 0x%02x.", l_opcode_cur);
+
     u16 script_cur = l_actor_script[l_actor_id_cur];
     u16 entity_cur = l_actor_entity[l_actor_id_cur];
 
@@ -54,8 +76,10 @@ int FieldEventOpcode_a0_pc()
 
 
 
-int FieldEventOpcode_a1_char()
+int FEOpcode_a1_char()
 {
+    LOG_INFO("Opcode 0x%02x.", l_opcode_cur);
+
     u16 script_cur = l_actor_script[l_actor_id_cur];
 
 //    if (bu[0x8009d820] & 0x3) field_debug_event_opcode("char", 0x1);
@@ -74,8 +98,56 @@ int FieldEventOpcode_a1_char()
 
 
 
-int FieldEventOpcode_a5_xyzi()
+int FEOpcode_a2_dfanm()
 {
+    LOG_INFO("Opcode 0x%02x.", l_opcode_cur);
+
+    u16 script_cur = l_actor_script[l_actor_id_cur];
+    u16 entity_cur = l_actor_entity[l_actor_id_cur];
+
+//    if (bu[0x8009d820] & 0x3) field_debug_event_opcode("dfanm", 0x2);
+
+    if (entity_cur != 0xff)
+    {
+//        [0x8008325c + entity_cur] = b(READ_LE_U8(g_field_events + script_cur + 0x1)); // animation_id
+//        [0x80082248 + entity_cur] = h(h[0x8007eb98 + entity_cur * 0x2] / READ_LE_U8(g_field_events + script_cur + 0x2)); // relative_speed
+//
+//        if (bu[0x800756e8 + entity_cur] == 0x3) // animation state
+//        {
+//            [0x800756e8 + entity_cur] = b(0);
+//        }
+    }
+
+    l_actor_script[l_actor_id_cur] += 0x3;
+    return 0x1;
+}
+
+
+
+int FEOpcode_a4_visi()
+{
+    LOG_INFO("Opcode 0x%02x.", l_opcode_cur);
+
+    u16 script_cur = l_actor_script[l_actor_id_cur];
+    u16 entity_cur = l_actor_entity[l_actor_id_cur];
+
+//    if (bu[0x8009d820] & 0x3) field_debug_event_opcode("visi", 0x1);
+
+    if (entity_cur != 0xff)
+    {
+        g_field_entities[entity_cur].visible = READ_LE_U8(g_field_events + script_cur + 0x1);
+    }
+
+    l_actor_script[l_actor_id_cur] += 0x2;
+    return 0;
+}
+
+
+
+int FEOpcode_a5_xyzi()
+{
+    LOG_INFO("Opcode 0x%02x.", l_opcode_cur);
+
     u16 entity_cur = l_actor_entity[l_actor_id_cur];
 
     if (entity_cur != 0xff)
@@ -90,4 +162,69 @@ int FieldEventOpcode_a5_xyzi()
 
     l_actor_script[l_actor_id_cur] += 0xb;
     return 0x1;
+}
+
+
+
+int FEOpcode_b3_dir()
+{
+    LOG_INFO("Opcode 0x%02x.", l_opcode_cur);
+
+    u16 entity_cur = l_actor_entity[l_actor_id_cur];
+
+    if (entity_cur != 0xff)
+    {
+//        if (bu[0x8009d820] & 0x3) field_debug_event_opcode("dir", 0x2);
+
+        g_field_entities[entity_cur].dir = FieldEventReadMemoryU8(0x2, 0x2);
+        g_field_entities[entity_cur].turn_step = 0;
+        g_field_entities[entity_cur].turn_type = 0;
+
+        l_actor_script[l_actor_id_cur] += 0x3;
+        return 0x1;
+    }
+    else
+    {
+        l_actor_script[l_actor_id_cur] += 0x3;
+        return 0;
+    }
+}
+
+
+
+int FEOpcode_c6_slidr()
+{
+    LOG_INFO("Opcode 0x%02x.", l_opcode_cur);
+
+    u16 entity_cur = l_actor_entity[l_actor_id_cur];
+
+    if (entity_cur != 0xff)
+    {
+//        if (bu[0x8009d820] & 0x3) field_debug_event_opcode("slidR", 0x2);
+
+        g_field_entities[entity_cur].solid_range = (FieldEventReadMemoryU8(0x2, 0x2) * g_field_control.scale) / 0x200;
+    }
+
+    l_actor_script[l_actor_id_cur] += 0x3;
+    return 0;
+}
+
+
+
+int FEOpcode_c7_solid()
+{
+    LOG_INFO("Opcode 0x%02x.", l_opcode_cur);
+
+    u16 script_cur = l_actor_script[l_actor_id_cur];
+    u16 entity_cur = l_actor_entity[l_actor_id_cur];
+
+//    if (bu[0x8009d820] & 0x3) field_debug_event_opcode("solid", 0x1);
+
+    if (entity_cur != 0xff)
+    {
+        g_field_entities[entity_cur].solid_off = READ_LE_U8(g_field_events + script_cur + 0x1);
+    }
+
+    l_actor_script[l_actor_id_cur] += 0x2;
+    return 0;
 }

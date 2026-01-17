@@ -7,41 +7,41 @@
 
 struct FieldDebugPage
 {
-    s16 x;                  //   0x0
-    s16 y;                  //   0x2
-    s16 w;                  //   0x4
-    s16 h;                  //   0x6
-    u8 r;                   //   0x8
-    u8 g;                   //   0x9
-    u8 b;                   //   0xa
-    s16 cur_row;            //   0xc
-    s16 head_row;           //   0xe
-    u8 strings[0x18][0xe];  //  0x10
-    u8 colors[0x18];        // 0x160
-    u8 state;               // 178 (2 - hide, 1 - not inited, 0 - render)
-}
+    s16 x;
+    s16 y;
+    s16 w;
+    s16 h;
+    u8 r;
+    u8 g;
+    u8 b;
+    s16 cur_row;
+    s16 head_row;
+    u8 strings[0x18][0xe];
+    u8 colors[0x18];
+    u8 state;
+};
 
-u8 l_field_debug_cur_page;                      // 0x80071c08
+u8 l_field_debug_cur_page;
 
-bool l_field_debug_dirty;                       // 0x8009d824
+bool l_field_debug_dirty;
 
 u8 l_field_debug_digits[] = {
     '0', '1', '2', '3', '4', '5', '6', '7',
-    '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };   // 0x800e0208
+    '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
-FieldDebugPage l_field_debug[0x6];              // 0x800e0748
-s16 l_field_debug_rb;                           // 0x800e1024
-SPRT_8 l_field_debug_char[0x2][0x158];          // 0x800e1028
-LINE_F3 l_field_debug_line_f3[0x2][0x18];       // 0x800e3b28
-TILE l_field_debug_tile[0x2][0xc];              // 0x800e3fa8
-TILE l_field_debug_dr_mode[0x2][0x6];           // 0x800e4128
-s16 l_field_debug_r_chars;                      // 0x800e41b8
-s16 l_field_debug_r_lines;                      // 0x800e41bc
-s16 l_field_debug_r_rect;                       // 0x800e41c0
-s16 l_field_debug_r_dm;                         // 0x800e41c4
-u32 l_field_debug_ot[0x2][0x7];                 // 0x800e41c8
-u16 l_field_debug_clut[0x8];                    // 0x800e4200
-u16 l_field_debug_transp;                       // 0x800e4210
+FieldDebugPage l_field_debug[0x6];
+s16 l_field_debug_rb;
+SPRT_8 l_field_debug_char[0x2][0x158];
+LINE_F3 l_field_debug_line_f3[0x2][0x18];
+TILE l_field_debug_tile[0x2][0xc];
+DR_MODE l_field_debug_dr_mode[0x2][0x6];
+s16 l_field_debug_r_chars;
+s16 l_field_debug_r_lines;
+s16 l_field_debug_r_rect;
+s16 l_field_debug_r_dm;
+u32 l_field_debug_ot[0x2][0x7];
+u16 l_field_debug_clut[0x8];
+u16 l_field_debug_transp;
 
 
 
@@ -49,7 +49,7 @@ void FieldDebugInitBuffers()
 {
     for (int i = 0; i < 0x6; ++i)
     {
-        l_field_debug[i] = DEBUG_PAGE_NOT_INIT;
+        l_field_debug[i].state = DEBUG_PAGE_NOT_INIT;
     }
 
     l_field_debug_dirty = 0x1;
@@ -59,38 +59,35 @@ void FieldDebugInitBuffers()
 
     for (int i = 0; i < 0x158; ++i)
     {
-        system_psyq_set_sprt8(&g_field_debug_char[0x0]);
-        system_psyq_set_shade_tex(&g_field_debug_char[0x0], 0x1);
-        system_psyq_set_sprt8(&g_field_debug_char[0x1]);
-        system_psyq_set_shade_tex(&g_field_debug_char[0x1], 0x1);
+        PsyqSetSprt8(&l_field_debug_char[0x0][i]);
+        PsyqSetShadeTex(&l_field_debug_char[0x0][i], 0x1);
+        PsyqSetSprt8(&l_field_debug_char[0x1][i]);
+        PsyqSetShadeTex(&l_field_debug_char[0x1][i], 0x1);
     }
 
     for (int i = 0; i < 0x8; ++i)
     {
-        g_field_debug_clut[i] = ((0x1e7 - i) << 0x6) | 0x0010;
+        l_field_debug_clut[i] = ((0x1e7 - i) << 0x6) | 0x0010;
     }
 
     for (int i = 0; i < 0xc; ++i)
     {
-        system_psyq_set_tile(&g_field_debug_tile[0x0][i]);
-        system_psyq_set_semi_trans(&g_field_debug_tile[0x0][i], 0x1);
-        system_psyq_set_tile(&g_field_debug_tile[0x1][i]);
-        system_psyq_set_semi_trans(&g_field_debug_tile[0x1][i], 0x1);
+        PsyqSetTile(&l_field_debug_tile[0x0][i]);
+        PsyqSetSemiTrans(&l_field_debug_tile[0x0][i], 0x1);
+        PsyqSetTile(&l_field_debug_tile[0x1][i]);
+        PsyqSetSemiTrans(&l_field_debug_tile[0x1][i], 0x1);
     }
 
     for (int i = 0; i < 0x18; ++i)
     {
-        system_psyq_set_line_f3(&g_field_debug_line_f3[0x0][i]);
-        system_psyq_set_line_f3(&g_field_debug_line_f3[0x1][i]);
+        PsyqSetLineF3(&l_field_debug_line_f3[0x0][i]);
+        PsyqSetLineF3(&l_field_debug_line_f3[0x1][i]);
     }
-
-    type = system_gpu_get_type();
-    S3 = ((type == 0x1) || (type == 0x2)) ? = 0x2f : 0x1f;
 
     for (int i = 0; i < 0x6; ++i)
     {
-        system_psyq_set_draw_mode(&g_field_debug_dr_mode[0x0][i], 0, 0, S3, 0);
-        system_psyq_set_draw_mode(&g_field_debug_dr_mode[0x1][i], 0, 0, S3, 0);
+        PsyqSetDrawMode(&l_field_debug_dr_mode[0x0][i], 0, 0, 0x1f, 0);
+        PsyqSetDrawMode(&l_field_debug_dr_mode[0x1][i], 0, 0, 0x1f, 0);
     }
 }
 

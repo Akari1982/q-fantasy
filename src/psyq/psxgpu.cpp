@@ -143,6 +143,10 @@ void OTag::execute()
     {
         ((LINE_F2*)this)->execute();
     }
+    else if (type == GPU_LINE_F3)
+    {
+        ((LINE_F3*)this)->execute();
+    }
     else if (type == GPU_TILE)
     {
         ((TILE*)this)->execute();
@@ -150,6 +154,10 @@ void OTag::execute()
     else if (type == GPU_SPRT)
     {
         ((SPRT*)this)->execute();
+    }
+    else if (type == GPU_SPRT_8)
+    {
+        ((SPRT_8*)this)->execute();
     }
     else if (type == GPU_SPRT_16)
     {
@@ -192,6 +200,36 @@ void LINE_F2::execute()
     mesh.addVertex(glm::vec3(l_ofs_x + x0, l_ofs_y + y0, 0.0f));
     mesh.addVertex(glm::vec3(l_ofs_x + x1, l_ofs_y + y1, 0.0f));
 
+    mesh.addColor(ofFloatColor(r0 / 255.0f, g0 / 255.0f, b0 / 255.0f, 1.0f));
+    mesh.addColor(ofFloatColor(r0 / 255.0f, g0 / 255.0f, b0 / 255.0f, 1.0f));
+
+    glm::mat4 projection = glm::ortho(0.0f, (float)VRAM_W, 0.0f, (float)VRAM_H, -1.0f, 1.0f);
+
+    ofSetLineWidth(1);
+
+    l_render_shader.setUniformMatrix4f("g_matrix", projection);
+    l_render_shader.setUniformTexture("g_texture", g_vram_texture, 0);
+    l_render_shader.setUniform1i("g_transp", (code & 0x2) ? 1 : 0);
+    l_render_shader.setUniform1i("g_colored", 1);
+    l_render_shader.setUniform1i("g_textured", 0);
+    l_render_shader.setUniform1i("g_abr", (l_tpage >> 0x5) & 0x3);
+    l_render_shader.setUniform1i("g_dtd", l_dtd);
+    mesh.draw();
+}
+
+
+
+void LINE_F3::execute()
+{
+    static ofVboMesh mesh;
+    mesh.clear();
+    mesh.setMode(OF_PRIMITIVE_LINES);
+
+    mesh.addVertex(glm::vec3(l_ofs_x + x0, l_ofs_y + y0, 0.0f));
+    mesh.addVertex(glm::vec3(l_ofs_x + x1, l_ofs_y + y1, 0.0f));
+    mesh.addVertex(glm::vec3(l_ofs_x + x2, l_ofs_y + y2, 0.0f));
+
+    mesh.addColor(ofFloatColor(r0 / 255.0f, g0 / 255.0f, b0 / 255.0f, 1.0f));
     mesh.addColor(ofFloatColor(r0 / 255.0f, g0 / 255.0f, b0 / 255.0f, 1.0f));
     mesh.addColor(ofFloatColor(r0 / 255.0f, g0 / 255.0f, b0 / 255.0f, 1.0f));
 
@@ -317,6 +355,44 @@ void SPRT::execute()
 
 
 
+void SPRT_8::execute()
+{
+    static ofVboMesh mesh;
+    mesh.clear();
+    mesh.setMode(OF_PRIMITIVE_TRIANGLE_FAN);
+
+    mesh.addVertex(glm::vec3(l_ofs_x + x0,        l_ofs_y + y0,        0.0f));
+    mesh.addVertex(glm::vec3(l_ofs_x + x0 + 8.0f, l_ofs_y + y0,        0.0f));
+    mesh.addVertex(glm::vec3(l_ofs_x + x0 + 8.0f, l_ofs_y + y0 + 8.0f, 0.0f));
+    mesh.addVertex(glm::vec3(l_ofs_x + x0,        l_ofs_y + y0 + 8.0f, 0.0f));
+
+    mesh.addColor(ofFloatColor(r0 / 255.0f, g0 / 255.0f, b0 / 255.0f, 1.0f));
+    mesh.addColor(ofFloatColor(r0 / 255.0f, g0 / 255.0f, b0 / 255.0f, 1.0f));
+    mesh.addColor(ofFloatColor(r0 / 255.0f, g0 / 255.0f, b0 / 255.0f, 1.0f));
+    mesh.addColor(ofFloatColor(r0 / 255.0f, g0 / 255.0f, b0 / 255.0f, 1.0f));
+
+    mesh.addTexCoord(glm::vec2(u0,        v0       ));
+    mesh.addTexCoord(glm::vec2(u0 + 8.0f, v0       ));
+    mesh.addTexCoord(glm::vec2(u0 + 8.0f, v0 + 8.0f));
+    mesh.addTexCoord(glm::vec2(u0,        v0 + 8.0f));
+
+    glm::mat4 projection = glm::ortho(0.0f, (float)VRAM_W, 0.0f, (float)VRAM_H, -1.0f, 1.0f);
+
+    l_render_shader.setUniformMatrix4f("g_matrix", projection);
+    l_render_shader.setUniformTexture("g_texture", g_vram_texture, 0);
+    l_render_shader.setUniform2i("g_clut", (clut & 0x3f) * 0x10, (clut & 0xffc0) >> 0x6);
+    l_render_shader.setUniform2i("g_tpage", (l_tpage << 0x6) & 0x3ff, (l_tpage << 0x4) & 0x100);
+    l_render_shader.setUniform1i("g_depth", (l_tpage >> 0x7) & 0x3);
+    l_render_shader.setUniform1i("g_transp", (code & 0x2) ? 1 : 0);
+    l_render_shader.setUniform1i("g_colored", (code & 0x1) ? 0 : 1);
+    l_render_shader.setUniform1i("g_textured", (code & 0x4) ? 1 : 0);
+    l_render_shader.setUniform1i("g_abr", (l_tpage >> 0x5) & 0x3);
+    l_render_shader.setUniform1i("g_dtd", 0);
+    mesh.draw();
+}
+
+
+
 void SPRT_16::execute()
 {
     static ofVboMesh mesh;
@@ -333,8 +409,8 @@ void SPRT_16::execute()
     mesh.addColor(ofFloatColor(r0 / 255.0f, g0 / 255.0f, b0 / 255.0f, 1.0f));
     mesh.addColor(ofFloatColor(r0 / 255.0f, g0 / 255.0f, b0 / 255.0f, 1.0f));
 
-    mesh.addTexCoord(glm::vec2(u0,         v0       ));
-    mesh.addTexCoord(glm::vec2(u0 + 16.0f, v0       ));
+    mesh.addTexCoord(glm::vec2(u0,         v0        ));
+    mesh.addTexCoord(glm::vec2(u0 + 16.0f, v0        ));
     mesh.addTexCoord(glm::vec2(u0 + 16.0f, v0 + 16.0f));
     mesh.addTexCoord(glm::vec2(u0,         v0 + 16.0f));
 

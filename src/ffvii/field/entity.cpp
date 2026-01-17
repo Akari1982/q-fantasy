@@ -16,7 +16,7 @@ std::vector<FieldWalkmeshLink> g_field_wm_link;
 void FieldEntityDebugAddToRender(OTag* ot, MATRIX* m)
 {
     static std::array<LINE_F2, 0x1000> wm_poly;
-    static std::array<LINE_F2, 0x1> entity;
+    static std::array<LINE_F2, FIELD_ENTITY_N> entity;
 
     PsyqPushMatrix();
     PsyqSetRotMatrix(m);
@@ -66,29 +66,32 @@ void FieldEntityDebugAddToRender(OTag* ot, MATRIX* m)
         PsyqAddPrim(ot, &wm_poly[i * 0x3 + 0x2]);
     }
 
-    SVECTOR p1;
-    p1.vx = 0;
-    p1.vy = 0;
-    p1.vz = 0;
+    for (int i = 0; i < FIELD_ENTITY_N; ++i)
+    {
+        SVECTOR p1;
+        p1.vx = g_field_entities[i].pos_x;
+        p1.vy = g_field_entities[i].pos_y;
+        p1.vz = g_field_entities[i].pos_z;
 
-    SVECTOR p2;
-    p2.vx = 0;
-    p2.vy = 0;
-    p2.vz = 0x100;
+        SVECTOR p2;
+        p2.vx = g_field_entities[i].pos_x;
+        p2.vy = g_field_entities[i].pos_y;
+        p2.vz = g_field_entities[i].pos_z + 0x100;
 
-    PsyqRotTransPers(&p1, &sxy1, &pt, &flag);
-    PsyqRotTransPers(&p2, &sxy2, &pt, &flag);
+        PsyqRotTransPers(&p1, &sxy1, &pt, &flag);
+        PsyqRotTransPers(&p2, &sxy2, &pt, &flag);
 
-    PsyqSetLineF2(&entity[0]);
-    PsyqSetSemiTrans(&entity[0], 0);
-    entity[0].r0 = 0x0;
-    entity[0].g0 = 0x7f;
-    entity[0].b0 = 0x7f;
-    entity[0].x0 = sxy1.vx;
-    entity[0].y0 = sxy1.vy;
-    entity[0].x1 = sxy2.vx;
-    entity[0].y1 = sxy2.vy;
-    PsyqAddPrim(ot, &entity[0]);
+        PsyqSetLineF2(&entity[i]);
+        PsyqSetSemiTrans(&entity[i], 0);
+        entity[i].r0 = 0x0;
+        entity[i].g0 = 0x7f;
+        entity[i].b0 = 0x7f;
+        entity[i].x0 = sxy1.vx;
+        entity[i].y0 = sxy1.vy;
+        entity[i].x1 = sxy2.vx;
+        entity[i].y1 = sxy2.vy;
+        PsyqAddPrim(ot, &entity[i]);
+    }
 
     PsyqPopMatrix();
 }
@@ -128,7 +131,7 @@ void FieldEntityInitPos()
 //            g_field_entities[id].pos_z = field_entity_calculate_z(&ba, &cb, &pos, id_offset + triangle_id * 0x18 + 0x0) << 0xc;
         }
 
-//        g_field_entities[id].anim_speed = 0x10;
+        g_field_entities[id].anim_speed = 0x10;
 //        g_field_entities[id].solid_range = (g_field_control.scale * 0x11) >> 0x8;
 //        g_field_entities[id].move_speed = g_field_control.scale * 0x2;
     }
