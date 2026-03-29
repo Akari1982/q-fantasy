@@ -10,6 +10,12 @@ std::array<OpcodeInfo, 256> g_field_opcodes;
 
 void FieldBrowserInitOpcode()
 {
+    g_field_opcodes[0x00]
+        .set_size(0x1)
+        .set_short_name("ret")
+        .set_full_name("RETURN")
+        .set_desc("Finish script ececution.")
+        .end();
     g_field_opcodes[0x16]
         .set_size(0x8)
         .set_short_name("if2")
@@ -19,6 +25,14 @@ void FieldBrowserInitOpcode()
         .add_argument_read_memory16("b", 0x2, 0x4)
         .add_argument_u8("cond", 0x6)
         .add_argument_jump8("jump", 0x7)
+        .end();
+
+    g_field_opcodes[0x43]
+        .set_size(0x2)
+        .set_short_name("mpnam")
+        .set_full_name("MAP:NAME")
+        .set_desc("Set map name to display in menu.")
+        .add_argument_u8("steps", 0x6)
         .end();
 
     g_field_opcodes[0x64]

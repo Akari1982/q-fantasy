@@ -328,83 +328,149 @@ void ParseFieldEvents(u8 actor_id)
 
     for (int i = 0; i < 0x20; ++i)
     {
-        u32 event_ofs = READ_LE_U16(&l_dat_file[ate_addr + 0x20 + actors_n * 0x8 + akao_n * 0x4 + actor_id * 0x40 + i * 0x02]);
+        u32 event_ofs = ate_addr + READ_LE_U16(&l_dat_file[ate_addr + 0x20 + actors_n * 0x8 + akao_n * 0x4 + actor_id * 0x40 + i * 0x02]);
         u32 end_ofs = event_ofs;
-        u8 opcode = READ_LE_U8(&l_dat_file[ate_addr + event_ofs]);
+        u8 opcode = READ_LE_U8(&l_dat_file[ event_ofs]);
 
-        if (ImGui::TreeNode(("Event " + std::format("0x{:02x} ", i) + std::format("0x{:04x}", event_ofs)).c_str()))
+        // init script
+        if (i == 0)
         {
-    //        if (opcode == 0x00 && i != 0) // skip if script contain only RET opcode and this is not init script
-    //        {
-    //            continue;
-    //        }
-    //        if (prev_script == script)
-    //        {
-    //            continue;
-    //        }
-    //        prev_script = script;
-
-            for (; event_ofs <= end_ofs;)
+            if (ImGui::TreeNode(("Init " + std::format("0x{:02x} ", i) + std::format("0x{:04x}", event_ofs)).c_str()))
             {
-                u8 opcode = READ_LE_U8(&l_dat_file[ate_addr + event_ofs]);
-
-                ImGui::Text("  0x%04x    ", event_ofs);
-                ImGui::SameLine(0, 0);
-
-                if (g_field_opcodes[opcode].init)
+                for (; event_ofs <= end_ofs;)
                 {
-                    ImGui::Text("%s(", g_field_opcodes[opcode].full_name.c_str()); ImGui::SameLine(0, 0);
+                    u8 opcode = READ_LE_U8(&l_dat_file[event_ofs]);
 
-                    for (int arg_id = 0; arg_id < g_field_opcodes[opcode].args.size(); ++arg_id)
+                    ImGui::Text("  0x%04x    ", event_ofs);
+                    ImGui::SameLine(0, 0);
+
+                    if (g_field_opcodes[opcode].init)
                     {
-                        const OpcodeArg& argument = g_field_opcodes[opcode].args[arg_id];
-                        const u32 arg_ofs = ate_addr + event_ofs + argument.offset;
+                        ImGui::Text("%s(", g_field_opcodes[opcode].full_name.c_str()); ImGui::SameLine(0, 0);
 
-                        if (arg_id != 0) ImGui::Text(","); ImGui::SameLine(0, 0);
-
-                        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5, 0.5, 0.5, 1));
-                        ImGui::Text(" %s:", argument.name.c_str()); ImGui::SameLine(0, 0);
-                        ImGui::PopStyleColor();
-
-                        switch(argument.type)
+                        for (int arg_id = 0; arg_id < g_field_opcodes[opcode].args.size(); ++arg_id)
                         {
-                            case OpcodeArg::U8: ArgGetU8(arg_ofs); break;
-                            case OpcodeArg::READ_MEMORY8: ArgGetMemory8(argument.mem_block, ate_addr + event_ofs, arg_ofs); break;
-                            case OpcodeArg::READ_MEMORY16: ArgGetMemory16(argument.mem_block, ate_addr + event_ofs, arg_ofs); break;
-                            case OpcodeArg::WRITE_MEMORY16: ArgSetMemory16(argument.mem_block, ate_addr + event_ofs, arg_ofs); break;
+                            const OpcodeArg& argument = g_field_opcodes[opcode].args[arg_id];
+                            const u32 arg_ofs = event_ofs + argument.offset;
 
-                            case OpcodeArg::JUMP8:
+                            if (arg_id != 0) ImGui::Text(","); ImGui::SameLine(0, 0);
+
+                            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5, 0.5, 0.5, 1));
+                            ImGui::Text(" %s:", argument.name.c_str()); ImGui::SameLine(0, 0);
+                            ImGui::PopStyleColor();
+
+                            switch(argument.type)
                             {
-                                ArgGetJump8(arg_ofs);
+                                case OpcodeArg::U8: ArgGetU8(arg_ofs); break;
+                                case OpcodeArg::READ_MEMORY8: ArgGetMemory8(argument.mem_block, event_ofs, arg_ofs); break;
+                                case OpcodeArg::READ_MEMORY16: ArgGetMemory16(argument.mem_block, event_ofs, arg_ofs); break;
+                                case OpcodeArg::WRITE_MEMORY16: ArgSetMemory16(argument.mem_block, event_ofs, arg_ofs); break;
 
-                                u32 temp_end = event_ofs + READ_LE_U8(&l_dat_file[arg_ofs]) + g_field_opcodes[opcode].size - 1;
-                                end_ofs = (temp_end > end_ofs) ? temp_end : end_ofs;
+                                case OpcodeArg::JUMP8:
+                                {
+                                    ArgGetJump8(arg_ofs);
+
+                                    u32 temp_end = event_ofs + READ_LE_U8(&l_dat_file[arg_ofs]) + g_field_opcodes[opcode].size - 1;
+                                    end_ofs = (temp_end > end_ofs) ? temp_end : end_ofs;
+                                }
+                                break;
                             }
-                            break;
+
+                            ImGui::SameLine(0, 0);
+
+                            if ((arg_id + 1) >= g_field_opcodes[opcode].args.size()) ImGui::Text(" "); ImGui::SameLine(0, 0);
                         }
+                        ImGui::Text(")");
+
+                        event_ofs += g_field_opcodes[opcode].size;
+                        end_ofs = (event_ofs > end_ofs) ? event_ofs : end_ofs;
+
+                        if (opcode == 0x00) break;
 
                         ImGui::SameLine(0, 0);
-
-                        if ((arg_id + 1) >= g_field_opcodes[opcode].args.size()) ImGui::Text(" "); ImGui::SameLine(0, 0);
+                        ImGui::Text(" // end:0x%04x", end_ofs);
                     }
-                    ImGui::Text(")");
-
-                    event_ofs += g_field_opcodes[opcode].size;
-                    end_ofs = (event_ofs > end_ofs) ? event_ofs : end_ofs;
-
-                    ImGui::SameLine(0, 0);
-                    ImGui::Text(" // end:0x%04x", end_ofs);
+                    else
+                    {
+                        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 0, 1));
+                        ImGui::Text("Failed to decode opcode 0x%02X", opcode);
+                        ImGui::PopStyleColor();
+                        break;
+                    }
                 }
-                else
-                {
-                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 0, 1));
-                    ImGui::Text("Failed to decode opcode 0x%02X", opcode);
-                    ImGui::PopStyleColor();
-                    break;
-                }
+
+                ImGui::TreePop();
             }
+        }
 
-            ImGui::TreePop();
+        if ((opcode != 0x00) || (i == 0))
+        {
+            if (ImGui::TreeNode(("Event " + std::format("0x{:02x} ", i) + std::format("0x{:04x}", event_ofs)).c_str()))
+            {
+                for (; event_ofs <= end_ofs;)
+                {
+                    u8 opcode = READ_LE_U8(&l_dat_file[event_ofs]);
+
+                    ImGui::Text("  0x%04x    ", event_ofs);
+                    ImGui::SameLine(0, 0);
+
+                    if (g_field_opcodes[opcode].init)
+                    {
+                        ImGui::Text("%s(", g_field_opcodes[opcode].full_name.c_str()); ImGui::SameLine(0, 0);
+
+                        for (int arg_id = 0; arg_id < g_field_opcodes[opcode].args.size(); ++arg_id)
+                        {
+                            const OpcodeArg& argument = g_field_opcodes[opcode].args[arg_id];
+                            const u32 arg_ofs = event_ofs + argument.offset;
+
+                            if (arg_id != 0) ImGui::Text(","); ImGui::SameLine(0, 0);
+
+                            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5, 0.5, 0.5, 1));
+                            ImGui::Text(" %s:", argument.name.c_str()); ImGui::SameLine(0, 0);
+                            ImGui::PopStyleColor();
+
+                            switch(argument.type)
+                            {
+                                case OpcodeArg::U8: ArgGetU8(arg_ofs); break;
+                                case OpcodeArg::READ_MEMORY8: ArgGetMemory8(argument.mem_block, event_ofs, arg_ofs); break;
+                                case OpcodeArg::READ_MEMORY16: ArgGetMemory16(argument.mem_block, event_ofs, arg_ofs); break;
+                                case OpcodeArg::WRITE_MEMORY16: ArgSetMemory16(argument.mem_block, event_ofs, arg_ofs); break;
+
+                                case OpcodeArg::JUMP8:
+                                {
+                                    ArgGetJump8(arg_ofs);
+
+                                    u32 temp_end = event_ofs + READ_LE_U8(&l_dat_file[arg_ofs]) + g_field_opcodes[opcode].size - 1;
+                                    end_ofs = (temp_end > end_ofs) ? temp_end : end_ofs;
+                                }
+                                break;
+                            }
+
+                            ImGui::SameLine(0, 0);
+
+                            if ((arg_id + 1) >= g_field_opcodes[opcode].args.size()) ImGui::Text(" "); ImGui::SameLine(0, 0);
+                        }
+                        ImGui::Text(")");
+
+                        event_ofs += g_field_opcodes[opcode].size;
+                        end_ofs = (event_ofs > end_ofs) ? event_ofs : end_ofs;
+
+                        if (opcode == 0x00) break;
+
+                        ImGui::SameLine(0, 0);
+                        ImGui::Text(" // end:0x%04x", end_ofs);
+                    }
+                    else
+                    {
+                        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 0, 1));
+                        ImGui::Text("Failed to decode opcode 0x%02X", opcode);
+                        ImGui::PopStyleColor();
+                        break;
+                    }
+                }
+
+                ImGui::TreePop();
+            }
         }
     }
 }
