@@ -15,7 +15,9 @@ void FieldBrowserInitOpcode()
         .set_short_name("ret")
         .set_full_name("RETURN")
         .set_desc("Finish script ececution.")
+        .set_can_break()
         .end();
+
     g_field_opcodes[0x16]
         .set_size(0x8)
         .set_short_name("if2")
@@ -97,6 +99,43 @@ void FieldBrowserInitOpcode()
         .set_short_name("char")
         .set_full_name("ENTITY:CHAR")
         .set_desc("Associate model entity with this actor and sets char id for some opcodes.")
+        .add_argument_u8("char_id", 0x1)
+        .end();
+
+    g_field_opcodes[0xa5]
+        .set_size(0xb)
+        .set_short_name("xyzi")
+        .set_full_name("ENTITY:SET_XYZI")
+        .set_desc("Set coordinated and triangle to entity.")
+        .add_argument_read_memory16("x", 0x1, 0x3)
+        .add_argument_read_memory16("y", 0x2, 0x5)
+        .add_argument_read_memory16("z", 0x3, 0x7)
+        .add_argument_read_memory16("i", 0x4, 0x9)
+        .set_can_break()
+        .end();
+
+    g_field_opcodes[0xb3]
+        .set_size(0x3)
+        .set_short_name("dir")
+        .set_full_name("ENTITY:SET_DIR")
+        .set_desc("Set direction to entity.")
+        .add_argument_read_memory8("dir", 0x2, 0x2)
+        .set_can_break()
+        .end();
+
+    g_field_opcodes[0xc6]
+        .set_size(0x3)
+        .set_short_name("slidR")
+        .set_full_name("ENTITY:SET_SOLID_RANGE")
+        .set_desc("Set solid range to entity.")
+        .add_argument_read_memory8("range", 0x2, 0x2)
+        .end();
+
+    g_field_opcodes[0xc8]
+        .set_size(0x2)
+        .set_short_name("prtyp")
+        .set_full_name("PARTY:ADD_CHAR")
+        .set_desc("Add character to party.")
         .add_argument_u8("char_id", 0x1)
         .end();
 
