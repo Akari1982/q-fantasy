@@ -140,10 +140,28 @@ void ArgGetU8(u32 arg_ofs)
 
 
 
+void ArgGetU16(u32 arg_ofs)
+{
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0.5, 0, 1));
+    ImGui::Text("0x%04x", READ_LE_U16(&l_dat_file[arg_ofs]));
+    ImGui::PopStyleColor();
+}
+
+
+
 void ArgGetJump8(u32 arg_ofs)
 {
     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 1, 1));
     ImGui::Text("0x%02x", READ_LE_U8(&l_dat_file[arg_ofs]));
+    ImGui::PopStyleColor();
+}
+
+
+
+void ArgGetJump16(u32 arg_ofs)
+{
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 1, 1));
+    ImGui::Text("0x%04x", READ_LE_U16(&l_dat_file[arg_ofs]));
     ImGui::PopStyleColor();
 }
 
@@ -362,6 +380,7 @@ void ParseFieldEvents(u8 actor_id)
                             switch(argument.type)
                             {
                                 case OpcodeArg::U8: ArgGetU8(arg_ofs); break;
+                                case OpcodeArg::U16: ArgGetU16(arg_ofs); break;
                                 case OpcodeArg::READ_MEMORY8: ArgGetMemory8(argument.mem_block, event_ofs, arg_ofs); break;
                                 case OpcodeArg::READ_MEMORY16: ArgGetMemory16(argument.mem_block, event_ofs, arg_ofs); break;
                                 case OpcodeArg::WRITE_MEMORY16: ArgSetMemory16(argument.mem_block, event_ofs, arg_ofs); break;
@@ -371,6 +390,15 @@ void ParseFieldEvents(u8 actor_id)
                                     ArgGetJump8(arg_ofs);
 
                                     u32 temp_end = event_ofs + READ_LE_U8(&l_dat_file[arg_ofs]) + g_field_opcodes[opcode].size - 1;
+                                    end_ofs = (temp_end > end_ofs) ? temp_end : end_ofs;
+                                }
+                                break;
+
+                                case OpcodeArg::JUMP16:
+                                {
+                                    ArgGetJump16(arg_ofs);
+
+                                    u32 temp_end = event_ofs + READ_LE_U16(&l_dat_file[arg_ofs]) + g_field_opcodes[opcode].size - 1;
                                     end_ofs = (temp_end > end_ofs) ? temp_end : end_ofs;
                                 }
                                 break;
@@ -432,6 +460,7 @@ void ParseFieldEvents(u8 actor_id)
                             switch(argument.type)
                             {
                                 case OpcodeArg::U8: ArgGetU8(arg_ofs); break;
+                                case OpcodeArg::U16: ArgGetU16(arg_ofs); break;
                                 case OpcodeArg::READ_MEMORY8: ArgGetMemory8(argument.mem_block, event_ofs, arg_ofs); break;
                                 case OpcodeArg::READ_MEMORY16: ArgGetMemory16(argument.mem_block, event_ofs, arg_ofs); break;
                                 case OpcodeArg::WRITE_MEMORY16: ArgSetMemory16(argument.mem_block, event_ofs, arg_ofs); break;
@@ -441,6 +470,15 @@ void ParseFieldEvents(u8 actor_id)
                                     ArgGetJump8(arg_ofs);
 
                                     u32 temp_end = event_ofs + READ_LE_U8(&l_dat_file[arg_ofs]) + g_field_opcodes[opcode].size - 1;
+                                    end_ofs = (temp_end > end_ofs) ? temp_end : end_ofs;
+                                }
+                                break;
+
+                                case OpcodeArg::JUMP16:
+                                {
+                                    ArgGetJump16(arg_ofs);
+
+                                    u32 temp_end = event_ofs + READ_LE_U16(&l_dat_file[arg_ofs]) + g_field_opcodes[opcode].size - 1;
                                     end_ofs = (temp_end > end_ofs) ? temp_end : end_ofs;
                                 }
                                 break;

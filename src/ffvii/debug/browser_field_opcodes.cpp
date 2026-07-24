@@ -18,6 +18,41 @@ void FieldBrowserInitOpcode()
         .set_can_break()
         .end();
 
+    g_field_opcodes[0x10]
+        .set_size(0x2)
+        .set_short_name("skip")
+        .set_full_name("SKIP")
+        .set_desc("Jumps to specific position in script.")
+        .add_argument_jump8("jump", 0x1)
+        .end();
+
+    g_field_opcodes[0x11]
+        .set_size(0x3)
+        .set_short_name("lskip")
+        .set_full_name("SKIP")
+        .set_desc("Jumps to specific position in script.")
+        .add_argument_jump16("jump", 0x1)
+        .end();
+
+    g_field_opcodes[0x12]
+        .set_size(0x2)
+        .set_short_name("back")
+        .set_full_name("BACK")
+        .set_desc("Jumps back to specific position in script.")
+        .add_argument_jump8("jump", 0x1)
+        .end();
+
+    g_field_opcodes[0x15]
+        .set_size(0x7)
+        .set_short_name("lif")
+        .set_full_name("IF:S8")
+        .set_desc("Checks condition on signed 1-byte value and jump if it fails.")
+        .add_argument_read_memory8("a", 0x1, 0x2)
+        .add_argument_read_memory8("b", 0x2, 0x3)
+        .add_argument_u8("cond", 0x4)
+        .add_argument_jump16("jump", 0x5)
+        .end();
+
     g_field_opcodes[0x16]
         .set_size(0x8)
         .set_short_name("if2")
@@ -29,12 +64,45 @@ void FieldBrowserInitOpcode()
         .add_argument_jump8("jump", 0x7)
         .end();
 
+    g_field_opcodes[0x33]
+        .set_size(0x2)
+        .set_short_name("uc")
+        .set_full_name("MAP:CONTROL_LOCK")
+        .set_desc("Disables control over player entity.")
+        .add_argument_u8("lock", 0x1)
+        .end();
+
     g_field_opcodes[0x43]
         .set_size(0x2)
         .set_short_name("mpnam")
         .set_full_name("MAP:NAME")
         .set_desc("Set map name to display in menu.")
         .add_argument_u8("steps", 0x6)
+        .end();
+
+    g_field_opcodes[0x48]
+        .set_size(0x7)
+        .set_short_name("ask")
+        .set_full_name("WINDOW:ASK")
+        .set_desc("Call dialog window with multiple choises.")
+        .add_argument_u8("w_id", 0x2)
+        .add_argument_u8("mes_id", 0x3)
+        .add_argument_u8("row_s", 0x4)
+        .add_argument_u8("row_e", 0x5)
+        .add_argument_read_memory8("row_cur", 0x2, 0x6)
+        .set_can_break()
+        .end();
+
+    g_field_opcodes[0x50]
+        .set_size(0xa)
+        .set_short_name("wsize")
+        .set_full_name("WINDOW:SIZE")
+        .set_desc("Set sizes to window.")
+        .add_argument_u8("w_id", 0x1)
+        .add_argument_u16("x", 0x2)
+        .add_argument_u16("y", 0x4)
+        .add_argument_u16("w", 0x6)
+        .add_argument_u16("h", 0x8)
         .end();
 
     g_field_opcodes[0x64]

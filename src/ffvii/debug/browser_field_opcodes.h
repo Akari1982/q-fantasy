@@ -12,10 +12,12 @@ struct OpcodeArg
     {
         UNKNOWN,
         U8,
+        U16,
         READ_MEMORY8,
         READ_MEMORY16,
         WRITE_MEMORY16,
-        JUMP8
+        JUMP8,
+        JUMP16
     } type = UNKNOWN;
     std::string name;
     u8 mem_block;
@@ -37,25 +39,25 @@ struct OpcodeInfo
         init = true;
     }
 
-    OpcodeInfo& set_size( u8 _size )
+    OpcodeInfo& set_size(u8 _size)
     {
         size = _size;
         return *this;
     }
 
-    OpcodeInfo& set_short_name( const char* name )
+    OpcodeInfo& set_short_name(const char* name)
     {
         short_name = name;
         return *this;
     }
 
-    OpcodeInfo& set_full_name( const char* name )
+    OpcodeInfo& set_full_name(const char* name)
     {
         full_name = name;
         return *this;
     }
 
-    OpcodeInfo& set_desc( const char* text )
+    OpcodeInfo& set_desc(const char* text)
     {
         desc = text;
         return *this;
@@ -67,9 +69,9 @@ struct OpcodeInfo
         return *this;
     }
 
-    OpcodeInfo& add_argument_u8( const char* arg_name, u8 offset )
+    OpcodeInfo& add_argument_u8(const char* arg_name, u8 offset)
     {
-        args.push_back( OpcodeArg() );
+        args.push_back(OpcodeArg());
         OpcodeArg& new_arg = args[args.size() - 1];
         new_arg.name = arg_name;
         new_arg.type = OpcodeArg::U8;
@@ -77,9 +79,19 @@ struct OpcodeInfo
         return *this;
     }
 
-    OpcodeInfo& add_argument_read_memory8( const char* arg_name, u8 block, u8 offset )
+    OpcodeInfo& add_argument_u16(const char* arg_name, u8 offset)
     {
-        args.push_back( OpcodeArg() );
+        args.push_back(OpcodeArg());
+        OpcodeArg& new_arg = args[args.size() - 1];
+        new_arg.name = arg_name;
+        new_arg.type = OpcodeArg::U16;
+        new_arg.offset = offset;
+        return *this;
+    }
+
+    OpcodeInfo& add_argument_read_memory8(const char* arg_name, u8 block, u8 offset)
+    {
+        args.push_back(OpcodeArg());
         OpcodeArg& new_arg = args[args.size() - 1];
         new_arg.name = arg_name;
         new_arg.type = OpcodeArg::READ_MEMORY8;
@@ -88,9 +100,9 @@ struct OpcodeInfo
         return *this;
     }
 
-    OpcodeInfo& add_argument_read_memory16( const char* arg_name, u8 block, u8 offset )
+    OpcodeInfo& add_argument_read_memory16(const char* arg_name, u8 block, u8 offset)
     {
-        args.push_back( OpcodeArg() );
+        args.push_back(OpcodeArg());
         OpcodeArg& new_arg = args[args.size() - 1];
         new_arg.name = arg_name;
         new_arg.type = OpcodeArg::READ_MEMORY16;
@@ -99,9 +111,9 @@ struct OpcodeInfo
         return *this;
     }
 
-    OpcodeInfo& add_argument_write_memory16( const char* arg_name, u8 block, u8 offset )
+    OpcodeInfo& add_argument_write_memory16(const char* arg_name, u8 block, u8 offset)
     {
-        args.push_back( OpcodeArg() );
+        args.push_back(OpcodeArg());
         OpcodeArg& new_arg = args[args.size() - 1];
         new_arg.name = arg_name;
         new_arg.type = OpcodeArg::WRITE_MEMORY16;
@@ -110,12 +122,22 @@ struct OpcodeInfo
         return *this;
     }
 
-    OpcodeInfo& add_argument_jump8( const char* arg_name, u8 offset )
+    OpcodeInfo& add_argument_jump8(const char* arg_name, u8 offset)
     {
-        args.push_back( OpcodeArg() );
+        args.push_back(OpcodeArg());
         OpcodeArg& new_arg = args[args.size() - 1];
         new_arg.name = arg_name;
         new_arg.type = OpcodeArg::JUMP8;
+        new_arg.offset = offset;
+        return *this;
+    }
+
+    OpcodeInfo& add_argument_jump16(const char* arg_name, u8 offset)
+    {
+        args.push_back(OpcodeArg());
+        OpcodeArg& new_arg = args[args.size() - 1];
+        new_arg.name = arg_name;
+        new_arg.type = OpcodeArg::JUMP16;
         new_arg.offset = offset;
         return *this;
     }
